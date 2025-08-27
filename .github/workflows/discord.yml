@@ -11,5 +11,7 @@ jobs:
         run: |
           curl -H "Content-Type: application/json" \
             -X POST \
-            -d "{\"content\": \"📌 Push by **${{ github.actor }}** on branch **${{ github.ref_name }}**\nLast commit: ${{ github.event.head_commit.message }}\"}" \
+            -d "{
+              \"content\": \"🚀 **New Push Detected**\n\n👤 Pushed by: **${{ github.actor }}**\n🌿 Branch: **${{ github.ref_name }}**\n📝 Commit: ${{ github.event.head_commit.message }}\"
+            }" \
             ${{ secrets.DISCORD_WEBHOOK }}
