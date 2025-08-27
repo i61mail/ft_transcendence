@@ -24,7 +24,7 @@ jobs:
           curl -H "Content-Type: application/json" \
             -X POST \
             -d "{
-              \"content\": \"📌 **Pull Request Opened**\n\n👤 Author: **${{ github.actor }}**\n🔀 PR Title: *${{ github.event.pull_request.title }}*\n📂 Branch: **${{ github.head_ref }} ➝ ${{ github.base_ref }}**\n🔗 Link: ${{ github.event.pull_request.html_url }}\"
+              \"content\": \"📌📌📌📌📌 **Pull Request Opened**📌📌📌📌📌\n\n👤 Author: **${{ github.actor }}**\n🔀 PR Title: *${{ github.event.pull_request.title }}*\n📂 Branch: **${{ github.head_ref }} ➝ ${{ github.base_ref }}**\n🔗 Link: ${{ github.event.pull_request.html_url }}\"
             }" \
             ${{ secrets.DISCORD_WEBHOOK }}
 
@@ -34,6 +34,6 @@ jobs:
           curl -H "Content-Type: application/json" \
             -X POST \
             -d "{
-              \"content\": \"🎉 **Pull Request Merged!**\n\n👤 Merged by: **${{ github.actor }}**\n🔀 PR Title: *${{ github.event.pull_request.title }}*\n📂 Branch: **${{ github.head_ref }} ➝ ${{ github.base_ref }}**\n🔗 Link: ${{ github.event.pull_request.html_url }}\"
+              \"content\": \"🎉🎉🎉🎉🎉 **Pull Request Merged!**🎉🎉🎉🎉🎉\n\n👤 Merged by: **${{ github.actor }}**\n🔀 PR Title: *${{ github.event.pull_request.title }}*\n📂 Branch: **${{ github.head_ref }} ➝ ${{ github.base_ref }}**\n🔗 Link: ${{ github.event.pull_request.html_url }}\"
             }" \
             ${{ secrets.DISCORD_WEBHOOK }}
