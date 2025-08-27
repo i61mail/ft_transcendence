@@ -2,16 +2,38 @@ name: Discord Notification
 
 on:
   push:
+  pull_request:
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send push notification to Discord
+      - name: Notify Discord on push
+        if: github.event_name == 'push'
         run: |
           curl -H "Content-Type: application/json" \
             -X POST \
             -d "{
               \"content\": \"🚀 **New Push Detected**\n\n👤 Pushed by: **${{ github.actor }}**\n🌿 Branch: **${{ github.ref_name }}**\n📝 Commit: ${{ github.event.head_commit.message }}\"
+            }" \
+            ${{ secrets.DISCORD_WEBHOOK }}
+
+      - name: Notify Discord on pull request opened
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "{
+              \"content\": \"📌 **Pull Request Opened**\n\n👤 Author: **${{ github.actor }}**\n🔀 PR Title: *${{ github.event.pull_request.title }}*\n📂 Branch: **${{ github.head_ref }} ➝ ${{ github.base_ref }}**\n🔗 Link: ${{ github.event.pull_request.html_url }}\"
+            }" \
+            ${{ secrets.DISCORD_WEBHOOK }}
+
+      - name: Notify Discord on pull request merged
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "{
+              \"content\": \"🎉 **Pull Request Merged!**\n\n👤 Merged by: **${{ github.actor }}**\n🔀 PR Title: *${{ github.event.pull_request.title }}*\n📂 Branch: **${{ github.head_ref }} ➝ ${{ github.base_ref }}**\n🔗 Link: ${{ github.event.pull_request.html_url }}\"
             }" \
             ${{ secrets.DISCORD_WEBHOOK }}
