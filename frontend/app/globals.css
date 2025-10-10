@@ -16,6 +16,8 @@
 body {
   color: var(--font-pixelify);
   font-family: "Pixelify Sans", sans-serif;
-  padding: 1rem;
+  padding: 0;
+  padding-top: 1rem;
+  padding-left: 1rem;
   background-color: var(--background);
 }

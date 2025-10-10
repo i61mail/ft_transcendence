@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Pixelify_Sans } from "next/font/google";
 import "./globals.css";
-import Header from "./components/Header.tsx";
+import Header from "../components/layout/header/Header";
+import AuthContext from "../context/AuthProvider";
 
-const PixelifySans = Pixelify_Sans(
-  {
-    variable: "--font-pixelify-sans",
-    subsets: ["latin"],
-  }
-);
+const PixelifySans = Pixelify_Sans({
+  variable: "--font-pixelify-sans",
+  subsets: ["latin"],
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,8 +34,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${PixelifySans.variable} antialiased`}
       >
-        <Header/>
-        {children}
+        <AuthContext>
+          <Header />
+          {children}
+        </AuthContext>
       </body>
     </html>
   );

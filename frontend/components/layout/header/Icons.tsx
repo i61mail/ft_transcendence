@@ -1,7 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
-import notificationIcon from "../../public/notification.svg"
-import settings from "../../public/settings.svg"
+import notificationIcon from "../../../public/notification.svg"
+import settings from "../../../public/settings.svg"
 
 const Icons = () => {
   return (
