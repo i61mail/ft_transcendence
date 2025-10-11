@@ -37,8 +37,14 @@ class PongGame
     {
         this._canvas = canvas;
         this._court = new Court(canvas);
-    }
 
+        let that = this;
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key == "Enter" && !that._court.ismatchStarted)
+                that._court.startMatch();
+        });
+    }
     _update(deltaTime)
     {
         this._court.update(deltaTime);
@@ -84,6 +90,8 @@ class Court
 
         this._scoreBoard = new ScoreBoard();
         this._ball = new Ball(SETTINGS.ballRadius, canvas.width / 2, canvas.height / 2, this);
+
+        this.ismatchStarted = false;
     }
 
     get bounds()
@@ -93,6 +101,43 @@ class Court
             lower: this._canvas.height - SETTINGS.courtMarginY - SETTINGS.wallSize,
             left: 0,
             right: this._canvas.width
+        }
+    }
+
+    startMatch()
+    {
+        this.ismatchStarted = true;
+        this._spawnBall();
+        this._scoreBoard.reset();
+        this.leftPadle.reset();
+        this.rightPadle.reset();
+        this._scoreBoard.round = 1;
+    }
+
+    _spawnBall()
+    {
+        this._ball.velocity = {
+            x: Math.random() > 0.5 ? 1 : -1,
+            y: Math.random() > 0.5 ? 1 : -1
+        };
+        this._ball.posX = this._canvas.width / 2;
+        this._ball.posY = this._canvas.height / 2;
+        this._ball.speed = Ball.minSpeed;
+    }
+
+    scorePoint(playerIndex)
+    {
+        if (playerIndex == PlayerIndex.PlayerOne)
+            this._scoreBoard.leftPlayerScore += 1;
+        else if (playerIndex == PlayerIndex.PlayerTwo)
+            this._scoreBoard.rightPlayerScore += 1;
+
+        if (this._scoreBoard.winner)
+            this._court.ismatchStarted = false;
+        else
+        {
+            this._scoreBoard.round++;
+            this._spawnBall();
         }
     }
 
@@ -235,7 +280,7 @@ class Ball
         this._startPosX = posX;
         this._startPosY = posY;
 
-        this._velocity = {x: -1, y: -1};
+        this._velocity = {x: 0, y: 0};
         this._speed = Ball.minSpeed;
         
     }
@@ -306,11 +351,11 @@ class Ball
 
         if (this.posX < this._court.bounds.left)
         {
-
+            this._court.scorePoint(PlayerIndex.PlayerTwo);
         }
         else if (this.posX > this._court.bounds.right)
         {
-
+            this._court.scorePoint(PlayerIndex.PlayerOne);
         }
         this.speed += Ball.acceleration * deltaTime;
     }
