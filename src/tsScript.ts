@@ -1,5 +1,33 @@
-const SETTINGS = {
+interface settingsInterface {
     // court
+    wallColor: string;
+	wallSize: number;
+	courtMarginX: number;
+	courtMarginY: number;
+    // logic
+    getIntervalLength: () => number;
+    targetFps: number;
+    // paddle
+    paddleSpeed: number;
+    playerOneColor: string;
+    playerTwoColor: string;
+    paddleWidth: number;
+    paddleHeight: number;
+    // scoreboard
+    winningScore: number;
+    smallFont: string;
+    largeFont: string;
+    scoreTextColor: string;
+    // ball
+    ballMinSpeed: number;
+    ballMaxSpeed: number;
+    ballColor: string;
+    ballAcceleration: number;
+    ballRadius: number;
+}
+
+const SETTINGS: settingsInterface = {
+	// court
     wallColor: "#202020",
     wallSize: 30,
     courtMarginX: 12, // might remove later if not used
@@ -33,7 +61,9 @@ const PlayerIndex = {
  
 class PongGame
 {
-    constructor(canvas)
+	_canvas: HTMLCanvasElement;
+	_court: Court;
+    constructor(canvas: HTMLCanvasElement)
     {
         this._canvas = canvas;
         this._court = new Court(canvas);
@@ -45,21 +75,23 @@ class PongGame
                 that._court.startMatch();
         });
     }
-    _update(deltaTime)
+    _update(deltaTime: number)
     {
         this._court.update(deltaTime);
     }
 
     draw()
     {
-        let context = this._canvas.getContext('2d');
-        context.clearRect(0, 0, this._canvas.width, this._canvas.height);
-        this._court.draw(this._canvas);
+        let context: CanvasRenderingContext2D | null = this._canvas.getContext('2d');
+        if (context) {
+            context.clearRect(0, 0, this._canvas.width, this._canvas.height);
+            this._court.draw(this._canvas);
+        }
     }
 
     run()
     {
-        let parent = this;
+        let parent: PongGame = this;
         let previousUpdateTime = Date.now();
         setInterval(function()
         {
@@ -74,7 +106,16 @@ class PongGame
 
 class Court
 {
-    constructor(canvas)
+    _canvas: HTMLCanvasElement;
+    leftPadle: Padle;
+    rightPadle: Padle;
+    _leftPlayerController: playerController;
+    _rightPlayerController: playerController;
+    _scoreBoard: ScoreBoard;
+    _ball: Ball;
+    ismatchStarted: boolean;
+
+    constructor(canvas: HTMLCanvasElement)
     {
         this._canvas = canvas;
 
@@ -125,7 +166,7 @@ class Court
         this._ball.speed = Ball.minSpeed;
     }
 
-    scorePoint(playerIndex)
+    scorePoint(playerIndex: number)
     {
         if (playerIndex == PlayerIndex.PlayerOne)
             this._scoreBoard.leftPlayerScore += 1;
@@ -141,7 +182,7 @@ class Court
         }
     }
 
-    update(deltaTime)
+    update(deltaTime: number)
     {
         if (!this.ismatchStarted)
             return;
@@ -151,9 +192,12 @@ class Court
         this._ball.update(deltaTime);
     }
 
-    draw(canvas)
+    draw(canvas: HTMLCanvasElement)
     {
-        let context = canvas.getContext('2d');
+        let context: CanvasRenderingContext2D | null = canvas.getContext('2d');
+        if (!context)
+            return;
+
         context.fillStyle = SETTINGS.wallColor;
         context.fillRect(0, SETTINGS.courtMarginY, this._canvas.width, SETTINGS.wallSize);
         context.fillRect(0, this._canvas.height - SETTINGS.wallSize - SETTINGS.courtMarginY, this._canvas.width, SETTINGS.wallSize);
@@ -166,36 +210,40 @@ class Court
 
 class playerController
 {
-    constructor(paddle)
+    _paddle: Padle;
+    _isUpKeyPressed: boolean;
+    _isDownKeyPressed: boolean;
+
+    constructor(paddle: Padle)
     {
         this._paddle = paddle;
         this._isUpKeyPressed = false;
         this._isDownKeyPressed = false;
 
-        let that = this;
+        let that: playerController = this;
         document.addEventListener("keydown", function(e) {
             if (that._paddle._playerIndex == PlayerIndex.PlayerOne)
             {
-                that._isUpKeyPressed = (e.key == "w") ? true : that._isUpKeyPressed;
-                that._isDownKeyPressed = (e.key == "s") ? true : that._isDownKeyPressed;
+                if (e.key == "w") that._isUpKeyPressed = true;
+                if (e.key == "s") that._isDownKeyPressed = true;
             }
-            else
+            else if (that._paddle._playerIndex == PlayerIndex.PlayerTwo)
             {
-                that._isUpKeyPressed = (e.key == "ArrowUp") ? true : that._isUpKeyPressed;
-                that._isDownKeyPressed = (e.key == "ArrowDown") ? true : that._isDownKeyPressed;
+                if (e.key == "ArrowUp") that._isUpKeyPressed = true;
+                if (e.key == "ArrowDown") that._isDownKeyPressed = true;
             }
         });
 
         document.addEventListener("keyup", function(e) {
             if (that._paddle._playerIndex == PlayerIndex.PlayerOne)
             {
-                that._isUpKeyPressed = (e.key == "w") ? false : that._isUpKeyPressed;
-                that._isDownKeyPressed = (e.key == "s") ? false : that._isDownKeyPressed;
+                if (e.key == "w") that._isUpKeyPressed = false;
+                if (e.key == "s") that._isDownKeyPressed = false;
             }
-            else
+            else if (that._paddle._playerIndex == PlayerIndex.PlayerTwo)
             {
-                that._isUpKeyPressed = (e.key == "ArrowUp") ? false : that._isUpKeyPressed;
-                that._isDownKeyPressed = (e.key == "ArrowDown") ? false : that._isDownKeyPressed;
+                if (e.key == "ArrowUp") that._isUpKeyPressed = false;
+                if (e.key == "ArrowDown") that._isDownKeyPressed = false;
             }
         });
     }
@@ -209,7 +257,7 @@ class playerController
             velocity += 1;
         return velocity;
     }
-    update(deltaTime)
+    update(deltaTime: number)
     {
         if (this.velocity > 0)
             this._paddle.moveDown(deltaTime);
@@ -220,7 +268,16 @@ class playerController
 
 class Padle
 {
-    constructor(posX, posY, width, height, PlayerIndex, court)
+    posX: number;
+    posY: number;
+    width: number;
+    height: number;
+    _playerIndex: number;
+    _court: Court;
+    _startPosX: number;
+    _startPosY: number;
+
+    constructor(posX: number, posY: number, width: number, height: number, PlayerIndex: number, court: Court)
     {
         this.posX = posX;
         this.posY = posY;
@@ -238,15 +295,15 @@ class Padle
     {
         return new Rectangle(this.posX, this.posY, this.width, this.height);
     }
-    
-    moveUp(deltaTime)
+
+    moveUp(deltaTime: number)
     {
         this.posY -= Padle.speed * deltaTime;
         if (this.posY < this._court.bounds.upper)
             this.posY = this._court.bounds.upper;
     }
 
-    moveDown(deltaTime)
+    moveDown(deltaTime: number)
     {
         this.posY += Padle.speed * deltaTime;
         if (this.posY + this.height > this._court.bounds.lower)
@@ -264,9 +321,12 @@ class Padle
         return this._playerIndex == PlayerIndex.PlayerOne ? SETTINGS.playerOneColor : SETTINGS.playerTwoColor;
     }
 
-    draw(canvas)
+    draw(canvas: HTMLCanvasElement)
     {
-        let context = canvas.getContext('2d');
+        let context: CanvasRenderingContext2D | null = canvas.getContext('2d');
+        if (!context)
+            return;
+
         context.fillStyle = this.renderColor;
         context.fillRect(this.posX, this.posY, this.width, this.height);
     }
@@ -274,7 +334,16 @@ class Padle
 
 class Ball
 {
-    constructor(radius, posX, posY, court)
+    radius: number;
+    posX: number;
+    posY: number;
+    _court: Court;
+    _startPosX: number;
+    _startPosY: number;
+    _velocity: {x: number, y: number};
+    _speed: number;
+
+    constructor(radius: number, posX: number, posY: number, court: Court)
     {
         this.radius = radius;
         this.posX = posX;
@@ -282,10 +351,8 @@ class Ball
         this._court = court;
         this._startPosX = posX;
         this._startPosY = posY;
-
         this._velocity = {x: 0, y: 0};
         this._speed = Ball.minSpeed;
-        
     }
 
     static get minSpeed() { return SETTINGS.ballMinSpeed; }
@@ -293,7 +360,7 @@ class Ball
     static get acceleration() { return SETTINGS.ballAcceleration; }
 
     get speed() { return this._speed; }
-    set speed(value)
+    set speed(value: number)
     {
         if (value < Ball.minSpeed)
             this._speed = Ball.minSpeed;
@@ -310,22 +377,27 @@ class Ball
 
     get collisionBox()
     {
-        return new Rectangle(this.posX - this.radius, this.posY - this.radius, this.radius * 2, this.radius * 2);
+        return new Rectangle(this.posX - this.radius,
+                            this.posY - this.radius,
+                            this.radius * 2, this.radius * 2);
     }
 
     get velocity() { return this._velocity; }
-    set velocity(value) { this._velocity = value; }
+    set velocity(value: {x: number, y: number}) { this._velocity = value; }
 
-    draw(canvas)
+    draw(canvas: HTMLCanvasElement)
     {
-        let context = canvas.getContext('2d');
+        let context: CanvasRenderingContext2D | null = canvas.getContext('2d');
+        if (!context)
+            return;
+
         context.fillStyle = SETTINGS.ballColor;
         context.beginPath();
         context.arc(this.posX, this.posY, this.radius, 0, Math.PI * 2, false);
         context.fill();
     }
 
-    update(deltaTime)
+    update(deltaTime: number)
     {
         this.posX += Math.sign(this._velocity.x) * this._speed * deltaTime;
         this.posY += Math.sign(this._velocity.y) * this._speed * deltaTime;
@@ -366,6 +438,10 @@ class Ball
 
 class ScoreBoard
 {
+    leftPlayerScore: number = 0;
+    rightPlayerScore: number = 0;
+    round: number = 0;
+
     constructor()
     {
         this.reset();
@@ -380,9 +456,12 @@ class ScoreBoard
         return 0;
     }
 
-    draw (canvas)
+    draw (canvas: HTMLCanvasElement)
     {
-        let context = canvas.getContext('2d');
+        let context: CanvasRenderingContext2D | null = canvas.getContext('2d');
+        if (!context)
+            return;
+
         context.font = SETTINGS.smallFont;
         context.fillStyle = SETTINGS.scoreTextColor;
         context.fillText("Player 1: " + this.leftPlayerScore, 20, 30); // it's hard coded so change this later
@@ -406,7 +485,12 @@ class ScoreBoard
 
 class Rectangle
 {
-	constructor(x, y, width, height)
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+
+	constructor(x: number, y: number, width: number, height: number)
 	{
 		this.x = x;
 		this.y = y;
@@ -419,7 +503,7 @@ class Rectangle
     get top() { return this.y; }
     get bottom() { return this.y + this.height; }
 
-    overlaps(other)
+    overlaps(other: Rectangle)
     {
         return  other.left < this.right &&
                 this.left < other.right &&
@@ -427,7 +511,7 @@ class Rectangle
                 this.top < other.bottom;
     }
 
-    contains(x, y)
+    contains(x: number, y: number) // did not use it, might remove later
     {
         return  this.left < x && this.right > x &&
                 this.top < y && this.bottom > y;
@@ -436,7 +520,7 @@ class Rectangle
 
 function startGame()
 {
-    let canvas = document.getElementById("canvas");
-	let pong = new PongGame(canvas);
+    let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
+	let pong: PongGame = new PongGame(canvas);
 	pong.run();
 }

@@ -2,9 +2,9 @@
   "name": "ft_transcendence",
   "version": "1.0.0",
   "description": "FT_transcendence",
-  "main": "script.js",
+  "main": "tsScript.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "tsc --watch"
   },
   "repository": {
     "type": "git",
@@ -13,7 +13,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/i61mail/ft_transcendence/issues"
   },
