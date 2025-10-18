@@ -1,21 +1,21 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { startGame } from "@/lib/game";
 
 
-export default function GamePage() {
+export default function GamePage()
+{
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (canvasRef.current)
+      startGame(canvasRef.current);
+  }, []);
+
   return (
-    <div>
-      <h1>Pong Game</h1>
-	<button
-		onClick={(e) => {
-			// @ts-ignore
-			if (typeof window !== "undefined" && typeof window.startGame === "function") {
-				window.startGame();
-				(e.target as HTMLButtonElement).disabled = true;
-			}
-		}}
-	>
-		Start Game
-	</button>
-      <canvas id="gameCanvas" width={800} height={600}></canvas>
-    </div>
+    <canvas ref={canvasRef} width={800} height={600}>
+            if you see this message, than the canvas did not load propraly
+        </canvas>
   );
 }
