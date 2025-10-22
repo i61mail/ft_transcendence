@@ -42,14 +42,14 @@ const MainChat = (client:MainChatProps) => {
     }, [chatContext.pointedUser?.id])
 
     return (
-        <div className='relative flex-3 h-full rounded-t-[30] bg-[#B0BBCF]'>
-        <div className='z-1 flex-1 flex justify-left items-center gap-4 absolute left-0 top-0 h-[7%] w-full bg-[#92A0BD] rounded-tl-[30] px-14'>
+    <div className='relative flex-3 flex flex-col h-full rounded-t-[30] bg-[#B0BBCF]'>
+        <div className='flex-1 flex justify-left items-center gap-4 bg-[#92A0BD] rounded-tl-[30] px-14'>
             <div className='size-11 flex justify-center items-end rounded-full bg-gray-200'>
                 <Image className='fill-current' alt='user' src={defaultUser}/>
             </div>
             <h1 className='text-[24px]'>{chatContext.pointedUser?.username}</h1>
         </div>
-        <div className='w-full mt-[7%] py-15 h-[86%] flex flex-col-reverse gap-8 wrap-anywhere overflow-scroll'>
+        <div className='flex-15 flex flex-col-reverse py-5 gap-8 wrap-anywhere overflow-scroll'>
             {                
                 chatContext.messages.map(msg => (
                     <Message key={msg.id} message={msg.content} type={msg.receiver === chatContext.pointedUser?.username ? "sent" : "received"} />

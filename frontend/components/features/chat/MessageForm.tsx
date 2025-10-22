@@ -53,7 +53,7 @@ const MessageForm = (user: MessageFormProps) => {
         }    
 
   return (
-    <form action={sendMessage} className='flex-1 flex justify-between items-center gap-4 absolute left-0 bottom-0 h-[9%] w-full bg-[#92A0BD] px-14'>
+    <form action={sendMessage} className='flex-1 flex justify-between items-center gap-4 bg-[#92A0BD] px-14'>
         <div className='flex-8'>
             <input name='message' type="text" placeholder='Type a message' className='text-[20px] rounded-full w-full h-13 bg-white outline-none px-6'/>
         </div>
