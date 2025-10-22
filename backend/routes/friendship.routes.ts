@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
-import { deleteFriendship, extractFriendships, registerFriendship } from "controllers/friendship.controllers.js";
+import { deleteFriendship, extractFriendships, registerFriendship } from "../controllers/friendship.controllers.js";
 import type { FriendShipRequest, FriendshipParams } from "types/friendship.types.js";
-import registerFriendSchema from "schemas/friendship.schemas.js";
+import registerFriendSchema from "../schemas/friendship.schemas.js";
 
 const friendsRoutes = async (server: FastifyInstance) =>
 {

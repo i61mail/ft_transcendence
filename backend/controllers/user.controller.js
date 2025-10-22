@@ -1,3 +1,4 @@
+import Fastify from "fastify";
 const createUserHandler = async (request, reply) => {
     const server = request.server;
     try {
@@ -12,7 +13,6 @@ const createUserHandler = async (request, reply) => {
         reply.send(err);
     }
 };
-
 const getUserById = async (request, reply) => {
     const id = request.params.id;
     const getUser = request.server.db.prepare(`SELECT * FROM users WHERE id = ?`);
@@ -25,7 +25,6 @@ const getUserById = async (request, reply) => {
             username: foundUser.username
         });
 };
-
 const getAllUsers = async (request, reply) => {
     const statement = request.server.db.prepare(`SELECT * FROM users`);
     const allData = statement.all();
@@ -38,6 +37,5 @@ const getAllUsers = async (request, reply) => {
         })));
     }
 };
-
 export default createUserHandler;
 export { getUserById, getAllUsers };
