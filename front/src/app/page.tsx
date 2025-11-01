@@ -29,7 +29,7 @@ export default function Home() {
                   src="/rectangle-8.png"
                 />
                 <h1 className="font-pixelify font-semibold text-black text-[40px] tracking-[0] leading-normal whitespace-nowrap">
-                  Let&apos;s Goo !
+                  Let's Goo !
                 </h1>
                 <img
                   className="w-[76px] h-[61px] object-cover"
@@ -79,7 +79,7 @@ export default function Home() {
 
                 <button
                   type="submit"
-                  className="w-full h-12 bg-black rounded-[20px] font-pixelify font-normal text-white text-base tracking-[0] leading-normal hover:bg-black/90 transition-colors"
+                  className="w-full h-12 bg-[#4a7bb8] rounded-[20px] font-pixelify font-normal text-white text-base tracking-[0] leading-normal hover:bg-black/90 transition-colors"
                 >
                   Login
                 </button>
