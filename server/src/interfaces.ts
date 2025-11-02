@@ -85,3 +85,10 @@ export interface messageInterace
     ballPosX: number;
     ballPosY: number;
 }
+
+export enum keyStat
+{
+    down,
+    up,
+    none
+}

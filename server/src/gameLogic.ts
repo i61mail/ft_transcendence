@@ -1,4 +1,4 @@
-import { SETTINGS, GameMode, messageInterace, PlayerIndex } from './interfaces'
+import * as intf from "./interfaces";
 
 class Rectangle
 {
@@ -42,18 +42,18 @@ class Padle
     _court: Court;
     _collisionBox: Rectangle;
 
-    constructor(playerIndex: PlayerIndex, court: Court)
+    constructor(playerIndex: intf.PlayerIndex, court: Court)
     {
-        if (playerIndex == PlayerIndex.leftPlayer)
-            this.posX = SETTINGS.paddleWidth;
+        if (playerIndex == intf.PlayerIndex.leftPlayer)
+            this.posX = intf.SETTINGS.paddleWidth;
         else
-            this.posX = SETTINGS.canvasWidth - 2 * SETTINGS.paddleWidth;
-        this.posY =  SETTINGS.canvasHeight / 2 - SETTINGS.paddleHeight / 2;
+            this.posX = intf.SETTINGS.canvasWidth - 2 * intf.SETTINGS.paddleWidth;
+        this.posY =  intf.SETTINGS.canvasHeight / 2 - intf.SETTINGS.paddleHeight / 2;
         this._court = court;
-        this._collisionBox = new Rectangle(this.posX, this.posY, SETTINGS.paddleWidth, SETTINGS.paddleHeight);
+        this._collisionBox = new Rectangle(this.posX, this.posY, intf.SETTINGS.paddleWidth, intf.SETTINGS.paddleHeight);
     }
 
-    static get speed() { return SETTINGS.paddleSpeed; } // pixels per second
+    static get speed() { return intf.SETTINGS.paddleSpeed; } // pixels per second
 
     get collisionBox()
     {
@@ -64,6 +64,7 @@ class Padle
 
     moveUp(deltaTime: number)
     {
+
         this.posY -= Padle.speed * deltaTime;
         if (this.posY < this._court.bounds.upper)
             this.posY = this._court.bounds.upper;
@@ -72,8 +73,8 @@ class Padle
     moveDown(deltaTime: number)
     {
         this.posY += Padle.speed * deltaTime;
-        if (this.posY + SETTINGS.paddleHeight > this._court.bounds.lower)
-            this.posY = this._court.bounds.lower - SETTINGS.paddleHeight;
+        if (this.posY + intf.SETTINGS.paddleHeight > this._court.bounds.lower)
+            this.posY = this._court.bounds.lower - intf.SETTINGS.paddleHeight;
     }
 
 }
@@ -83,14 +84,12 @@ abstract class Controller
 {
     private     paddle: Padle;
     private     _socket: WebSocket | null = null;
-    protected   _isUpKeyPressed: boolean;
-    protected   _isDownKeyPressed: boolean;
+    protected   _status: intf.keyStat;
 
     constructor(paddle: Padle)
     {
         this.paddle = paddle;
-        this._isUpKeyPressed = false;
-        this._isDownKeyPressed = false;
+        this._status = intf.keyStat.none;
         this.controlling();
     }
 
@@ -109,21 +108,23 @@ abstract class Controller
     get velocity()
     {
         let velocity = 0;
-        if (this._isUpKeyPressed)
-            velocity -= 1;
-        if (this._isDownKeyPressed)
+        if (this._status == intf.keyStat.up)
             velocity += 1;
+        if (this._status == intf.keyStat.down)
+            velocity -= 1;
         return velocity;
     }
 
     update(deltaTime: number)
     {
-        if (this.velocity > 0)
+        const velocity = this.velocity;
+        if (velocity < 0)
             this.paddle.moveDown(deltaTime);
-        else if (this.velocity < 0)
+        else if (velocity > 0)
             this.paddle.moveUp(deltaTime);
     }
 }
+
 
 class LocalController extends Controller
 {
@@ -155,21 +156,11 @@ class onlineController extends Controller
     {
         if (this.socket)
         {
+            // u: press Up
+            // d: press Down
+            // r: release
             this.socket.onmessage = (msg) => {
-                // this will be changed later when i update the client input handler so it will send a JSON instead
-               
-                if (msg.data == 'u')
-                {
-                    console.log(msg.data);
-                    this._isUpKeyPressed = true;
-                    this._isDownKeyPressed = false;
-                }
-                else if (msg.data == 'd')
-                {
-                     console.log(msg.data);
-                    this._isDownKeyPressed = true;
-                    this._isUpKeyPressed = false;
-                }
+                this._status = msg.data;
             }
         }
     }
@@ -193,19 +184,19 @@ class Court
 {
     public  leftPadle: Padle;
     public  rightPadle: Padle;
-    private gameMode: GameMode;
+    private gameMode: intf.GameMode;
     public  leftPlayerController: Controller;
     public  rightPlayerController: Controller;
 
-    constructor(gameMode: GameMode)
+    constructor(gameMode: intf.GameMode)
     {
         this.gameMode = gameMode;
-        this.leftPadle = new Padle(PlayerIndex.leftPlayer, this);
-        this.rightPadle = new Padle(PlayerIndex.rightPlayer, this);
+        this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this);
+        this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this);
         this.leftPlayerController = new onlineController(this.leftPadle) as Controller;
-        if (gameMode == GameMode.online)
+        if (gameMode == intf.GameMode.online)
             this.rightPlayerController = new onlineController(this.rightPadle) as Controller;
-        else if (gameMode == GameMode.local)
+        else if (gameMode == intf.GameMode.local)
             this.rightPlayerController = new LocalController(this.rightPadle) as Controller;
         else
             this.rightPlayerController = new AIController(this.rightPadle) as Controller;
@@ -215,9 +206,11 @@ class Court
     {
         if (this.leftPlayerController.socket == null)
             this.leftPlayerController.socket = player;
-        else if (this.gameMode == GameMode.online)
+        else if (this.gameMode == intf.GameMode.online)
+        {
             this.rightPlayerController.socket = player;
-        if (this.gameMode == GameMode.local)
+        }
+        if (this.gameMode == intf.GameMode.local)
             this.rightPlayerController.socket = player;
     }
 
@@ -231,10 +224,14 @@ class Court
     {
         this.leftPlayerController.update(deltaTime);
         this.rightPlayerController.update(deltaTime);
-        let data: messageInterace =
+        let data: intf.messageInterace =
         {
+            // this is a vector, so eithert change the name of it or make the user teleport to where it's position on the server instead
+
             leftPlayerPosY: this.leftPadle.posY,
             rightPlayerPosY: this.rightPadle.posY,
+
+            //might add the current position in case there was a big delay between the paddle position in the server and in the client 
 
             leftPlayerScore: 0, // for now
             rightPlayerScore: 0, // for now
@@ -242,17 +239,18 @@ class Court
             ballPosX: 0, // for now
             ballPosY: 0, // for now
         }
-    
+        
         this.leftPlayerController.socket?.send(JSON.stringify(data));
+        this.rightPlayerController.socket?.send(JSON.stringify(data));
     }
 
     get bounds()
     {
         return {
-            upper: SETTINGS.courtMarginY + SETTINGS.wallSize,
-            lower: SETTINGS.canvasHeight - SETTINGS.courtMarginY - SETTINGS.wallSize,
+            upper: intf.SETTINGS.courtMarginY + intf.SETTINGS.wallSize,
+            lower: intf.SETTINGS.canvasHeight - intf.SETTINGS.courtMarginY - intf.SETTINGS.wallSize,
             left: 0,
-            right: SETTINGS.canvasWidth
+            right: intf.SETTINGS.canvasWidth
         }
     }
 
@@ -262,7 +260,7 @@ export class PongGame
 {
     private _court: Court;
 
-    constructor(gameMode: GameMode)
+    constructor(gameMode: intf.GameMode)
     {
         this._court = new Court(gameMode);
         let that = this;
@@ -293,7 +291,7 @@ export class PongGame
             let deltaTime = (updateTime - previousUpdateTime) / 1000.0;
             parent._update(deltaTime);
 			previousUpdateTime = updateTime;
-        }, SETTINGS.getIntervalLength());
+        }, intf.SETTINGS.getIntervalLength());
     }
 
 }

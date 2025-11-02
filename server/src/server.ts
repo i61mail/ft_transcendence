@@ -26,8 +26,8 @@ async function connect(gameMode: GameMode)
     //   connection.close();
     //   return;
     // }
+    connection.send(JSON.stringify({gm: gameMode, plyI: clients.length}));
     clients.push(connection);
-    connection.send(JSON.stringify({gm: gameMode}));
     pong.addPlayer(connection);
     if (clients.length == 2)
     {

@@ -1,80 +1,69 @@
-import {messageInterace , SETTINGS, GameMode, PlayerIndex} from "./interfaces"
+import * as intf from "./interfaces";
 
-class playerController
+class PlayerController
 {
+    public  nextPos: number;
     private _paddle: Padle;
-    public  nextPosY: number;
-    private _isUpKeyPressed: boolean;
-    private _isDownKeyPressed: boolean;
-    constructor(paddle: Padle)
+    private _status: intf.keyStat;
+
+    constructor(paddle: Padle, court: Court, isPlayable: boolean)
     {
         this._paddle = paddle;
-        this.nextPosY = paddle.posY;
-        this._isUpKeyPressed = false;
-        this._isDownKeyPressed = false;
-
-        let that: playerController = this;
-        document.addEventListener("keydown", function(e) {
-            if (e.key == "w" && that._isUpKeyPressed == false)
-            {
-                that._isUpKeyPressed = true;
-                that._paddle.send('u');
-            }
-        });
-
-        document.addEventListener("keyup", function(e) {
-            if (that._paddle._playerIndex == PlayerIndex.leftPlayer)
-            {
-                if (e.key == "w") that._isUpKeyPressed = false;
-                if (e.key == "s") that._isDownKeyPressed = false;
-            }
-            else if (that._paddle._playerIndex == PlayerIndex.rightPlayer)
-            {
-                if (e.key == "ArrowUp") that._isUpKeyPressed = false;
-                if (e.key == "ArrowDown") that._isDownKeyPressed = false;
-            }
-        });
-    }
-
-    get velocity()
-    {
-        // console.log(`nextPosY: ${this.nextPosY}, paddlePosY: ${this._paddle.posY}`);
-        if (this.nextPosY > this._paddle.posY)
-            return (-1);
-        else if (this.nextPosY < this._paddle.posY)
-            return (1);
-        return 0;
+        this.nextPos = paddle.posY;
+        this._status = intf.keyStat.none;
+        
+        let that: PlayerController = this;
+        if (isPlayable)
+        {
+            document.addEventListener("keydown", function(e) {
+                if (e.key == "w" && that._status != intf.keyStat.up)
+                {
+                    that._status = intf.keyStat.up;
+                    court.socket.send(that._status.toString());
+                }
+                else if (e.key == "s" && that._status != intf.keyStat.down)
+                {
+                    that._status = intf.keyStat.down;
+                    court.socket.send(that._status.toString());
+                }
+            });
+            
+            document.addEventListener("keyup", function(e) {
+                if ((e.key == "w" && that._status == intf.keyStat.up)
+                    || (e.key == "s" && that._status == intf.keyStat.down))
+                {
+                    that._status = intf.keyStat.none;
+                    court.socket.send(that._status.toString());
+                }
+            });
+        }
     }
     
-    update(deltaTime: number)
+    update()
     {
-        // console.log("bruhhhhh");
-        if (this.velocity > 0)
-            this._paddle.moveDown(deltaTime);
-        else if (this.velocity < 0)
-            this._paddle.moveUp(deltaTime);
+        this._paddle.posY = this.nextPos;
     }
 }
 
 class Padle
 {
-    posX: number;
-    posY: number;
-    _playerIndex: PlayerIndex;
-    _court: Court;
+    public  posX: number;
+    public  posY: number;
+    public  playerIndex: intf.PlayerIndex;
+    private _court: Court;
 
-    constructor(playerIndex: PlayerIndex, court: Court)
+    constructor(playerIndex: intf.PlayerIndex, court: Court)
     {
-       if (playerIndex == PlayerIndex.leftPlayer)
-            this.posX = SETTINGS.paddleWidth;
+       if (playerIndex == intf.PlayerIndex.leftPlayer)
+            this.posX = intf.SETTINGS.paddleWidth;
         else
-            this.posX = SETTINGS.canvasWidth - 2 * SETTINGS.paddleWidth;
-        this.posY =  SETTINGS.canvasHeight / 2 - SETTINGS.paddleHeight / 2;
-        this._playerIndex = playerIndex;
+            this.posX = intf.SETTINGS.canvasWidth - 2 * intf.SETTINGS.paddleWidth;
+        this.posY =  intf.SETTINGS.canvasHeight / 2 - intf.SETTINGS.paddleHeight / 2;
+        this.playerIndex  = playerIndex;
         this._court = court;
     }
 
-    static get speed() { return SETTINGS.paddleSpeed; } // pixels per second // maybe useless remove later
+    static get speed() { return intf.SETTINGS.paddleSpeed; } // pixels per second // maybe useless remove later
 
 
     moveUp(deltaTime: number)
@@ -87,13 +76,13 @@ class Padle
     moveDown(deltaTime: number)
     {
         this.posY += Padle.speed * deltaTime;
-        if (this.posY + SETTINGS.paddleHeight > this._court.bounds.lower)
-            this.posY = this._court.bounds.lower - SETTINGS.paddleHeight;
+        if (this.posY + intf.SETTINGS.paddleHeight > this._court.bounds.lower)
+            this.posY = this._court.bounds.lower - intf.SETTINGS.paddleHeight;
     }
 
     get renderColor()
     {
-        return this._playerIndex == PlayerIndex.leftPlayer ? SETTINGS.playerOneColor : SETTINGS.playerTwoColor;
+        return this.playerIndex  == intf.PlayerIndex.leftPlayer ? intf.SETTINGS.playerOneColor : intf.SETTINGS.playerTwoColor;
     }
 
     draw(canvas: HTMLCanvasElement)
@@ -103,7 +92,7 @@ class Padle
             return;
 
         context.fillStyle = this.renderColor;
-        context.fillRect(this.posX, this.posY, SETTINGS.paddleWidth, SETTINGS.paddleHeight);
+        context.fillRect(this.posX, this.posY, intf.SETTINGS.paddleWidth, intf.SETTINGS.paddleHeight);
     }
 }
 
@@ -112,42 +101,53 @@ class Court
     _canvas: HTMLCanvasElement;
     leftPadle: Padle;
     rightPadle: Padle;
-    _leftPlayerController: playerController;
-    _rightPlayerController: playerController;
+    _leftPlayerController!: PlayerController;
+    _rightPlayerController!: PlayerController;
+    gameMode: intf.GameMode;
+    socket: WebSocket;
     // _scoreBoard: ScoreBoard;
     // _ball: Ball;
 
-    constructor(canvas: HTMLCanvasElement, socket: WebSocket)
+    constructor(canvas: HTMLCanvasElement, socket: WebSocket, info: string)
     {
+        const { gm, plyI } = JSON.parse(info);
+
+        this.socket = socket;
+        this.gameMode = gm;
         this._canvas = canvas;
+        this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this);
+        this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this);
 
-        this.leftPadle = new Padle(PlayerIndex.leftPlayer, this);
-        this.rightPadle = new Padle(PlayerIndex.rightPlayer, this);
-
-        this._leftPlayerController = new playerController(this.leftPadle);
-        this._rightPlayerController = new playerController(this.rightPadle);
+        this.createControllers(plyI);
 
         // this._scoreBoard = new ScoreBoard();
-        // this._ball = new Ball(SETTINGS.ballRadius, canvas.width / 2, canvas.height / 2, this);
+        // this._ball = new Ball(Interfaces.SETTINGS.ballRadius, canvas.width / 2, canvas.height / 2, this);
 
+    }
+
+    createControllers(plyI: number)
+    {
+        if (this.gameMode == intf.GameMode.online)
+        {
+            this._leftPlayerController = new PlayerController(this.leftPadle, this, (plyI == 0) ? true : false);
+            this._rightPlayerController = new PlayerController(this.rightPadle, this, (plyI == 1) ? true : false);
+        }
     }
 
     get bounds()
     {
         return {
-            upper: SETTINGS.courtMarginY + SETTINGS.wallSize,
-            lower: this._canvas.height - SETTINGS.courtMarginY - SETTINGS.wallSize,
+            upper: intf.SETTINGS.courtMarginY + intf.SETTINGS.wallSize,
+            lower: this._canvas.height - intf.SETTINGS.courtMarginY - intf.SETTINGS.wallSize,
             left: 0,
             right: this._canvas.width
         }
     }
 
-    public listen(message: messageInterace)
+    public listen(message: intf.messageInterface)
     {
-        // console.clear();
-        // console.log(message.leftPlayerPosY);
-        this._leftPlayerController.nextPosY = message.leftPlayerPosY;
-        this._rightPlayerController.nextPosY = message.rightPlayerPosY;
+        this._leftPlayerController.nextPos = message.leftPlayerPosY;
+        this._rightPlayerController.nextPos = message.rightPlayerPosY;
 
         //update ball postion and scoreboard
     }
@@ -175,9 +175,9 @@ class Court
 
     // scorePoint(playerIndex: number)
     // {
-    //     if (playerIndex == PlayerIndex.PlayerOne)
+    //     if (playerIndex == Interfaces.PlayerIndex.PlayerOne)
     //         this._scoreBoard.leftPlayerScore += 1;
-    //     else if (playerIndex == PlayerIndex.PlayerTwo)
+    //     else if (playerIndex == Interfaces.PlayerIndex.PlayerTwo)
     //         this._scoreBoard.rightPlayerScore += 1;
 
     //     if (this._scoreBoard.winner)
@@ -189,10 +189,10 @@ class Court
     //     }
     // }
 
-    update(deltaTime: number)
+    update()
     {
-        this._leftPlayerController.update(deltaTime);
-        this._rightPlayerController.update(deltaTime);
+        this._leftPlayerController.update();
+        this._rightPlayerController.update();
         // this._ball.update(deltaTime);
     }
 
@@ -202,9 +202,9 @@ class Court
         if (!context)
             return;
 
-        context.fillStyle = SETTINGS.wallColor;
-        context.fillRect(0, SETTINGS.courtMarginY, this._canvas.width, SETTINGS.wallSize);
-        context.fillRect(0, this._canvas.height - SETTINGS.wallSize - SETTINGS.courtMarginY, this._canvas.width, SETTINGS.wallSize);
+        context.fillStyle = intf.SETTINGS.wallColor;
+        context.fillRect(0, intf.SETTINGS.courtMarginY, this._canvas.width, intf.SETTINGS.wallSize);
+        context.fillRect(0, this._canvas.height - intf.SETTINGS.wallSize - intf.SETTINGS.courtMarginY, this._canvas.width, intf.SETTINGS.wallSize);
         this.leftPadle.draw(canvas);
         this.rightPadle.draw(canvas);
         // this._ball.draw(this._canvas);
@@ -216,26 +216,19 @@ class PongGame
 {
 	private _canvas: HTMLCanvasElement;
 	private _court: Court;
-    public  gameMode: GameMode;
 
-    constructor(canvas: HTMLCanvasElement, gameMode: GameMode, socket: WebSocket)
+    constructor(canvas: HTMLCanvasElement, info: string, socket: WebSocket)
     {
         this._canvas = canvas;
-        this.gameMode = gameMode;
-        this._court = new Court(canvas, socket);
-
-        let that = this;
+        this._court = new Court(canvas, socket, info);
     }
 
-    public listen(message: messageInterace)
+    public listen(message: intf.messageInterface)
     {
         this._court.listen(message);
+        this._court.update();
+        this._draw();
     } 
-
-    private _update(deltaTime: number)
-    {
-        this._court.update(deltaTime);
-    }
 
     private _draw()
     {
@@ -246,48 +239,20 @@ class PongGame
         }
     }
 
-    run()
-    {
-        let parent: PongGame = this;
-        let previousUpdateTime = Date.now();
-        setInterval(function()
-        {
-            let updateTime = Date.now();
-            let deltaTime = (updateTime - previousUpdateTime) / 1000.0;
-            parent._update(deltaTime);
-            parent._draw();
-			previousUpdateTime = updateTime;
-        }, SETTINGS.getIntervalLength());
-    }
-
 }
 
 export function startGame(canvas: HTMLCanvasElement)
 {
     const socket = new WebSocket("ws://localhost:4000/game");
     let pong: PongGame;
-    let gameMode: GameMode;
+    let gameMode: intf.GameMode;
 
-    // socket.addEventListener("message", (event) => {
-    //     console.log("Message from server ", event.data);
-    // });
     socket.onmessage = (msg) =>
     {
         pong = new PongGame(canvas, msg.data, socket);
-        pong.run();
         socket.onmessage = (msg) =>
         {
             pong.listen(JSON.parse(msg.data));
         }
-        // message = JSON.parse(msg.data);
-        // console.log("bruh: ", message);
     }
-    
-    // ***** you should change the input to send two signals, if the key is down or not ***** //
-    // ***** the current code bellow sends mutipal messages when you keep pressing a key ***** //
-    // ***** also add this listener inside of PongGame class ***** //
-    window.addEventListener("keydown", function(e) { 
-        if (e.key == "w") socket.send('u');
-        if (e.key == "s") socket.send('d');
-    });
 }

@@ -74,7 +74,7 @@ export enum PlayerIndex {
     rightPlayer
 };
 
-export interface messageInterace
+export interface messageInterface
 {
     leftPlayerPosY: number;
     rightPlayerPosY: number;
@@ -84,4 +84,11 @@ export interface messageInterace
 
     ballPosX: number;
     ballPosY: number;
+}
+
+export enum keyStat
+{
+    down,
+    up,
+    none
 }
