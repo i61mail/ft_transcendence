@@ -27,12 +27,88 @@ class Rectangle
                 other.top < this.bottom &&
                 this.top < other.bottom;
     }
+}
 
-    // contains(x: number, y: number) // did not use it, might remove later
-    // {
-    //     return  this.left < x && this.right > x &&
-    //             this.top < y && this.bottom > y;
-    // } 
+class Ball
+{
+    posX: number;
+    posY: number;
+    _court: Court;
+    _velocity: {x: number, y: number};
+    _speed: number;
+
+    constructor(court: Court)
+    {
+        this.posX = intf.SETTINGS.canvasWidth / 2;
+        this.posY = intf.SETTINGS.canvasHeight / 2;
+        this._court = court;
+        this._velocity = {x: 0, y: 0};
+        this._speed = Ball.minSpeed;
+    }
+
+    static get minSpeed() { return intf.SETTINGS.ballMinSpeed; }
+    static get maxSpeed() { return intf.SETTINGS.ballMaxSpeed; }
+    static get acceleration() { return intf.SETTINGS.ballAcceleration; }
+
+    get speed() { return this._speed; }
+
+    set speed(value: number)
+    {
+        if (value < Ball.minSpeed)
+            this._speed = Ball.minSpeed;
+        else if (value > Ball.maxSpeed)
+            this._speed = Ball.maxSpeed;
+        else
+            this._speed = value;
+    }
+
+    get collisionBox()
+    {
+        return new Rectangle(this.posX - intf.SETTINGS.ballRadius,
+                            this.posY - intf.SETTINGS.ballRadius,
+                            intf.SETTINGS.ballRadius * 2, intf.SETTINGS.ballRadius * 2);
+    }
+
+    get velocity() { return this._velocity; }
+    set velocity(value: {x: number, y: number}) { this._velocity = value; }
+
+    update(deltaTime: number)
+    {
+        this.posX += Math.sign(this._velocity.x) * this._speed * deltaTime;
+        this.posY += Math.sign(this._velocity.y) * this._speed * deltaTime;
+
+        if (this.posY - intf.SETTINGS.ballRadius < this._court.bounds.upper)
+        {
+            this.posY = this._court.bounds.upper + intf.SETTINGS.ballRadius;
+            this._velocity.y *= -1;
+        }
+        else if (this.posY + intf.SETTINGS.ballRadius > this._court.bounds.lower)
+        {
+            this.posY = this._court.bounds.lower - intf.SETTINGS.ballRadius;
+            this._velocity.y *= -1;
+        }
+
+        if (this.collisionBox.overlaps(this._court.leftPadle.collisionBox))
+        {
+            this.posX = this._court.leftPadle.collisionBox.right + intf.SETTINGS.ballRadius;
+            this._velocity.x *= -1;
+        }
+        else if (this.collisionBox.overlaps(this._court.rightPadle.collisionBox))
+        {
+            this.posX = this._court.rightPadle.collisionBox.left - intf.SETTINGS.ballRadius;
+            this._velocity.x *= -1;
+        }
+
+        if (this.posX < this._court.bounds.left)
+        {
+            this._court.scorePoint(intf.PlayerIndex.rightPlayer);
+        }
+        else if (this.posX > this._court.bounds.right)
+        {
+            this._court.scorePoint(intf.PlayerIndex.leftPlayer);
+        }
+        this.speed += Ball.acceleration * deltaTime;
+    }
 }
 
 class Padle
@@ -187,9 +263,11 @@ class Court
     private gameMode: intf.GameMode;
     public  leftPlayerController: Controller;
     public  rightPlayerController: Controller;
+    _ball: Ball;
 
     constructor(gameMode: intf.GameMode)
     {
+        this._ball = new Ball(this);
         this.gameMode = gameMode;
         this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this);
         this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this);
@@ -220,10 +298,38 @@ class Court
         this.rightPlayerController.controlling();
     }
     
+    _spawnBall()
+    {
+        this._ball.velocity = {
+            x: Math.random() > 0.5 ? 1 : -1,
+            y: Math.random() > 0.5 ? 1 : -1
+        };
+        this._ball.posX = intf.SETTINGS.canvasWidth / 2;
+        this._ball.posY = intf.SETTINGS.canvasHeight / 2;
+        this._ball.speed = Ball.minSpeed;
+    }
+
+    scorePoint(playerIndex: number)
+    {
+        // if (playerIndex == intf.PlayerIndex.leftPlayer)
+        //     this._scoreBoard.leftPlayerScore += 1;
+        // else if (playerIndex == intf.PlayerIndex.rightPlayer)
+        //     this._scoreBoard.rightPlayerScore += 1;
+
+        // if (this._scoreBoard.winner)
+        //     this.ismatchStarted = false;
+        // else
+        // {
+        //     this._scoreBoard.round++;
+            this._spawnBall();
+        // }
+    }
+
     update(deltaTime: number)
     {
         this.leftPlayerController.update(deltaTime);
         this.rightPlayerController.update(deltaTime);
+        this._ball.update(deltaTime);
         let data: intf.messageInterace =
         {
             // this is a vector, so eithert change the name of it or make the user teleport to where it's position on the server instead
@@ -236,8 +342,8 @@ class Court
             leftPlayerScore: 0, // for now
             rightPlayerScore: 0, // for now
 
-            ballPosX: 0, // for now
-            ballPosY: 0, // for now
+            ballPosX: this._ball.posX,
+            ballPosY: this._ball.posY
         }
         
         this.leftPlayerController.socket?.send(JSON.stringify(data));
@@ -285,6 +391,7 @@ export class PongGame
     {
         let parent: PongGame = this;
         let previousUpdateTime = Date.now();
+        this._court._spawnBall();
         setInterval(function()
         {
             let updateTime = Date.now();

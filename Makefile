@@ -12,7 +12,7 @@ server:
 
 dev:
 	@echo "Starting client in background and server in foreground..."
-	npm run dev --prefix client >/dev/null 2>&1 & \
+	npm run dev --prefix client& \
 	npm run dev --prefix server
 
 help:

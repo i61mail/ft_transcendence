@@ -1,18 +1,53 @@
 import * as intf from "./interfaces";
 
-class PlayerController
+class Ball
 {
-    public  nextPos: number;
-    private _paddle: Padle;
+    posX: number;
+    posY: number;
+
+    constructor()
+    {
+        this.posX = intf.SETTINGS.canvasWidth / 2;
+        this.posY = intf.SETTINGS.canvasHeight / 2;
+    }
+
+    draw(canvas: HTMLCanvasElement)
+    {
+        let context = canvas.getContext('2d');
+        if (!context)
+            return;
+        context.fillStyle = intf.SETTINGS.ballColor;
+        context.beginPath();
+        context.arc(this.posX, this.posY, intf.SETTINGS.ballRadius, 0, Math.PI * 2, false);
+        context.fill();
+    }
+    
+    update(nextPosX: number, nextPosY: number)
+    {
+        this.posX = nextPosX;
+        this.posY = nextPosY;
+    }
+}
+
+
+class Padle
+{
+    public  posX: number;
+    public  posY: number;
+    public  playerIndex: intf.PlayerIndex;
     private _status: intf.keyStat;
 
-    constructor(paddle: Padle, court: Court, isPlayable: boolean)
+    constructor(playerIndex: intf.PlayerIndex, court: Court, isPlayable: boolean)
     {
-        this._paddle = paddle;
-        this.nextPos = paddle.posY;
+       if (playerIndex == intf.PlayerIndex.leftPlayer)
+            this.posX = intf.SETTINGS.paddleWidth;
+        else
+            this.posX = intf.SETTINGS.canvasWidth - 2 * intf.SETTINGS.paddleWidth;
+        this.posY =  intf.SETTINGS.canvasHeight / 2 - intf.SETTINGS.paddleHeight / 2;
+        this.playerIndex  = playerIndex;
         this._status = intf.keyStat.none;
-        
-        let that: PlayerController = this;
+
+        let that: Padle = this;
         if (isPlayable)
         {
             document.addEventListener("keydown", function(e) {
@@ -38,47 +73,9 @@ class PlayerController
             });
         }
     }
-    
-    update()
-    {
-        this._paddle.posY = this.nextPos;
-    }
-}
-
-class Padle
-{
-    public  posX: number;
-    public  posY: number;
-    public  playerIndex: intf.PlayerIndex;
-    private _court: Court;
-
-    constructor(playerIndex: intf.PlayerIndex, court: Court)
-    {
-       if (playerIndex == intf.PlayerIndex.leftPlayer)
-            this.posX = intf.SETTINGS.paddleWidth;
-        else
-            this.posX = intf.SETTINGS.canvasWidth - 2 * intf.SETTINGS.paddleWidth;
-        this.posY =  intf.SETTINGS.canvasHeight / 2 - intf.SETTINGS.paddleHeight / 2;
-        this.playerIndex  = playerIndex;
-        this._court = court;
-    }
 
     static get speed() { return intf.SETTINGS.paddleSpeed; } // pixels per second // maybe useless remove later
 
-
-    moveUp(deltaTime: number)
-    {
-        this.posY -= Padle.speed * deltaTime;
-        if (this.posY < this._court.bounds.upper)
-            this.posY = this._court.bounds.upper;
-    }
-
-    moveDown(deltaTime: number)
-    {
-        this.posY += Padle.speed * deltaTime;
-        if (this.posY + intf.SETTINGS.paddleHeight > this._court.bounds.lower)
-            this.posY = this._court.bounds.lower - intf.SETTINGS.paddleHeight;
-    }
 
     get renderColor()
     {
@@ -99,14 +96,12 @@ class Padle
 class Court
 {
     _canvas: HTMLCanvasElement;
-    leftPadle: Padle;
-    rightPadle: Padle;
-    _leftPlayerController!: PlayerController;
-    _rightPlayerController!: PlayerController;
+    leftPadle!: Padle;
+    rightPadle!: Padle;
     gameMode: intf.GameMode;
     socket: WebSocket;
     // _scoreBoard: ScoreBoard;
-    // _ball: Ball;
+    _ball: Ball;
 
     constructor(canvas: HTMLCanvasElement, socket: WebSocket, info: string)
     {
@@ -115,13 +110,11 @@ class Court
         this.socket = socket;
         this.gameMode = gm;
         this._canvas = canvas;
-        this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this);
-        this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this);
 
         this.createControllers(plyI);
 
         // this._scoreBoard = new ScoreBoard();
-        // this._ball = new Ball(Interfaces.SETTINGS.ballRadius, canvas.width / 2, canvas.height / 2, this);
+        this._ball = new Ball();
 
     }
 
@@ -129,8 +122,8 @@ class Court
     {
         if (this.gameMode == intf.GameMode.online)
         {
-            this._leftPlayerController = new PlayerController(this.leftPadle, this, (plyI == 0) ? true : false);
-            this._rightPlayerController = new PlayerController(this.rightPadle, this, (plyI == 1) ? true : false);
+            this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this, (plyI == 0) ? true : false);
+            this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this, (plyI == 1) ? true : false);
         }
     }
 
@@ -146,10 +139,9 @@ class Court
 
     public listen(message: intf.messageInterface)
     {
-        this._leftPlayerController.nextPos = message.leftPlayerPosY;
-        this._rightPlayerController.nextPos = message.rightPlayerPosY;
-
-        //update ball postion and scoreboard
+        this.leftPadle.posY = message.leftPlayerPosY;
+        this.rightPadle.posY = message.rightPlayerPosY;
+        this._ball.update(message.ballPosX, message.ballPosY);
     }
 
     // startMatch()
@@ -189,13 +181,6 @@ class Court
     //     }
     // }
 
-    update()
-    {
-        this._leftPlayerController.update();
-        this._rightPlayerController.update();
-        // this._ball.update(deltaTime);
-    }
-
     draw(canvas: HTMLCanvasElement)
     {
         let context = canvas.getContext('2d');
@@ -207,6 +192,7 @@ class Court
         context.fillRect(0, this._canvas.height - intf.SETTINGS.wallSize - intf.SETTINGS.courtMarginY, this._canvas.width, intf.SETTINGS.wallSize);
         this.leftPadle.draw(canvas);
         this.rightPadle.draw(canvas);
+        this._ball.draw(canvas);
         // this._ball.draw(this._canvas);
         // this._scoreBoard.draw(this._canvas);
     }
@@ -226,7 +212,6 @@ class PongGame
     public listen(message: intf.messageInterface)
     {
         this._court.listen(message);
-        this._court.update();
         this._draw();
     } 
 
