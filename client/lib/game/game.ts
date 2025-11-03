@@ -1,5 +1,47 @@
 import * as intf from "./interfaces";
 
+class ScoreBoard
+{
+    leftPlayerScore: number = 0;
+    rightPlayerScore: number = 0;
+    round: number = 0;
+
+    get winner() : number
+    {
+        if (this.leftPlayerScore >= intf.SETTINGS.winningScore)
+            return intf.PlayerIndex.leftPlayer;
+        if (this.rightPlayerScore >= intf.SETTINGS.winningScore)
+            return intf.PlayerIndex.rightPlayer;
+        return 0;
+    }
+
+    draw (canvas: HTMLCanvasElement)
+    {
+        let context = canvas.getContext('2d');
+        if (!context)
+            return;
+
+        context.font = intf.SETTINGS.smallFont;
+        context.fillStyle = intf.SETTINGS.scoreTextColor;
+        context.fillText("Player 1: " + this.leftPlayerScore, 20, 30); // it's hard coded so change this later
+        context.fillText("Player 2: " + this.rightPlayerScore, canvas.width - 120, 30); // it's hard coded so change this later
+        context.fillText("Round: " + this.round, canvas.width / 2 - 30, 30); // it's hard coded so change this later
+        if (this.winner)
+        {
+            let winnerText = this.winner == (intf.PlayerIndex.leftPlayer) ? "Player 1 Wins!" : "Player 2 Wins!";
+            context.font = intf.SETTINGS.largeFont;
+            context.fillText(winnerText, canvas.width / 2 - 80, canvas.height / 2); // it's hard coded so change this later
+        }
+    }
+
+    update(leftPS: number, rightPS:number)
+    {
+        this.leftPlayerScore = leftPS;
+        this.rightPlayerScore = rightPS;
+        this.round = leftPS + rightPS + 1;
+    }
+}
+
 class Ball
 {
     posX: number;
@@ -95,12 +137,11 @@ class Padle
 
 class Court
 {
-    _canvas: HTMLCanvasElement;
     leftPadle!: Padle;
     rightPadle!: Padle;
     gameMode: intf.GameMode;
     socket: WebSocket;
-    // _scoreBoard: ScoreBoard;
+    _scoreBoard: ScoreBoard;
     _ball: Ball;
 
     constructor(canvas: HTMLCanvasElement, socket: WebSocket, info: string)
@@ -109,11 +150,10 @@ class Court
 
         this.socket = socket;
         this.gameMode = gm;
-        this._canvas = canvas;
 
         this.createControllers(plyI);
 
-        // this._scoreBoard = new ScoreBoard();
+        this._scoreBoard = new ScoreBoard();
         this._ball = new Ball();
 
     }
@@ -131,9 +171,9 @@ class Court
     {
         return {
             upper: intf.SETTINGS.courtMarginY + intf.SETTINGS.wallSize,
-            lower: this._canvas.height - intf.SETTINGS.courtMarginY - intf.SETTINGS.wallSize,
+            lower: intf.SETTINGS.canvasHeight - intf.SETTINGS.courtMarginY - intf.SETTINGS.wallSize,
             left: 0,
-            right: this._canvas.width
+            right: intf.SETTINGS.canvasWidth
         }
     }
 
@@ -142,44 +182,8 @@ class Court
         this.leftPadle.posY = message.leftPlayerPosY;
         this.rightPadle.posY = message.rightPlayerPosY;
         this._ball.update(message.ballPosX, message.ballPosY);
+        this._scoreBoard.update(message.leftPlayerScore, message.rightPlayerScore);
     }
-
-    // startMatch()
-    // {
-    //     this.ismatchStarted = true;
-    //     this._spawnBall();
-    //     // this._scoreBoard.reset();
-    //     this.leftPadle.reset();
-    //     this.rightPadle.reset();
-    //     this._scoreBoeard.round = 1;
-    // }
-
-    // _spawnBall()
-    // {
-    //     this._ball.velocity = {
-    //         x: Math.random() > 0.5 ? 1 : -1,
-    //         y: Math.random() > 0.5 ? 1 : -1
-    //     };
-    //     this._ball.posX = this._canvas.width / 2;
-    //     this._ball.posY = this._canvas.height / 2;
-    //     this._ball.speed = Ball.minSpeed;
-    // }
-
-    // scorePoint(playerIndex: number)
-    // {
-    //     if (playerIndex == Interfaces.PlayerIndex.PlayerOne)
-    //         this._scoreBoard.leftPlayerScore += 1;
-    //     else if (playerIndex == Interfaces.PlayerIndex.PlayerTwo)
-    //         this._scoreBoard.rightPlayerScore += 1;
-
-    //     if (this._scoreBoard.winner)
-    //         this.ismatchStarted = false;
-    //     else
-    //     {
-    //         this._scoreBoard.round++;
-    //         this._spawnBall();
-    //     }
-    // }
 
     draw(canvas: HTMLCanvasElement)
     {
@@ -188,13 +192,12 @@ class Court
             return;
 
         context.fillStyle = intf.SETTINGS.wallColor;
-        context.fillRect(0, intf.SETTINGS.courtMarginY, this._canvas.width, intf.SETTINGS.wallSize);
-        context.fillRect(0, this._canvas.height - intf.SETTINGS.wallSize - intf.SETTINGS.courtMarginY, this._canvas.width, intf.SETTINGS.wallSize);
+        context.fillRect(0, intf.SETTINGS.courtMarginY, intf.SETTINGS.canvasWidth, intf.SETTINGS.wallSize);
+        context.fillRect(0, intf.SETTINGS.canvasHeight - intf.SETTINGS.wallSize - intf.SETTINGS.courtMarginY, intf.SETTINGS.canvasWidth, intf.SETTINGS.wallSize);
         this.leftPadle.draw(canvas);
         this.rightPadle.draw(canvas);
         this._ball.draw(canvas);
-        // this._ball.draw(this._canvas);
-        // this._scoreBoard.draw(this._canvas);
+        this._scoreBoard.draw(canvas);
     }
 }
 

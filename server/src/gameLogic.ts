@@ -1,4 +1,21 @@
+import { match } from "assert";
 import * as intf from "./interfaces";
+
+class ScoreBoard
+{
+    leftPlayerScore: number = 0;
+    rightPlayerScore: number = 0;
+
+    get winner() : number
+    {
+        console.log(this.leftPlayerScore, intf.SETTINGS.winningScore);
+        if (this.leftPlayerScore >= intf.SETTINGS.winningScore)
+            return intf.PlayerIndex.leftPlayer;
+        if (this.rightPlayerScore >= intf.SETTINGS.winningScore)
+            return intf.PlayerIndex.rightPlayer;
+        return 0;
+    }
+}
 
 class Rectangle
 {
@@ -258,12 +275,14 @@ class AIController extends Controller
 
 class Court
 {
+    private _isMatchStarted: boolean = true; // might add a timer before it startes
     public  leftPadle: Padle;
     public  rightPadle: Padle;
     private gameMode: intf.GameMode;
     public  leftPlayerController: Controller;
     public  rightPlayerController: Controller;
-    _ball: Ball;
+    private _ball: Ball;
+    private _scoreBoard: ScoreBoard;
 
     constructor(gameMode: intf.GameMode)
     {
@@ -278,6 +297,8 @@ class Court
             this.rightPlayerController = new LocalController(this.rightPadle) as Controller;
         else
             this.rightPlayerController = new AIController(this.rightPadle) as Controller;
+
+        this._scoreBoard = new ScoreBoard()
     }
 
     addPlayer(player: WebSocket)
@@ -311,22 +332,24 @@ class Court
 
     scorePoint(playerIndex: number)
     {
-        // if (playerIndex == intf.PlayerIndex.leftPlayer)
-        //     this._scoreBoard.leftPlayerScore += 1;
-        // else if (playerIndex == intf.PlayerIndex.rightPlayer)
-        //     this._scoreBoard.rightPlayerScore += 1;
+        if (playerIndex == intf.PlayerIndex.leftPlayer)
+            this._scoreBoard.leftPlayerScore += 1;
+        else if (playerIndex == intf.PlayerIndex.rightPlayer)
+            this._scoreBoard.rightPlayerScore += 1;
 
-        // if (this._scoreBoard.winner)
-        //     this.ismatchStarted = false;
-        // else
-        // {
-        //     this._scoreBoard.round++;
+        if (this._scoreBoard.winner != 0)
+        {
+            this._isMatchStarted = false;
+            console.log("stop!!!!!");
+        }
+        else
             this._spawnBall();
-        // }
     }
 
     update(deltaTime: number)
     {
+        if (this._isMatchStarted == false)
+            return;
         this.leftPlayerController.update(deltaTime);
         this.rightPlayerController.update(deltaTime);
         this._ball.update(deltaTime);
@@ -339,8 +362,8 @@ class Court
 
             //might add the current position in case there was a big delay between the paddle position in the server and in the client 
 
-            leftPlayerScore: 0, // for now
-            rightPlayerScore: 0, // for now
+            leftPlayerScore: this._scoreBoard.leftPlayerScore,
+            rightPlayerScore: this._scoreBoard.rightPlayerScore,
 
             ballPosX: this._ball.posX,
             ballPosY: this._ball.posY

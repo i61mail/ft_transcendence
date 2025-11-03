@@ -70,8 +70,8 @@ export enum GameMode {
 }
 
 export enum PlayerIndex {
-    leftPlayer,
-    rightPlayer
+    leftPlayer = 1,
+    rightPlayer = 2
 };
 
 export interface messageInterace
