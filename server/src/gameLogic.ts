@@ -8,7 +8,6 @@ class ScoreBoard
 
     get winner() : number
     {
-        console.log(this.leftPlayerScore, intf.SETTINGS.winningScore);
         if (this.leftPlayerScore >= intf.SETTINGS.winningScore)
             return intf.PlayerIndex.leftPlayer;
         if (this.rightPlayerScore >= intf.SETTINGS.winningScore)
@@ -134,6 +133,7 @@ class Padle
     posY: number;
     _court: Court;
     _collisionBox: Rectangle;
+    playerIndex: intf.PlayerIndex;
 
     constructor(playerIndex: intf.PlayerIndex, court: Court)
     {
@@ -144,6 +144,7 @@ class Padle
         this.posY =  intf.SETTINGS.canvasHeight / 2 - intf.SETTINGS.paddleHeight / 2;
         this._court = court;
         this._collisionBox = new Rectangle(this.posX, this.posY, intf.SETTINGS.paddleWidth, intf.SETTINGS.paddleHeight);
+        this.playerIndex = playerIndex;
     }
 
     static get speed() { return intf.SETTINGS.paddleSpeed; } // pixels per second
@@ -175,9 +176,9 @@ class Padle
 
 abstract class Controller
 {
-    private     paddle: Padle;
-    private     _socket: WebSocket | null = null;
-    protected   _status: intf.keyStat;
+    public   paddle: Padle;
+    private  _socket: WebSocket | null = null;
+    public   _status: intf.keyStat;
 
     constructor(paddle: Padle)
     {
@@ -218,9 +219,10 @@ abstract class Controller
     }
 }
 
-
 class LocalController extends Controller
 {
+    static _socket: WebSocket | null;
+    static controlers:Controller[] = [];
     constructor(paddle: Padle)
     {
         super(paddle);
@@ -228,11 +230,23 @@ class LocalController extends Controller
 
     controlling(): void
     {
-        if (this.socket)
-        {
-            this.socket.onmessage = (msg) => {
-                
+       LocalController.listener(this);
+    }
 
+    static listener(controller: Controller)
+    {
+        LocalController.controlers.push(controller);
+        if (LocalController._socket == null)
+            LocalController._socket = controller.socket;
+        else
+            return ;
+        if (LocalController._socket)
+        {
+            LocalController._socket.onmessage = (msg) => {
+                if (msg.data[0] == LocalController.controlers[0].paddle.playerIndex)
+                    LocalController.controlers[0]._status = msg.data[1]; // i should problem check the message length before using it
+                else
+                    LocalController.controlers[1]._status = msg.data[1];
             }
         }
     }
@@ -290,13 +304,21 @@ class Court
         this.gameMode = gameMode;
         this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this);
         this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this);
-        this.leftPlayerController = new onlineController(this.leftPadle) as Controller;
         if (gameMode == intf.GameMode.online)
+        {
+            this.leftPlayerController = new onlineController(this.leftPadle) as Controller;
             this.rightPlayerController = new onlineController(this.rightPadle) as Controller;
+        }
         else if (gameMode == intf.GameMode.local)
+        {
+            this.leftPlayerController = new LocalController(this.leftPadle) as Controller;
             this.rightPlayerController = new LocalController(this.rightPadle) as Controller;
+        }
         else
+        {
+            this.leftPlayerController = new AIController(this.leftPadle) as Controller;
             this.rightPlayerController = new AIController(this.rightPadle) as Controller;
+        }
 
         this._scoreBoard = new ScoreBoard()
     }
@@ -310,7 +332,18 @@ class Court
             this.rightPlayerController.socket = player;
         }
         if (this.gameMode == intf.GameMode.local)
+        {
             this.rightPlayerController.socket = player;
+
+            player.onmessage = (msg) => {
+                if (msg.data[0] == this.leftPadle.playerIndex)
+                {
+                    this.leftPlayerController._status = msg.data[1]; // i should problem check the message length before using it
+                }
+                else
+                    this.rightPlayerController._status = msg.data[1];
+            }
+        }
     }
 
     listenToPlayers()
@@ -340,7 +373,6 @@ class Court
         if (this._scoreBoard.winner != 0)
         {
             this._isMatchStarted = false;
-            console.log("stop!!!!!");
         }
         else
             this._spawnBall();

@@ -29,7 +29,7 @@ async function connect(gameMode: GameMode)
     connection.send(JSON.stringify({gm: gameMode, plyI: clients.length}));
     clients.push(connection);
     pong.addPlayer(connection);
-    if (clients.length == 2)
+    if (gameMode != GameMode.online || clients.length == 2)
     {
       pong.listenToPlayers();
       pong.run();
@@ -46,4 +46,4 @@ async function connect(gameMode: GameMode)
 
 
 
-connect(GameMode.online);
+connect(GameMode.local);

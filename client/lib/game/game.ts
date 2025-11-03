@@ -78,8 +78,9 @@ class Padle
     public  posY: number;
     public  playerIndex: intf.PlayerIndex;
     private _status: intf.keyStat;
+    private _gameMode:intf.GameMode;
 
-    constructor(playerIndex: intf.PlayerIndex, court: Court, isPlayable: boolean)
+    constructor(playerIndex: intf.PlayerIndex, court: Court, isPlayable: boolean, gameMode: intf.GameMode)
     {
        if (playerIndex == intf.PlayerIndex.leftPlayer)
             this.posX = intf.SETTINGS.paddleWidth;
@@ -88,36 +89,55 @@ class Padle
         this.posY =  intf.SETTINGS.canvasHeight / 2 - intf.SETTINGS.paddleHeight / 2;
         this.playerIndex  = playerIndex;
         this._status = intf.keyStat.none;
+        this._gameMode = gameMode;
 
         let that: Padle = this;
-        if (isPlayable)
-        {
-            document.addEventListener("keydown", function(e) {
-                if (e.key == "w" && that._status != intf.keyStat.up)
-                {
-                    that._status = intf.keyStat.up;
-                    court.socket.send(that._status.toString());
-                }
-                else if (e.key == "s" && that._status != intf.keyStat.down)
-                {
-                    that._status = intf.keyStat.down;
-                    court.socket.send(that._status.toString());
-                }
-            });
-            
-            document.addEventListener("keyup", function(e) {
-                if ((e.key == "w" && that._status == intf.keyStat.up)
-                    || (e.key == "s" && that._status == intf.keyStat.down))
-                {
-                    that._status = intf.keyStat.none;
-                    court.socket.send(that._status.toString());
-                }
-            });
-        }
+        if (this._gameMode == intf.GameMode.online && !isPlayable)
+            return ;
+        document.addEventListener("keydown", function(e) {
+            if (e.key == that.upKey && that._status != intf.keyStat.up)
+            {
+                that._status = intf.keyStat.up;
+                court.socket.send(that.status);
+            }
+            else if (e.key == that.downKey && that._status != intf.keyStat.down)
+            {
+                that._status = intf.keyStat.down;
+                court.socket.send(that.status);
+            }
+        });
+        
+        document.addEventListener("keyup", function(e) {
+            if ((e.key == that.upKey && that._status == intf.keyStat.up)
+                || (e.key == that.downKey && that._status == intf.keyStat.down))
+            {
+                that._status = intf.keyStat.none;
+                court.socket.send(that.status);
+            }
+        });
     }
 
     static get speed() { return intf.SETTINGS.paddleSpeed; } // pixels per second // maybe useless remove later
 
+    get upKey(): string
+    {
+        return this._gameMode == intf.GameMode.local && this.playerIndex == intf.PlayerIndex.rightPlayer
+                ? "ArrowUp" : "w";
+    }
+    get downKey(): string
+    {
+        return this._gameMode == intf.GameMode.local && this.playerIndex == intf.PlayerIndex.rightPlayer
+                ? "ArrowDown" : "s";
+    }
+
+    get status() : string
+    {
+        if (this._gameMode == intf.GameMode.local)
+        {
+            return this.playerIndex.toString() + this._status.toString();
+        }
+        return this._status.toString();
+    }
 
     get renderColor()
     {
@@ -160,11 +180,8 @@ class Court
 
     createControllers(plyI: number)
     {
-        if (this.gameMode == intf.GameMode.online)
-        {
-            this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this, (plyI == 0) ? true : false);
-            this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this, (plyI == 1) ? true : false);
-        }
+        this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this, (plyI == 0) ? true : false, this.gameMode);
+        this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this, (plyI == 1) ? true : false, this.gameMode);
     }
 
     get bounds()
