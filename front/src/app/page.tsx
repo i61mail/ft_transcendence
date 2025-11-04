@@ -1,13 +1,91 @@
 "use client";
 
 import React, { useState } from "react";
+import { register, login } from "@/lib/api";
 
 export default function Home() {
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  // Register form state
+  const [registerName, setRegisterName] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+
+  // Handle Login
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError("");
+  setSuccess("");
+  setLoading(true);
+
+  try {
+    const result = await login({
+      email: loginEmail,
+      password: loginPassword,
+    });
+
+    // Store token in localStorage
+    localStorage.setItem("token", result.token);
+    localStorage.setItem("user", JSON.stringify(result.user));
+
+    // setSuccess(`Welcome back, ${result.user.username}!`);
+    // console.log("Logged in:", result);
+
+    // Redirect to dashboard
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 500);
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+// Handle Register
+const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError("");
+  setSuccess("");
+  setLoading(true);
+
+  try {
+    const result = await register({
+      email: registerEmail,
+      username: registerName,
+      password: registerPassword,
+    });
+
+    // Store token in localStorage
+    localStorage.setItem("token", result.token);
+    localStorage.setItem("user", JSON.stringify(result.user));
+
+    // setSuccess(`Account created! Welcome, ${result.user.username}!`);
+    // console.log("Registered:", result);
+
+    // Redirect to dashboard
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 500);
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="flex min-h-screen w-full bg-white">
-      {/* Left side - Game background image (50% width, full height) */}
+      {/* Left side - Game background image */}
       <section className="relative w-1/2 h-screen overflow-hidden bg-[#5ea5e8] flex items-center justify-center">
         <img
           className="max-w-full max-h-full object-contain"
@@ -16,9 +94,23 @@ export default function Home() {
         />
       </section>
 
-      {/* Right side - Login/Register form (50% width, centered content) */}
+      {/* Right side - Login/Register form */}
       <section className="w-1/2 min-h-screen flex items-center justify-center px-8 overflow-y-auto">
         <div className="w-full max-w-[431px]">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          {/* Success Message */}
+          {success && (
+            <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+              {success}
+            </div>
+          )}
+
           {isLogin ? (
             // LOGIN FORM
             <>
@@ -29,7 +121,7 @@ export default function Home() {
                   src="/rectangle-8.png"
                 />
                 <h1 className="font-pixelify font-semibold text-black text-[40px] tracking-[0] leading-normal whitespace-nowrap">
-                  Let's Goo !
+                  Let&apos;s Goo !
                 </h1>
                 <img
                   className="w-[76px] h-[61px] object-cover"
@@ -38,7 +130,7 @@ export default function Home() {
                 />
               </header>
 
-              <form className="space-y-6">
+              <form onSubmit={handleLogin} className="space-y-6">
                 <div className="space-y-2">
                   <label
                     htmlFor="email"
@@ -49,8 +141,10 @@ export default function Home() {
                   <input
                     id="email"
                     type="email"
-                    defaultValue="mail@gmail.com"
-                    className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-thin text-black text-sm tracking-[0] leading-normal underline focus:outline-none focus:ring-2 focus:ring-black"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                    className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-thin text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
 
@@ -64,6 +158,10 @@ export default function Home() {
                   <input
                     id="password"
                     type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                    minLength={8}
                     placeholder="Min. 8 character"
                     className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-thin text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
                   />
@@ -79,9 +177,10 @@ export default function Home() {
 
                 <button
                   type="submit"
-                  className="w-full h-12 bg-[#4a7bb8] rounded-[20px] font-pixelify font-normal text-white text-base tracking-[0] leading-normal hover:bg-black/90 transition-colors"
+                  disabled={loading}
+                  className="w-full h-12 bg-[#4a7bb8] rounded-[20px] font-pixelify font-normal text-white text-base tracking-[0] leading-normal hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Login
+                  {loading ? "Loading..." : "Login"}
                 </button>
 
                 <div className="flex items-center gap-2 text-sm justify-center">
@@ -90,7 +189,11 @@ export default function Home() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => setIsLogin(false)}
+                    onClick={() => {
+                      setIsLogin(false);
+                      setError("");
+                      setSuccess("");
+                    }}
                     className="font-pixelify font-normal text-[#3773bb] tracking-[0] leading-normal hover:underline"
                   >
                     Create an Account
@@ -149,7 +252,7 @@ export default function Home() {
                 />
               </header>
 
-              <form className="space-y-6">
+              <form onSubmit={handleRegister} className="space-y-6">
                 <div className="space-y-2">
                   <label
                     htmlFor="register-name"
@@ -160,6 +263,9 @@ export default function Home() {
                   <input
                     id="register-name"
                     type="text"
+                    value={registerName}
+                    onChange={(e) => setRegisterName(e.target.value)}
+                    required
                     placeholder="Name"
                     className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-thin text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
                   />
@@ -175,6 +281,9 @@ export default function Home() {
                   <input
                     id="register-email"
                     type="email"
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
+                    required
                     placeholder="you.ME@mail.com"
                     className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-thin text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
                   />
@@ -190,6 +299,10 @@ export default function Home() {
                   <input
                     id="register-password"
                     type="password"
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    required
+                    minLength={8}
                     placeholder="Min. 8 character"
                     className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-thin text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
                   />
@@ -197,9 +310,10 @@ export default function Home() {
 
                 <button
                   type="submit"
-                  className="w-full h-12 bg-[#4a7bb8] rounded-[20px] font-pixelify font-normal text-white text-base tracking-[0] leading-normal hover:bg-[#3d6a9f] transition-colors"
+                  disabled={loading}
+                  className="w-full h-12 bg-[#4a7bb8] rounded-[20px] font-pixelify font-normal text-white text-base tracking-[0] leading-normal hover:bg-[#3d6a9f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Sign Up
+                  {loading ? "Loading..." : "Sign Up"}
                 </button>
 
                 <div className="flex items-center gap-2 text-sm justify-center">
@@ -208,7 +322,11 @@ export default function Home() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => setIsLogin(true)}
+                    onClick={() => {
+                      setIsLogin(true);
+                      setError("");
+                      setSuccess("");
+                    }}
                     className="font-pixelify font-normal text-[#3773bb] tracking-[0] leading-normal hover:underline"
                   >
                     Sign in

@@ -15,7 +15,6 @@
   "dependencies": {
     "@fastify/cors": "^11.1.0",
     "@fastify/jwt": "^10.0.0",
-    "@punkish/fastify-better-sqlite3": "^2.0.0",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.4.1",
     "fastify": "^5.6.1"
@@ -29,4 +28,3 @@
     "typescript": "^5.9.3"
   }
 }
-
