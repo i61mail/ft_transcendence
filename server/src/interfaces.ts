@@ -92,3 +92,11 @@ export enum keyStat
     up,
     none
 }
+
+export enum difficulty
+{
+    easy,
+    meduim,
+    hard,
+    impossible // might remove later
+}

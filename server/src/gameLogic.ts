@@ -1,5 +1,8 @@
 import { match } from "assert";
 import * as intf from "./interfaces";
+import { EventEmitter } from "events";
+
+const event: EventEmitter = new EventEmitter();
 
 class ScoreBoard
 {
@@ -108,6 +111,8 @@ class Ball
         {
             this.posX = this._court.leftPadle.collisionBox.right + intf.SETTINGS.ballRadius;
             this._velocity.x *= -1;
+            if (this._court.gameMode == intf.GameMode.AI)
+                event.emit("aiPredection", this.posX, this.posY, this.velocity);
         }
         else if (this.collisionBox.overlaps(this._court.rightPadle.collisionBox))
         {
@@ -204,7 +209,7 @@ abstract class Controller
         let velocity = 0;
         if (this._status == intf.keyStat.up)
             velocity += 1;
-        if (this._status == intf.keyStat.down)
+        else if (this._status == intf.keyStat.down)
             velocity -= 1;
         return velocity;
     }
@@ -275,15 +280,61 @@ class onlineController extends Controller
 
 class AIController extends Controller
 {
-    constructor(paddle: Padle)
+    private _court: Court;
+    private _target: number = 0;
+    private _reachedTarget: boolean = true;
+
+    constructor(paddle: Padle, court: Court)
     {
         super(paddle);
+        this._court = court;
     }
 
     controlling(): void
     {
-        // will add this later
-        // maybe will add event handler here, that will trigger whenever the player's paddle touches the ball 
+        event.on("aiPredection", (x: number, y: number, vec : {x: number, y: number}) =>
+        {
+            this._reachedTarget = false;
+
+            let Xmin = intf.SETTINGS.paddleWidth * 2 + intf.SETTINGS.ballRadius;
+            let Xmax = intf.SETTINGS.canvasWidth - 2 * intf.SETTINGS.paddleWidth - intf.SETTINGS.ballRadius;
+            let Lx = Xmax - Xmin;
+            let Ymin = this._court.bounds.upper + intf.SETTINGS.ballRadius;
+            let Ymax = this._court.bounds.lower - intf.SETTINGS.ballRadius;
+            let Ly = Ymax - Ymin;
+
+            x -= intf.SETTINGS.paddleWidth * 2;
+            let dy = vec.y;
+            let t = Xmax - x;
+            let Yunfold = y + dy * t;
+            let d = Yunfold - Ymin;
+            let m = ((d % (2 * Ly)) + (2 * Ly)) % (2 * Ly);
+
+            if (m <= Ly)
+                this._target = Ymin + m;
+            else
+                this._target = Ymax - (m - Ly);
+            this._target -= intf.SETTINGS.paddleHeight / 2;
+
+
+
+            if (this._target < this._court.bounds.upper)
+                this._target = this._court.bounds.upper;
+            else if (this._target + intf.SETTINGS.paddleHeight > this._court.bounds.lower)
+                this._target = this._court.bounds.lower - intf.SETTINGS.paddleHeight;
+
+            this._status = this._target < this.paddle.posY ? intf.keyStat.up : intf.keyStat.down; 
+        });
+    }
+
+    get velocity()
+    {
+        let velocity = 0;
+        if (this._status == intf.keyStat.up && this._target < this.paddle.posY)
+            velocity += 1;
+        else if (this._status == intf.keyStat.down && this._target > this.paddle.posY)
+            velocity -= 1;
+        return velocity;
     }
 }
 
@@ -292,7 +343,7 @@ class Court
     private _isMatchStarted: boolean = true; // might add a timer before it startes
     public  leftPadle: Padle;
     public  rightPadle: Padle;
-    private gameMode: intf.GameMode;
+    public  gameMode: intf.GameMode;
     public  leftPlayerController: Controller;
     public  rightPlayerController: Controller;
     private _ball: Ball;
@@ -316,8 +367,8 @@ class Court
         }
         else
         {
-            this.leftPlayerController = new AIController(this.leftPadle) as Controller;
-            this.rightPlayerController = new AIController(this.rightPadle) as Controller;
+            this.leftPlayerController = new onlineController(this.leftPadle) as Controller;
+            this.rightPlayerController = new AIController(this.rightPadle, this) as Controller;
         }
 
         this._scoreBoard = new ScoreBoard()
@@ -352,7 +403,7 @@ class Court
         this.rightPlayerController.controlling();
     }
     
-    _spawnBall()
+    spawnBall()
     {
         this._ball.velocity = {
             x: Math.random() > 0.5 ? 1 : -1,
@@ -360,6 +411,8 @@ class Court
         };
         this._ball.posX = intf.SETTINGS.canvasWidth / 2;
         this._ball.posY = intf.SETTINGS.canvasHeight / 2;
+        if (this.gameMode == intf.GameMode.AI && this._ball.velocity.x == 1)
+            event.emit("aiPredection", this._ball.posX, this._ball.posY, this._ball.velocity);
         this._ball.speed = Ball.minSpeed;
     }
 
@@ -375,7 +428,7 @@ class Court
             this._isMatchStarted = false;
         }
         else
-            this._spawnBall();
+            this.spawnBall();
     }
 
     update(deltaTime: number)
@@ -446,7 +499,7 @@ export class PongGame
     {
         let parent: PongGame = this;
         let previousUpdateTime = Date.now();
-        this._court._spawnBall();
+        this._court.spawnBall();
         setInterval(function()
         {
             let updateTime = Date.now();

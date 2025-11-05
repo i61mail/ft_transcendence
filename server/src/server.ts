@@ -18,6 +18,8 @@ async function connect(gameMode: GameMode)
 
     connection.on("close", () => {
       console.log("client closed: ", clientId);
+      clients = [];
+      pong = new PongGame(gameMode);
     });
   
     // if (clients.length >= 2)
@@ -46,4 +48,4 @@ async function connect(gameMode: GameMode)
 
 
 
-connect(GameMode.local);
+connect(GameMode.AI);
