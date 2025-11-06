@@ -93,10 +93,10 @@ export enum keyStat
     none
 }
 
-export enum difficulty
+export enum Difficulty // might need to be balanced later, also you can add as much difuclities as you want
 {
-    easy,
-    meduim,
-    hard,
-    impossible // might remove later
+    easy = 2,
+    meduim = 1,
+    hard = 0.5,
+    impossible = 0 // might remove later
 }

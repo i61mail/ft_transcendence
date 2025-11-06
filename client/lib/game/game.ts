@@ -250,8 +250,10 @@ export function startGame(canvas: HTMLCanvasElement)
 {
     const socket = new WebSocket("ws://localhost:4000/game");
     let pong: PongGame;
-    let gameMode: intf.GameMode;
 
+    canvas.width = intf.SETTINGS.canvasWidth;
+    canvas.height = intf.SETTINGS.canvasHeight;
+    canvas.style.backgroundColor = intf.SETTINGS.canvasColor;
     socket.onmessage = (msg) =>
     {
         pong = new PongGame(canvas, msg.data, socket);

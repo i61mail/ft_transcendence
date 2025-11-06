@@ -189,7 +189,6 @@ abstract class Controller
     {
         this.paddle = paddle;
         this._status = intf.keyStat.none;
-        this.controlling();
     }
 
     abstract controlling(): void;
@@ -282,11 +281,13 @@ class AIController extends Controller
 {
     private _court: Court;
     private _target: number = 0;
-    private _reachedTarget: boolean = true;
+    private _difficulty: intf.Difficulty;
 
-    constructor(paddle: Padle, court: Court)
+    constructor(paddle: Padle, court: Court, difficulty: intf.Difficulty)
     {
         super(paddle);
+
+        this._difficulty = difficulty;
         this._court = court;
     }
 
@@ -294,29 +295,25 @@ class AIController extends Controller
     {
         event.on("aiPredection", (x: number, y: number, vec : {x: number, y: number}) =>
         {
-            this._reachedTarget = false;
 
-            let Xmin = intf.SETTINGS.paddleWidth * 2 + intf.SETTINGS.ballRadius;
-            let Xmax = intf.SETTINGS.canvasWidth - 2 * intf.SETTINGS.paddleWidth - intf.SETTINGS.ballRadius;
-            let Lx = Xmax - Xmin;
-            let Ymin = this._court.bounds.upper + intf.SETTINGS.ballRadius;
-            let Ymax = this._court.bounds.lower - intf.SETTINGS.ballRadius;
-            let Ly = Ymax - Ymin;
+            const Xtarget: number = this.paddle.posX - intf.SETTINGS.ballRadius;
+            const Ymin: number = this._court.bounds.upper + intf.SETTINGS.ballRadius;
+            const Ymax: number = this._court.bounds.lower - intf.SETTINGS.ballRadius;
+            const Ly: number = Ymax - Ymin;
 
             x -= intf.SETTINGS.paddleWidth * 2;
-            let dy = vec.y;
-            let t = Xmax - x;
-            let Yunfold = y + dy * t;
-            let d = Yunfold - Ymin;
-            let m = ((d % (2 * Ly)) + (2 * Ly)) % (2 * Ly);
+            const horizontalDist: number = Xtarget - x;
+            const Yunfold: number = y + vec.y * horizontalDist;
+            const YdistUnfold: number = Yunfold - Ymin;
+            const modRemainder: number = ((YdistUnfold % (2 * Ly)) + (2 * Ly)) % (2 * Ly);
 
-            if (m <= Ly)
-                this._target = Ymin + m;
+            if (modRemainder <= Ly)
+                this._target = Ymin + modRemainder;
             else
-                this._target = Ymax - (m - Ly);
+                this._target = Ymax - (modRemainder - Ly);
             this._target -= intf.SETTINGS.paddleHeight / 2;
 
-
+            this._target += (Math.random() - 0.5) * intf.SETTINGS.paddleHeight * this._difficulty;
 
             if (this._target < this._court.bounds.upper)
                 this._target = this._court.bounds.upper;
@@ -349,7 +346,7 @@ class Court
     private _ball: Ball;
     private _scoreBoard: ScoreBoard;
 
-    constructor(gameMode: intf.GameMode)
+    constructor(gameMode: intf.GameMode, difficulty: intf.Difficulty)
     {
         this._ball = new Ball(this);
         this.gameMode = gameMode;
@@ -368,7 +365,7 @@ class Court
         else
         {
             this.leftPlayerController = new onlineController(this.leftPadle) as Controller;
-            this.rightPlayerController = new AIController(this.rightPadle, this) as Controller;
+            this.rightPlayerController = new AIController(this.rightPadle, this, difficulty) as Controller;
         }
 
         this._scoreBoard = new ScoreBoard()
@@ -474,9 +471,9 @@ export class PongGame
 {
     private _court: Court;
 
-    constructor(gameMode: intf.GameMode)
+    constructor(gameMode: intf.GameMode, difficulty: intf.Difficulty)
     {
-        this._court = new Court(gameMode);
+        this._court = new Court(gameMode, difficulty);
         let that = this;
     }
 

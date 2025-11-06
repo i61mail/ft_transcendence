@@ -1,14 +1,13 @@
 import Fastify from 'fastify';
 import websocketPlugin from '@fastify/websocket';
 import { PongGame } from './gameLogic'
-import { GameMode } from './interfaces';
-import { Console } from 'console';
+import { GameMode, Difficulty } from './interfaces';
 
 let clients = [];
 
-async function connect(gameMode: GameMode)
+async function connect(gameMode: GameMode, difficulty: Difficulty)
 {
-  let pong: PongGame = new PongGame(gameMode);
+  let pong: PongGame = new PongGame(gameMode, difficulty);
 
   const fastify = Fastify({ logger: true });
   await fastify.register(websocketPlugin);
@@ -19,7 +18,7 @@ async function connect(gameMode: GameMode)
     connection.on("close", () => {
       console.log("client closed: ", clientId);
       clients = [];
-      pong = new PongGame(gameMode);
+      pong = new PongGame(gameMode, difficulty);
     });
   
     // if (clients.length >= 2)
@@ -48,4 +47,4 @@ async function connect(gameMode: GameMode)
 
 
 
-connect(GameMode.AI);
+connect(GameMode.AI, Difficulty.impossible);
