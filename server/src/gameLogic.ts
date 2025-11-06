@@ -109,15 +109,24 @@ class Ball
 
         if (this.collisionBox.overlaps(this._court.leftPadle.collisionBox))
         {
-            this.posX = this._court.leftPadle.collisionBox.right + intf.SETTINGS.ballRadius;
-            this._velocity.x *= -1;
-            if (this._court.gameMode == intf.GameMode.AI)
-                event.emit("aiPredection", this.posX, this.posY, this.velocity);
+            if (this.posX - intf.SETTINGS.ballRadius <= this._court.leftPadle.posX + intf.SETTINGS.paddleWidth / 2)
+                this._velocity.y *= -1;
+            else
+            {
+                this.posX = this._court.leftPadle.collisionBox.right + intf.SETTINGS.ballRadius;
+                this._velocity.x *= -1;
+                if (this._court.gameMode == intf.GameMode.AI)
+                    event.emit("aiPredection", this.posX, this.posY, this.velocity);
+            }
         }
         else if (this.collisionBox.overlaps(this._court.rightPadle.collisionBox))
         {
-            this.posX = this._court.rightPadle.collisionBox.left - intf.SETTINGS.ballRadius;
-            this._velocity.x *= -1;
+            if (this.posX - intf.SETTINGS.ballRadius >= this._court.rightPadle.posX + intf.SETTINGS.paddleWidth / 2)
+                this._velocity.y *= -1;
+            {
+                this.posX = this._court.rightPadle.collisionBox.left - intf.SETTINGS.ballRadius;
+                this._velocity.x *= -1;
+            }
         }
 
         if (this.posX < this._court.bounds.left)
