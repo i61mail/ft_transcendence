@@ -55,6 +55,7 @@ class Ball
     _court: Court;
     _velocity: {x: number, y: number};
     _speed: number;
+    canBeRecovered: boolean = true;
 
     constructor(court: Court)
     {
@@ -91,6 +92,32 @@ class Ball
     get velocity() { return this._velocity; }
     set velocity(value: {x: number, y: number}) { this._velocity = value; }
 
+
+    _overlapsPaddle(paddle: Padle, isLeftPaddle: boolean)
+    {
+        if (!this.collisionBox.overlaps(paddle.collisionBox))
+            return;
+        if (this.posY + intf.SETTINGS.ballRadius <= paddle.posY ||
+            this.posY - intf.SETTINGS.ballRadius >= paddle.posY + intf.SETTINGS.paddleHeight)
+        {
+            this._velocity.y *= -1;
+            this.canBeRecovered = false;
+        }
+        else
+        {
+            this.posX = paddle.collisionBox.right;
+            this._velocity.x *= -1;
+            if (isLeftPaddle)
+            {
+                this.posX = paddle.collisionBox.right + intf.SETTINGS.ballRadius;
+                if (this._court.gameMode == intf.GameMode.AI)
+                    event.emit("aiPredection", this.posX, this.posY, this.velocity);
+            }
+            else
+                this.posX = paddle.collisionBox.left - intf.SETTINGS.ballRadius;
+        }
+    }
+
     update(deltaTime: number)
     {
         this.posX += Math.sign(this._velocity.x) * this._speed * deltaTime;
@@ -106,36 +133,21 @@ class Ball
             this.posY = this._court.bounds.lower - intf.SETTINGS.ballRadius;
             this._velocity.y *= -1;
         }
-
-        if (this.collisionBox.overlaps(this._court.leftPadle.collisionBox))
+        if (this.canBeRecovered == true)
         {
-            if (this.posX - intf.SETTINGS.ballRadius <= this._court.leftPadle.posX + intf.SETTINGS.paddleWidth / 2)
-                this._velocity.y *= -1;
-            else
-            {
-                this.posX = this._court.leftPadle.collisionBox.right + intf.SETTINGS.ballRadius;
-                this._velocity.x *= -1;
-                if (this._court.gameMode == intf.GameMode.AI)
-                    event.emit("aiPredection", this.posX, this.posY, this.velocity);
-            }
-        }
-        else if (this.collisionBox.overlaps(this._court.rightPadle.collisionBox))
-        {
-            if (this.posX - intf.SETTINGS.ballRadius >= this._court.rightPadle.posX + intf.SETTINGS.paddleWidth / 2)
-                this._velocity.y *= -1;
-            {
-                this.posX = this._court.rightPadle.collisionBox.left - intf.SETTINGS.ballRadius;
-                this._velocity.x *= -1;
-            }
+            this._overlapsPaddle(this._court.leftPadle, true);
+            this._overlapsPaddle(this._court.rightPadle, false);
         }
 
         if (this.posX < this._court.bounds.left)
         {
             this._court.scorePoint(intf.PlayerIndex.rightPlayer);
+            this.canBeRecovered = true;
         }
         else if (this.posX > this._court.bounds.right)
         {
             this._court.scorePoint(intf.PlayerIndex.leftPlayer);
+            this.canBeRecovered = true;
         }
         this.speed += Ball.acceleration * deltaTime;
     }
@@ -310,9 +322,12 @@ class AIController extends Controller
             const Ymax: number = this._court.bounds.lower - intf.SETTINGS.ballRadius;
             const Ly: number = Ymax - Ymin;
 
-            x -= intf.SETTINGS.paddleWidth * 2;
             const horizontalDist: number = Xtarget - x;
-            const Yunfold: number = y + vec.y * horizontalDist;
+            let Yunfold: number;
+            if (vec.x === 0)
+                Yunfold = y;
+            else
+                Yunfold = y + (vec.y / vec.x) * horizontalDist;
             const YdistUnfold: number = Yunfold - Ymin;
             const modRemainder: number = ((YdistUnfold % (2 * Ly)) + (2 * Ly)) % (2 * Ly);
 

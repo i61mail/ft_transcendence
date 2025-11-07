@@ -10,6 +10,10 @@ client:
 server:
 	cd server && npm run dev
 
+setup:
+	npm install --prefix client
+	npm install --prefix server
+
 dev:
 	@echo "Starting client in background and server in foreground..."
 	npm run dev --prefix client& \

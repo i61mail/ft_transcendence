@@ -34,7 +34,7 @@ export const SETTINGS: settingsInterface =
 {
     // canvas
     canvasColor: "#004c00ff",
-    canvasWidth: 800,
+    canvasWidth: 1248,
     canvasHeight: 600,
 	// court
     wallColor: "#b8b8b8ff",

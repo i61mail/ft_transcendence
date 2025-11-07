@@ -34,7 +34,7 @@ export const SETTINGS: settingsInterface =
 {
     // canvas
     canvasColor: "#004c00ff",
-    canvasWidth: 800,
+    canvasWidth: 1248,
     canvasHeight: 600,
 	// court
     wallColor: "#b8b8b8ff",
@@ -56,8 +56,8 @@ export const SETTINGS: settingsInterface =
     largeFont: "30px Arial",
     scoreTextColor: "#F0EAD6", // eggshell white
     // ball
-    ballMinSpeed: 200,
-    ballMaxSpeed: 300,
+    ballMinSpeed: 500,
+    ballMaxSpeed: 600,
     ballColor: "#F0EAD6", // eggshell white
     ballAcceleration: 10,
     ballRadius: 8
