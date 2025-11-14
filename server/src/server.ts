@@ -1,7 +1,8 @@
 import Fastify from 'fastify';
 import websocketPlugin from '@fastify/websocket';
-import { PongGame } from './pong/gameLogic'
+import { PongGame } from './pong/gameLogic';
 import { GameMode, Difficulty } from './pong/interfaces';
+import { TicTacToeGame } from './tic-tac-toe/gameLogic';
 
 let clients = [];
 
@@ -45,9 +46,9 @@ async function pongConnect(gameMode: GameMode, difficulty: Difficulty)
   });
 }
 
-async function ticTacToeConnect(gameMode: GameMode, difficulty: Difficulty)
+async function ticTacToeConnect()
 {
-  let ticTacToe: TicTacToeGame = new TicTacToeGame(gameMode, difficulty);
+  let ttt: TicTacToeGame = new TicTacToeGame();
 
   const fastify = Fastify({ logger: true });
   await fastify.register(websocketPlugin);
@@ -58,7 +59,7 @@ async function ticTacToeConnect(gameMode: GameMode, difficulty: Difficulty)
     connection.on("close", () => {
       console.log("client closed: ", clientId);
       clients = [];
-      pong = new PongGame(gameMode, difficulty);
+      ttt = new TicTacToeGame();
     });
   
     // if (clients.length >= 2)
@@ -67,13 +68,15 @@ async function ticTacToeConnect(gameMode: GameMode, difficulty: Difficulty)
     //   connection.close();
     //   return;
     // }
-    connection.send(JSON.stringify({gm: gameMode, plyI: clients.length}));
+    if (clients.length == 0)
+
+      connection.send();
     clients.push(connection);
-    pong.addPlayer(connection);
+    ttt.addPlayer(connection);
     if (gameMode != GameMode.online || clients.length == 2)
     {
-      pong.listenToPlayers();
-      pong.run();
+      ttt.listenToPlayers();
+      ttt.run();
     }
   });
 

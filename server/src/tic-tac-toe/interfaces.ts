@@ -1,27 +1,40 @@
 interface settingsInterface
 {
+	canvaSize: number;
     squareSize: number;
 	squareColor: string;
 	borderColor: string;
-	borderwidth: number;
+	borderSize: number;
 	xColor: string;
 	oColor: string;
+	xoLineWidth: number;
 	winLineColor: string;
-	winLineWidth: number;
+	winLineSize: number; // not used
 }
+
+const SQUARESIZE = 300;
 
 export const SETTINGS: settingsInterface =
 {
-	//tictattoe settings
-	squareSize: 300,
-	squareColor: "#FFFFFF",
-	borderColor: "#000000",
-	borderwidth: 2,
-	xColor: "#FF0000",
-	oColor: "#0000FF",
-	winLineColor: "#00FF00",
-	winLineWidth: 4
+	// tictactoe settings (dark theme)
+	canvaSize: SQUARESIZE * 3,
+	squareSize: SQUARESIZE,
+	squareColor: "#121212",
+	borderColor: "#6f6e6eff",
+	borderSize: 4,
+	xColor: "#FF5252",
+	oColor: "#64B5F6",
+	xoLineWidth: 6,
+	winLineColor: "#66BB6A",
+	winLineSize: 4
 };
+
+export interface messageInterface
+{
+    board: Symbol[][];
+	winner: Symbol | 'Draw' | null;
+	winningCells: [number, number][] | null;
+}
 
 export enum GameMode {
     online,
@@ -33,3 +46,5 @@ export enum PlayerIndex {
     leftPlayer = 1,
     rightPlayer = 2
 };
+
+export type Symbol = '' | 'X' | 'O';

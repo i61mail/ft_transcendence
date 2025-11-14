@@ -10,6 +10,7 @@ interface settingsInterface
 	xoLineWidth: number;
 	winLineColor: string;
 	winLineSize: number; // not used
+	textColor: string;
 }
 
 const SQUARESIZE = 300;
@@ -26,25 +27,28 @@ export const SETTINGS: settingsInterface =
 	oColor: "#64B5F6",
 	xoLineWidth: 6,
 	winLineColor: "#66BB6A",
-	winLineSize: 4
+	winLineSize: 4,
+	textColor: 'rgba(0,0,0,0.6)'
 };
 
-export interface messageInterface
+export enum messageType
 {
+	midGame,
+	winner
+}
+
+export interface gameMessage
+{
+	type: messageType.midGame;
     board: Symbol[][];
-	winner: Symbol | 'Draw' | null;
-	winningCells: [number, number][] | null;
+	currentPLayer: Symbol;
+}
+export interface winnerMessage
+{
+	type: messageType.winner;
+	winner: Symbol | 'Draw';
+	winningCells: [number, number][];
 }
 
-export enum GameMode {
-    online,
-    local,
-    AI
-}
-
-export enum PlayerIndex {
-    leftPlayer = 1,
-    rightPlayer = 2
-};
 
 export type Symbol = '' | 'X' | 'O';

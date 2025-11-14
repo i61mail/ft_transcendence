@@ -2,78 +2,67 @@ import { HtmlContext } from "next/dist/server/route-modules/pages/vendored/conte
 import * as intf from "./interfaces";
 import { SETTINGS } from "./interfaces";
 
-class Controller
-{
-	private gameMode: intf.GameMode;
-	private currentPlayer: intf.Symbol = 'X';
-	private playableCharatcer!: intf.Symbol;
-	private tttGame: TicTacToeGame;
-
-	constructor(gameMode: intf.GameMode, playerSymbol: string, tttGame: TicTacToeGame)
-	{
-		this.gameMode = gameMode;
-		if (gameMode == intf.GameMode.local)
-			this.playableCharatcer = '';
-		else if (playerSymbol == 'X')
-			this.playableCharatcer = 'X';
-		else
-			this.playableCharatcer = 'O';
-		this.tttGame = tttGame;
-		this.handleClick = this.handleClick.bind(this);
-		tttGame.canvas.addEventListener('click', this.handleClick);
-	}
-	
-	handleClick(e: MouseEvent) {
-		console.log("x:", e.clientX, 'y:', e.clientY);
-		const rect:DOMRect = this.tttGame.canvas.getBoundingClientRect();
-		// translate to CSS pixel coordinates
-		const x = (e.clientX - rect.left);
-		const y = (e.clientY - rect.top);
-		const c = Math.floor((x / rect.width) * 3);
-		const r = Math.floor((y / rect.height) * 3);
-		if (r < 0 || r > 2 || c < 0 || c > 2) return;
-
-		if (this.tttGame.board[r][c]) return;
-
-		console.log('r:', r, 'c:', c);
-		this.tttGame.board[r][c] = this.currentPlayer;
-		// checkWinner();
-		this.currentPlayer = this.currentPlayer == 'X' ? 'O' : 'X';
-
-	}
-}
-
 class TicTacToeGame
 {
 	private socket: WebSocket;
-	private gameMode: intf.GameMode;
 	private ctx: CanvasRenderingContext2D;
-	private winner: intf.Symbol | 'Draw' | null = null;
-	private winningCells: [number, number][] | null = null;
-	private	control: Controller;
-	public	canvas: HTMLCanvasElement;
-	public  current: intf.Symbol = 'X';
-	public  board: intf.Symbol[][] = [
+	private winner!: intf.Symbol | 'Draw';
+	private winningCells!: [number, number][];
+	private currentPlayer: intf.Symbol = 'X';
+	private playableChar: intf.Symbol;
+	private	canvas: HTMLCanvasElement;
+	private board: intf.Symbol[][] = [
 		['', '', ''],
 		['', '', ''],
 		['', '', ''],
 	];
 	
-	constructor(socket: WebSocket, canvas: HTMLCanvasElement, info: string)
+	constructor(socket: WebSocket, canvas: HTMLCanvasElement, plySymbole: intf.Symbol)
 	{
-		const { gm, plySymbole } = JSON.parse(info);
 		this.socket = socket;
-		this.control = new Controller(gm, plySymbole, this);
-		this.gameMode = gm;
-		
+		this.playableChar = plySymbole;
 		this.canvas = canvas;
 		this.ctx = canvas.getContext('2d')!;
 		this.draw();
+		this.handleClick = this.handleClick.bind(this);
+		this.canvas.addEventListener('click', this.handleClick);
 	}
 
-	listen(message: intf.messageInterface)
+	handleClick(e: MouseEvent)
 	{
-		
+		const canvasRect: DOMRect = this.canvas.getBoundingClientRect();
+		const x: number = (e.clientX - canvasRect.left);
+		const y: number = (e.clientY - canvasRect.top);
+		const collumn: number = Math.floor((x / canvasRect.width) * 3);
+		const row: number = Math.floor((y / canvasRect.height) * 3);
+
+		if (row < 0 || row > 2 || collumn < 0 || collumn > 2
+			|| this.board[row][collumn] != ''
+			|| this.currentPlayer != this.playableChar)
+			return;
+
+		console.log('r:', row, 'c:', collumn);
+		this.socket.send(JSON.stringify({row, collumn}));
+		// this.board[row][collumn] = this.currentPlayer;
+		// checkWinner();
+		// this.currentPlayer = this.currentPlayer == 'X' ? 'O' : 'X';
+
+	}
+	
+	listen(message: intf.gameMessage | intf.winnerMessage)
+	{
+		if (message.type == intf.messageType.midGame)
+		{
+			this.board = message.board;
+			this.currentPlayer = message.currentPLayer;
+		}
+		else
+		{
+			this.winningCells = message.winningCells;
+			this.winner = message.winner;
+			this.drawStatus();
+			this.highlightWinning();
+		}
 	}
 
 	drawGrid()
@@ -128,10 +117,21 @@ class TicTacToeGame
 		this.ctx.stroke();
 	}
 
+
+	drawStatus()
+	{
+		this.ctx.fillStyle = intf.SETTINGS.textColor;
+		this.ctx.fillRect(0, intf.SETTINGS.canvaSize - 50, intf.SETTINGS.canvaSize, 50);
+		this.ctx.fillStyle = '#fff';
+		this.ctx.font = '18px sans-serif';
+		this.ctx.textAlign = 'center';
+		this.ctx.textBaseline = 'middle';
+		const text = this.winner == 'Draw' ? 'Draw! Click any cell to restart' : `${this.winner} wins! Click any cell to restart`;
+		this.ctx.fillText(text, intf.SETTINGS.canvaSize / 2, intf.SETTINGS.canvaSize - 25);
+	}
+
 	highlightWinning()
 	{
-		if (!this.winningCells)
-			return ;
 		this.ctx.fillStyle = SETTINGS.winLineColor;
 		for (const [r, c] of this.winningCells) {
 			this.ctx.fillRect(c * SETTINGS.squareSize + SETTINGS.borderSize,
@@ -145,7 +145,6 @@ class TicTacToeGame
 	draw()
 	{
 		this.drawGrid();
-		this.highlightWinning();
 		for (let r = 0; r < 3; r++)
 		{
 			for (let c = 0; c < 3; c++)
@@ -174,6 +173,7 @@ export function startGame(canvas: HTMLCanvasElement)
 	socket.onmessage = (msg) =>
     {
 		ttt =  new TicTacToeGame(socket, canvas, msg.data);
+		ttt.draw();
         socket.onmessage = (msg) =>
         {
             ttt.listen(JSON.parse(msg.data));
