@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { startGame } from "@/lib/game/game";
+import { startGame } from "@/lib/pong/game";
 
 
 export default function GamePage()

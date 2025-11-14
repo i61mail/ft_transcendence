@@ -1,4 +1,3 @@
-import { match } from "assert";
 import * as intf from "./interfaces";
 import { EventEmitter } from "events";
 

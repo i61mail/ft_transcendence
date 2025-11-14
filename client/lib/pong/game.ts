@@ -166,22 +166,19 @@ class Court
 
     constructor(canvas: HTMLCanvasElement, socket: WebSocket, info: string)
     {
-        const { gm, plyI } = JSON.parse(info);
+        const { gm, playerIndex } = JSON.parse(info);
 
         this.socket = socket;
         this.gameMode = gm;
 
-        this.createControllers(plyI);
+        this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this,
+            (playerIndex == 0) ? true : false, this.gameMode);
+        this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this,
+            (playerIndex == 1) ? true : false, this.gameMode);
 
         this._scoreBoard = new ScoreBoard();
         this._ball = new Ball();
 
-    }
-
-    createControllers(plyI: number)
-    {
-        this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this, (plyI == 0) ? true : false, this.gameMode);
-        this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this, (plyI == 1) ? true : false, this.gameMode);
     }
 
     get bounds()
@@ -248,7 +245,7 @@ class PongGame
 
 export function startGame(canvas: HTMLCanvasElement)
 {
-    const socket = new WebSocket("ws://localhost:4000/game");
+    const socket = new WebSocket("ws://localhost:4000/pong");
     let pong: PongGame;
 
     canvas.width = intf.SETTINGS.canvasWidth;
