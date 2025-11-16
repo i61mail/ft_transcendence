@@ -4,7 +4,7 @@ import { PongGame } from './pong/gameLogic';
 import { GameMode, Difficulty } from './pong/interfaces';
 import { TicTacToeGame } from './tic-tac-toe/gameLogic';
 
-let clients = [];
+let clients: WebSocket[] = [];
 
 async function pongConnect(gameMode: GameMode, difficulty: Difficulty)
 {
@@ -68,16 +68,10 @@ async function ticTacToeConnect()
     //   connection.close();
     //   return;
     // }
-    if (clients.length == 0)
-
-      connection.send();
     clients.push(connection);
-    ttt.addPlayer(connection);
-    if (gameMode != GameMode.online || clients.length == 2)
-    {
-      ttt.listenToPlayers();
-      ttt.run();
-    }
+    if (clients.length == 2)
+      ttt.listenToPlayers(clients);
+  
   });
 
   
@@ -86,6 +80,8 @@ async function ticTacToeConnect()
     if (err) throw err;
     console.log(`Server listening on ${address}`);
   });
+}
 
+ticTacToeConnect();
 
 // pongConnect(GameMode.AI, Difficulty.impossible);

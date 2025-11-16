@@ -29,22 +29,24 @@ export const SETTINGS: settingsInterface =
 	winLineSize: 4
 };
 
-export interface messageInterface
+export enum messageType
 {
+	midGame,
+	winner
+}
+
+export interface gameMessage
+{
+	type: messageType.midGame;
     board: Symbol[][];
-	winner: Symbol | 'Draw' | null;
-	winningCells: [number, number][] | null;
+	currentPLayer: Symbol;
 }
-
-export enum GameMode {
-    online,
-    local,
-    AI
+export interface winnerMessage
+{
+	type: messageType.winner;
+	board: Symbol[][];
+	winner: Symbol | 'Draw';
+	winningCells: [number, number][];
 }
-
-export enum PlayerIndex {
-    leftPlayer = 1,
-    rightPlayer = 2
-};
 
 export type Symbol = '' | 'X' | 'O';

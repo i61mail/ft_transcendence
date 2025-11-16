@@ -26,7 +26,7 @@ export const SETTINGS: settingsInterface =
 	xColor: "#FF5252",
 	oColor: "#64B5F6",
 	xoLineWidth: 6,
-	winLineColor: "#66BB6A",
+	winLineColor: 'rgba(241, 196, 15, 0.25)',
 	winLineSize: 4,
 	textColor: 'rgba(0,0,0,0.6)'
 };
@@ -46,6 +46,7 @@ export interface gameMessage
 export interface winnerMessage
 {
 	type: messageType.winner;
+	board: Symbol[][];
 	winner: Symbol | 'Draw';
 	winningCells: [number, number][];
 }

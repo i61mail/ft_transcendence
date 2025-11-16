@@ -41,11 +41,7 @@ class TicTacToeGame
 			|| this.currentPlayer != this.playableChar)
 			return;
 
-		console.log('r:', row, 'c:', collumn);
 		this.socket.send(JSON.stringify({row, collumn}));
-		// this.board[row][collumn] = this.currentPlayer;
-		// checkWinner();
-		// this.currentPlayer = this.currentPlayer == 'X' ? 'O' : 'X';
 
 	}
 	
@@ -55,11 +51,14 @@ class TicTacToeGame
 		{
 			this.board = message.board;
 			this.currentPlayer = message.currentPLayer;
+			this.draw();
 		}
 		else
 		{
 			this.winningCells = message.winningCells;
 			this.winner = message.winner;
+			this.board = message.board;
+			this.draw();
 			this.drawStatus();
 			this.highlightWinning();
 		}
@@ -155,8 +154,6 @@ class TicTacToeGame
 					this.drawO(r, c);
 			}
 		}
-		// this.drawX(0, 0);
-		// this.drawO(1, 0);
 	}
 
 	
