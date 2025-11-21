@@ -35,6 +35,13 @@ export enum messageType
 	winner
 }
 
+// export interface gameConnect
+// {
+// 	type: ...;
+// 	id:
+// 	cookies: 
+// }
+
 export interface gameMessage
 {
 	type: messageType.midGame;

@@ -246,6 +246,7 @@ class PongGame
 export function startGame(canvas: HTMLCanvasElement)
 {
     const socket = new WebSocket("ws://localhost:4000/pong");
+    const socket2 = new WebSocket("ws://localhost:4000/pong");
     let pong: PongGame;
 
     canvas.width = intf.SETTINGS.canvasWidth;

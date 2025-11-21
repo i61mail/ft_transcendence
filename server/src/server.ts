@@ -6,6 +6,8 @@ import { TicTacToeGame } from './tic-tac-toe/gameLogic';
 
 let clients: WebSocket[] = [];
 
+// [id, Socket]
+
 async function pongConnect(gameMode: GameMode, difficulty: Difficulty)
 {
   let pong: PongGame = new PongGame(gameMode, difficulty);
