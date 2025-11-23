@@ -18,6 +18,7 @@ interface AuthResponse {
     id: number;
     email: string;
     username: string;
+    avatar_url?: string | null; // Add this
   };
 }
 
@@ -82,6 +83,30 @@ export async function getCurrentUser(token: string) {
 
   if (!response.ok) {
     throw new Error(result.error || 'Failed to get user info');
+  }
+
+  return result;
+}
+
+/**
+ * Upload user avatar
+ */
+export async function uploadAvatar(file: File, token: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_URL}/profile/avatar`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to upload avatar');
   }
 
   return result;

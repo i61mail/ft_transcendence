@@ -165,14 +165,6 @@ const handleRegister = async (e: React.FormEvent) => {
                     placeholder="Min. 8 character"
                     className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-thin text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
                   />
-                  <div className="flex justify-end">
-                    <a
-                      href="#"
-                      className="font-pixelify font-normal text-[#3773bb] text-sm tracking-[0] leading-normal hover:underline"
-                    >
-                      Forget password?
-                    </a>
-                  </div>
                 </div>
 
                 <button
@@ -258,7 +250,7 @@ const handleRegister = async (e: React.FormEvent) => {
                     htmlFor="register-name"
                     className="block font-pixelify font-normal text-black text-base tracking-[0] leading-normal"
                   >
-                    Name*
+                    Username*
                   </label>
                   <input
                     id="register-name"
