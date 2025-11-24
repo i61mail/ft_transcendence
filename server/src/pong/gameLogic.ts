@@ -243,7 +243,7 @@ abstract class Controller
     }
 }
 
-class LocalController extends Controller
+class LocalController extends Controller // remove this later
 {
     static _socket: WebSocket | null;
     static controlers:Controller[] = [];

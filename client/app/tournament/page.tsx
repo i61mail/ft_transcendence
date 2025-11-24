@@ -76,7 +76,7 @@ export default function PongTournament() {
                 {tournamentCode}
               </p>
             </div>
-            
+            <p className="text-2xl font-bold text-gray-800 font-mono">Waiting For Players</p>
             {/* Right side - Invite Button */}
             {/* bg-blue-600 = blue background color */}
             {/* hover:bg-blue-700 = darker blue on mouse hover */}

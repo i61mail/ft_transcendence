@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import dbPlugin from './plugins/db';
 import websocketPlugin from '@fastify/websocket';
 import { PongGame } from './pong/gameLogic';
 import { GameMode, Difficulty } from './pong/interfaces';
@@ -8,11 +9,12 @@ let clients: WebSocket[] = [];
 
 // [id, Socket]
 
+const fastify = Fastify({ logger: true });
+
 async function pongConnect(gameMode: GameMode, difficulty: Difficulty)
 {
   let pong: PongGame = new PongGame(gameMode, difficulty);
 
-  const fastify = Fastify({ logger: true });
   await fastify.register(websocketPlugin);
   fastify.get("/pong", { websocket: true }, (connection, req) =>
   {
@@ -52,7 +54,6 @@ async function ticTacToeConnect()
 {
   let ttt: TicTacToeGame = new TicTacToeGame();
 
-  const fastify = Fastify({ logger: true });
   await fastify.register(websocketPlugin);
   fastify.get("/tic-tac-toe", { websocket: true }, (connection, req) =>
   {
@@ -84,6 +85,22 @@ async function ticTacToeConnect()
   });
 }
 
-ticTacToeConnect();
+// ticTacToeConnect();
 
 // pongConnect(GameMode.AI, Difficulty.impossible);
+
+
+async function start() {
+  await fastify.register(dbPlugin);
+
+  fastify.get('/users', async () => {
+    // Now TypeScript knows `db` exists
+    const rows = fastify.db.prepare('SELECT * FROM users').all();
+    console.log(rows);
+    return rows;
+  });
+
+  await fastify.listen({ port: 4000 });
+}
+
+start();

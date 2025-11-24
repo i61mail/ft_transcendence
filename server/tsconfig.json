@@ -1,13 +1,30 @@
+// {
+//   "compilerOptions": {
+//     "target": "esnext",
+//     "module": "CommonJS",
+//     "esModuleInterop": true,
+//     "moduleResolution": "node",
+//     "verbatimModuleSyntax": false,
+//     "outDir": "dist",
+//     "rootDir": "src",
+//     "strict": true,
+//     "skipLibCheck": true,
+//     "typeRoots": ["./types", "./node_modules/@types"]
+//   },
+//   "include": ["src/**/*.ts"],
+// }
+
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "CommonJS",
-    "esModuleInterop": true,
-    "moduleResolution": "node",
-    "verbatimModuleSyntax": false,
-    "outDir": "dist",
-    "rootDir": "src",
+    "target": "ES2020",
+    "module": "commonjs",
     "strict": true,
-    "skipLibCheck": true
-  }
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "dist",
+    "baseUrl": "src",
+    "typeRoots": ["./src/types", "./node_modules/@types"]
+  },
+  "include": ["src/**/*.ts"]
 }
