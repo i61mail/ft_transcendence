@@ -100,3 +100,9 @@ export enum Difficulty // might need to be balanced later, also you can add as m
     hard = 0.5,
     impossible = 0 // might remove later
 }
+
+export interface playerInfo
+{
+  id: number;
+  socket: WebSocket;
+}

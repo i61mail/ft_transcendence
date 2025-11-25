@@ -5,84 +5,34 @@ import { PongGame } from './pong/gameLogic';
 import { GameMode, Difficulty } from './pong/interfaces';
 import { TicTacToeGame } from './tic-tac-toe/gameLogic';
 
-let clients: WebSocket[] = [];
+interface playerInfo
+{
+  id: number;
+  socket: WebSocket;
+}
 
 // [id, Socket]
 
 const fastify = Fastify({ logger: true });
 
-async function pongConnect(gameMode: GameMode, difficulty: Difficulty)
+export function pongOnline(player1 : playerInfo, player2 : playerInfo)
 {
-  let pong: PongGame = new PongGame(gameMode, difficulty);
-
-  await fastify.register(websocketPlugin);
-  fastify.get("/pong", { websocket: true }, (connection, req) =>
-  {
-    const clientId = clients.length;
-
-    connection.on("close", () => {
-      console.log("client closed: ", clientId);
-      clients = [];
-      pong = new PongGame(gameMode, difficulty);
-    });
-  
-    // if (clients.length >= 2)
-    // {
-    //   console.log("reached max clients");
-    //   connection.close();
-    //   return;
-    // }
-    connection.send(JSON.stringify({gm: gameMode, plyI: clients.length}));
-    clients.push(connection);
-    pong.addPlayer(connection);
-    if (gameMode != GameMode.online || clients.length == 2)
-    {
-      pong.listenToPlayers();
-      pong.run();
-    }
-  });
-
-  
-
-  fastify.listen({ port: 4000 }, (err, address) => {
-    if (err) throw err;
-    console.log(`Server listening on ${address}`);
-  });
+  let pong: PongGame = new PongGame(GameMode.online, player1, player2);
 }
 
-async function ticTacToeConnect()
+export function pongLocal(player : playerInfo)
 {
-  let ttt: TicTacToeGame = new TicTacToeGame();
+  let pong: PongGame = new PongGame(GameMode.local, player);
+}
 
-  await fastify.register(websocketPlugin);
-  fastify.get("/tic-tac-toe", { websocket: true }, (connection, req) =>
-  {
-    const clientId = clients.length;
+export function pongAI(player : playerInfo, difficulty: Difficulty)
+{
+  let pong: PongGame = new PongGame(GameMode.AI, player, undefined, difficulty);
+}
 
-    connection.on("close", () => {
-      console.log("client closed: ", clientId);
-      clients = [];
-      ttt = new TicTacToeGame();
-    });
-  
-    // if (clients.length >= 2)
-    // {
-    //   console.log("reached max clients");
-    //   connection.close();
-    //   return;
-    // }
-    clients.push(connection);
-    if (clients.length == 2)
-      ttt.listenToPlayers(clients);
-  
-  });
-
-  
-
-  fastify.listen({ port: 4000 }, (err, address) => {
-    if (err) throw err;
-    console.log(`Server listening on ${address}`);
-  });
+export function ticTacToe(player1 : playerInfo, player2 : playerInfo)
+{
+  let ttt: TicTacToeGame = new TicTacToeGame(player1, player2);
 }
 
 // ticTacToeConnect();

@@ -1,3 +1,4 @@
+import { Socket } from "dgram";
 import * as intf from "./interfaces";
 import { EventEmitter } from "events";
 
@@ -201,27 +202,18 @@ class Padle
 
 abstract class Controller
 {
-    public   paddle: Padle;
-    private  _socket: WebSocket | null = null;
-    public   _status: intf.keyStat;
+    public  paddle: Padle;
+    public  socket: WebSocket;
+    public  _status: intf.keyStat;
 
-    constructor(paddle: Padle)
+    constructor(paddle: Padle, player: intf.playerInfo)
     {
         this.paddle = paddle;
         this._status = intf.keyStat.none;
+        this.socket = player.socket
     }
 
     abstract controlling(): void;
-
-    public set socket(socket: WebSocket)
-    {
-        this._socket = socket;
-    }
-
-    public get socket(): WebSocket | null
-    {
-        return (this._socket);
-    }
 
     get velocity()
     {
@@ -245,42 +237,29 @@ abstract class Controller
 
 class LocalController extends Controller // remove this later
 {
-    static _socket: WebSocket | null;
-    static controlers:Controller[] = [];
-    constructor(paddle: Padle)
+    constructor(paddle: Padle, player: intf.playerInfo)
     {
-        super(paddle);
+        super(paddle, player);
     }
 
-    controlling(): void
-    {
-       LocalController.listener(this);
-    }
+    controlling(): void {}
 
-    static listener(controller: Controller)
+    static listener(socket: WebSocket, leftPlayer: LocalController, rightPlayer: LocalController)
     {
-        LocalController.controlers.push(controller);
-        if (LocalController._socket == null)
-            LocalController._socket = controller.socket;
-        else
-            return ;
-        if (LocalController._socket)
-        {
-            LocalController._socket.onmessage = (msg) => {
-                if (msg.data[0] == LocalController.controlers[0].paddle.playerIndex)
-                    LocalController.controlers[0]._status = msg.data[1]; // i should problem check the message length before using it
-                else
-                    LocalController.controlers[1]._status = msg.data[1];
-            }
+        socket.onmessage = (msg) => {
+            if (msg.data[0] == leftPlayer.paddle.playerIndex)
+                leftPlayer._status = msg.data[1]; // i should problem check the message length before using it
+            else
+                rightPlayer._status = msg.data[1];
         }
     }
 }
 
 class onlineController extends Controller
 {
-    constructor(paddle: Padle)
+    constructor(paddle: Padle, player: intf.playerInfo)
     {
-        super(paddle);
+        super(paddle, player);
     }
 
     controlling(): void
@@ -303,9 +282,9 @@ class AIController extends Controller
     private _target: number = 0;
     private _difficulty: intf.Difficulty;
 
-    constructor(paddle: Padle, court: Court, difficulty: intf.Difficulty)
+    constructor(paddle: Padle, court: Court, difficulty: intf.Difficulty, player: intf.playerInfo)
     {
-        super(paddle);
+        super(paddle, player);
 
         this._difficulty = difficulty;
         this._court = court;
@@ -369,7 +348,7 @@ class Court
     private _ball: Ball;
     private _scoreBoard: ScoreBoard;
 
-    constructor(gameMode: intf.GameMode, difficulty: intf.Difficulty)
+    constructor(gameMode: intf.GameMode, difficulty: intf.Difficulty, player1 : intf.playerInfo, player2 : intf.playerInfo)
     {
         this._ball = new Ball(this);
         this.gameMode = gameMode;
@@ -377,43 +356,33 @@ class Court
         this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this);
         if (gameMode == intf.GameMode.online)
         {
-            this.leftPlayerController = new onlineController(this.leftPadle) as Controller;
-            this.rightPlayerController = new onlineController(this.rightPadle) as Controller;
+            this.leftPlayerController = new onlineController(this.leftPadle, player1) as Controller;
+            this.rightPlayerController = new onlineController(this.rightPadle, player2) as Controller;
         }
         else if (gameMode == intf.GameMode.local)
         {
-            this.leftPlayerController = new LocalController(this.leftPadle) as Controller;
-            this.rightPlayerController = new LocalController(this.rightPadle) as Controller;
+            this.leftPlayerController = new LocalController(this.leftPadle, player1) as Controller;
+            this.rightPlayerController = new LocalController(this.rightPadle, player1) as Controller;
+            
         }
         else
         {
-            this.leftPlayerController = new onlineController(this.leftPadle) as Controller;
-            this.rightPlayerController = new AIController(this.rightPadle, this, difficulty) as Controller;
+            this.leftPlayerController = new onlineController(this.leftPadle, player1) as Controller;
+            this.rightPlayerController = new AIController(this.rightPadle, this, difficulty, player1) as Controller;
         }
 
         this._scoreBoard = new ScoreBoard()
     }
 
-    addPlayer(player: WebSocket)
+    addPlayer(socket: WebSocket)
     {
-        if (this.leftPlayerController.socket == null)
-            this.leftPlayerController.socket = player;
-        else if (this.gameMode == intf.GameMode.online)
+        socket.onmessage = (msg) => {
+        if (msg.data[0] == this.leftPadle.playerIndex)
         {
-            this.rightPlayerController.socket = player;
+            this.leftPlayerController._status = msg.data[1];
         }
-        if (this.gameMode == intf.GameMode.local)
-        {
-            this.rightPlayerController.socket = player;
-
-            player.onmessage = (msg) => {
-                if (msg.data[0] == this.leftPadle.playerIndex)
-                {
-                    this.leftPlayerController._status = msg.data[1]; // i should problem check the message length before using it
-                }
-                else
-                    this.rightPlayerController._status = msg.data[1];
-            }
+        else
+            this.rightPlayerController._status = msg.data[1];
         }
     }
 
@@ -474,8 +443,8 @@ class Court
             ballPosY: this._ball.posY
         }
         
-        this.leftPlayerController.socket?.send(JSON.stringify(data));
-        this.rightPlayerController.socket?.send(JSON.stringify(data));
+        this.leftPlayerController.socket.send(JSON.stringify(data));
+        this.rightPlayerController.socket.send(JSON.stringify(data));
     }
 
     get bounds()
@@ -494,20 +463,17 @@ export class PongGame
 {
     private _court: Court;
 
-    constructor(gameMode: intf.GameMode, difficulty: intf.Difficulty)
+    constructor(gameMode: intf.GameMode, player1 : intf.playerInfo, player2 : intf.playerInfo = player1, difficulty: intf.Difficulty = intf.Difficulty.impossible)
     {
-        this._court = new Court(gameMode, difficulty);
+        this._court = new Court(gameMode, difficulty, player1, player2);
         let that = this;
+        this._court.listenToPlayers();
+        this.run();
     }
 
     public addPlayer(player: WebSocket)
     {
         this._court.addPlayer(player);
-    }
-
-    public listenToPlayers()
-    {
-        this._court.listenToPlayers();
     }
     
     private _update(deltaTime: number)

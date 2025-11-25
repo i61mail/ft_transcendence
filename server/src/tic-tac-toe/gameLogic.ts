@@ -3,21 +3,24 @@ import * as intf from "./interfaces";
 
 class Player
 {
-	public	socket: WebSocket | null = null;
+	private	socket: WebSocket;
 	private symbol: intf.Symbol;
 	private ttt: TicTacToeGame;
+	private playerId : number;
 
-	constructor(symbol: intf.Symbol, ttt: TicTacToeGame)
+	constructor(symbol: intf.Symbol, ttt: TicTacToeGame, playerInfo : intf.playerInfo)
 	{
 		this.ttt = ttt;
 		this.symbol = symbol;
+		this.playerId = playerInfo.id;
+		this.socket = playerInfo.socket;
+		this.socketListen();
 	}
 
-	socketListen(player: WebSocket)
+	socketListen()
 	{
-		this.socket = player;
 		this.socket.send(this.symbol);
-	
+
 		this.socket.onmessage = (msg) => {
 			if (this.ttt.currentPlayer == this.symbol)
 				this.ttt.send(msg.data);
@@ -27,7 +30,7 @@ class Player
 	send(gameMsg: intf.gameMessage | intf.winnerMessage)
 	{
 		console.log(JSON.stringify(gameMsg));
-		this.socket?.send(JSON.stringify(gameMsg));
+		this.socket.send(JSON.stringify(gameMsg));
 	}
 }
 
@@ -36,27 +39,23 @@ export class TicTacToeGame
 	public  currentPlayer: intf.Symbol = 'X';
 	private winner: intf.Symbol | 'Draw' | null = null;
 	private winningCells: [number, number][] = [];
-	private players: [Player, Player];
+	private player1: Player;
+	private player2: Player;
 	private board: intf.Symbol[][] = [
 		['', '', ''],
 		['', '', ''],
 		['', '', ''],
 	];
 
-	constructor()
+	constructor(player1: intf.playerInfo, player2: intf.playerInfo)
 	{
-		const randomizer = (Date.now() * Math.random()) % 1;
+		const randomizer : boolean = ((Date.now() * Math.random()) % 1) < 0.5;
+		let symbol1 : intf.Symbol = randomizer ? 'X' : 'O';
+		let symbol2 : intf.Symbol = randomizer ? 'O' : 'X';;
 
-		this.players = (randomizer < 0.5)
-			? [new Player('X', this), new Player('O', this)]
-			: [new Player('O', this), new Player('X', this)];
+		this.player1 = new Player(symbol1, this, player1);
+		this.player2 = new Player(symbol2, this, player2);
 	}
-
-	listenToPlayers(clients: WebSocket[])
-    {
-		this.players[0].socketListen(clients[0]);
-		this.players[1].socketListen(clients[1]);
-    }
 
 	send(message: string)
 	{
@@ -79,8 +78,9 @@ export class TicTacToeGame
 				board: this.board,
 				currentPLayer: this.currentPlayer
 			}
-			this.players[0].send(gameMsg);
-			this.players[1].send(gameMsg);
+			// add the match history when there is a winner
+			this.player1.send(gameMsg);
+			this.player2.send(gameMsg);
 		}
 	}
 

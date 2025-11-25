@@ -57,3 +57,9 @@ export interface winnerMessage
 }
 
 export type Symbol = '' | 'X' | 'O';
+
+export interface playerInfo
+{
+  id: number;
+  socket: WebSocket;
+}
