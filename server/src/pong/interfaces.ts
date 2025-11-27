@@ -101,8 +101,18 @@ export enum Difficulty // might need to be balanced later, also you can add as m
     impossible = 0 // might remove later
 }
 
-export interface playerInfo
+export interface PlayerInfo
 {
   id: number;
   socket: WebSocket;
+}
+
+export interface PongDataBase {
+  game_mode: 'online' | 'local' | 'ai';
+  left_player_id: number;
+  right_player_id?: number | null; // Nullable
+  winner: 'left' | 'right';
+  left_score: number;
+  right_score: number;
+  ai_difficulty?: string | null; // Nullable
 }
