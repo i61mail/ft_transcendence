@@ -3,7 +3,8 @@ import { Geist, Geist_Mono, Pixelify_Sans } from "next/font/google";
 import "./globals.css";
 import Header from "../components/layout/header/Header";
 import AuthContext from "../context/AuthProvider";
-
+import ChatContextProvider from "@/context/ChatContextProvider";
+import { GlobalContexProvider } from "@/context/GLobalContextProvider";
 const PixelifySans = Pixelify_Sans({
   variable: "--font-pixelify-sans",
   subsets: ["latin"],
@@ -35,8 +36,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${PixelifySans.variable} antialiased`}
       >
         <AuthContext>
-          <Header />
-          {children}
+            <ChatContextProvider>
+                <Header />
+                {children}
+            </ChatContextProvider>
         </AuthContext>
       </body>
     </html>

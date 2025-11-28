@@ -1,6 +1,7 @@
 import { WebSocket } from "ws";
 import Fastify from "fastify";
 import type { Chat } from "types/chat.types.js";
+import type { ParsedUrlQuery } from "querystring";
 
 const chatMessageHandler = (socket:WebSocket, request: Fastify.FastifyRequest) =>
 {
@@ -8,6 +9,7 @@ const chatMessageHandler = (socket:WebSocket, request: Fastify.FastifyRequest) =
 
     socket.on('open', () =>
         {
+            console.log("new socket connection...");
         })
         socket.on('close', () =>
         {
@@ -20,28 +22,30 @@ const chatMessageHandler = (socket:WebSocket, request: Fastify.FastifyRequest) =
             if (type === "auth")
             {
                 server.chatConnections.set(socket, content);
-                console.log("new user", server.chatConnections.get(socket));
+                console.log("new user", server.chatConnections.get(socket), server.chatConnections.size);
             }
             if (type === "message")
             {
+                console.log("new message", server.chatConnections.get(socket), server.chatConnections.size);
                 socket.send(`${JSON.stringify(content)}`);
                 server.chatConnections.forEach((user, sock) => {
-                    if (user === content.receiver)
+                    if (user == content.friendship_id)
                     {
+                        console.log("sending to ", sock.url)
                         sock.send(`${JSON.stringify(content)}`)
                     }
                 });
-                server.chatPreviewNotifications.forEach((chat, sock) =>
-                {
-                    server.log.info(`checking for ${chat.receiver}`)
-                    if (chat.receiver === content.receiver && chat.sender === content.sender || 
-                        chat.receiver === content.sender && chat.sender === content.receiver
-                    )
-                    {
-                        let reply = {type: "notification", message: content.content};
-                        sock.send(JSON.stringify(reply));
-                    }
-                })
+                // server.chatPreviewNotifications.forEach((chat, sock) =>
+                // {
+                //     server.log.info(`checking for ${chat.receiver}`)
+                //     if (chat.receiver === content.receiver && chat.sender === content.sender || 
+                //         chat.receiver === content.sender && chat.sender === content.receiver
+                //     )
+                //     {
+                //         let reply = {type: "notification", message: content.content};
+                //         sock.send(JSON.stringify(reply));
+                //     }
+                // })
             }
         }
 }
@@ -72,5 +76,175 @@ export const messageNotification = async (socket: WebSocket, request: Fastify.Fa
         }
     }
 }
+
+
+
+export const createGlobalSocket = async (socket: WebSocket, request: Fastify.FastifyRequest) =>
+{
+    const server = request.server;
+
+    socket.on('close', () =>
+    {
+        console.log("closed global connection");
+        server.globalSockets.delete(socket);
+    })
+
+    socket.onmessage = (msg) =>
+    {
+        const {type, content} = JSON.parse(msg.data.toString());
+        console.log("received", type, content);
+        if (type == "handshake")
+        {
+            console.log("creating new global socket for", content);
+            server.globalSockets.set(socket, content);
+        }
+        else if (type === "message")
+        {
+            console.log("new message", server.globalSockets.get(socket), server.globalSockets.size);
+            socket.send(`${JSON.stringify(content)}`);
+            server.globalSockets.forEach((user, sock) => {
+                console.log(user, content.friendship_id);
+                if ((user === content.receiver || user === content.sender) && sock !== socket)
+                {
+                    console.log("sending to ", user)
+                    sock.send(`${JSON.stringify(content)}`)
+                }
+            });
+        }
+    }
+}
+
+
+interface Player 
+{
+    socket: WebSocket,
+    id: number
+}
+
+
+class Queue{
+    private items: Player[] = [];
+    private offset = 0;
+
+    enqueue(item: Player) {
+        this.items.push(item);
+    }
+
+    dequeue(): Player | undefined {
+        if (this.size() === 0) return undefined;
+
+        const item = this.items[this.offset];
+        this.offset++;
+
+        if (this.offset * 2 >= this.items.length) {
+            this.items = this.items.slice(this.offset);
+            this.offset = 0;
+        }
+
+        return item;
+    }
+
+    peek(): Player | undefined {
+        return this.items[this.offset];
+    }
+
+    size() {
+        return this.items.length - this.offset;
+    }
+
+    isEmpty() {
+        return this.size() === 0;
+    }
+    contains(item: Player): boolean
+    {
+        const found = this.items.find(val => val.socket === item.socket);
+        if (found)
+            return (true);
+        return (false);
+    }
+}
+
+
+
+const queue = new Queue; 
+
+const handleLocalGame = async (socket: WebSocket, player: any) =>
+{
+    console.log("game local is ongoing", player);
+    socket.send(JSON.stringify(player));
+}
+
+const handleOnlineGame = async (socket: WebSocket, player: any) => 
+{
+    const p1: Player = {socket: socket, id: player};
+
+    if (!queue.size())
+    {
+        console.log("finding second player for", player, queue.size());
+        queue.enqueue(p1);
+    }
+    else
+    {
+        console.log("starting online game now...", queue.size())
+        const p2: Player | undefined = queue.dequeue();
+        if (p1 && p2)
+        {
+            p1.socket.send(JSON.stringify({state: "true"}));
+            p2.socket.send(JSON.stringify({state: "true"}));
+        }
+    }
+}
+
+const handleTournament = async (socket: WebSocket, player: any) =>
+{
+    const p: Player = {socket: socket, id: player};
+
+    if (queue.size() < 3)
+    {
+        console.log("waiting for other players to join...");
+        queue.enqueue(p);
+    }
+    else
+    {
+        const p1: Player | undefined = queue.dequeue();
+        const p2: Player | undefined = queue.dequeue();
+        const p3: Player | undefined = queue.dequeue();
+        const p4: Player | undefined = p;
+
+        if (p1 && p2 && p3 && p4)
+        {
+            p1.socket.send(JSON.stringify({state: "true"}));
+            p2.socket.send(JSON.stringify({state: "true"}));
+            p3.socket.send(JSON.stringify({state: "true"}));
+            p4.socket.send(JSON.stringify({state: "true"}));
+        }
+    }
+}
+
+
+export const gameController = async (socket: WebSocket, request: Fastify.FastifyRequest) =>
+{
+    const server = request.server;
+    socket.onmessage = (msg) =>
+    {
+        const {gameType, data} = JSON.parse(msg.data.toString());
+        if (gameType === "init")
+            console.log("created new game socket...");
+        else if (gameType === "close")
+            socket.close();
+        else if (gameType === "local")
+            handleLocalGame(socket, data);
+        else if (gameType === "online")
+            handleOnlineGame(socket, data);
+        else if (gameType === "tournament")
+            handleTournament(socket, data);
+    }
+
+    socket.onclose = () =>
+    {
+        console.log("closed game socket....");
+    }
+}
+
 
 export default chatMessageHandler;

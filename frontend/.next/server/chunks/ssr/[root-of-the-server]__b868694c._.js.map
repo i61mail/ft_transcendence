@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 15, "column": 0}, "map": {"version":3,"sources":["file:///home/shamdoun/Desktop/ft_transcendence/frontend/app/games/page.tsx"],"sourcesContent":["import { useRouter } from \"next/navigation\";\nimport React from \"react\";\n\n\nconst Games = () =>\n{\n    const router = useRouter();\n    return (\n        <>\n            <div className=\"h-screen w-screen flex align-center justify-elements gap-x-10\">\n                <div onClick={()=>{\n                    router.push('/games/local');\n                }} className=\"size-40 bg-white-300\">Ping Pong</div>\n                <div className=\"size-40 bg-white-300\">Tournament</div>\n                <div className=\"size-40 bg-white-300\">TTT section</div>\n            </div>\n        </>\n    )\n}\n\nexport default Games;"],"names":[],"mappings":";;;;;AAAA;AAAA;;;AAIA,MAAM,QAAQ;IAEV,MAAM,SAAS,IAAA,6OAAS;IACxB,qBACI;kBACI,cAAA,yRAAC;YAAI,WAAU;;8BACX,yRAAC;oBAAI,SAAS;wBACV,OAAO,IAAI,CAAC;oBAChB;oBAAG,WAAU;8BAAuB;;;;;;8BACpC,yRAAC;oBAAI,WAAU;8BAAuB;;;;;;8BACtC,yRAAC;oBAAI,WAAU;8BAAuB;;;;;;;;;;;;;AAItD;uCAEe","debugId":null}}]
+}

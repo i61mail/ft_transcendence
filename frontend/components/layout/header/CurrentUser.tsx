@@ -11,7 +11,7 @@ const CurrentUser = (user: CurrentUser) => {
         <Image className='fill-current' alt='user' src={defaultUser}/>
       </div>
       <div>
-        <p>{user.name}</p>
+        {/* <p>{user.name}</p> */}
         <p className='text-slate-500'>{user.username}</p>
       </div>
     </div>

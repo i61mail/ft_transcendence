@@ -6,7 +6,7 @@ const NavList = () => {
     <ul className=' flex gap-x-30 text-[24px] font-[400]'>
       <Link href={"/"}>HOME</Link>
       <Link href={"/chats"}>CHAT</Link>
-      <Link href={"/"}>GAME</Link>
+      <Link href={"/games"}>GAME</Link>
     </ul>
   )
 }

@@ -8,12 +8,11 @@ const postUserSchema = {
     body: {
         type: "object",
         properties: {
-            name: { type: "string" },
-            lastName: { type: "string" },
             password: { type: "string" },
-            username: { type: "string" }
+            username: { type: "string" },
+            email: { type: "string" }
         },
-        required: ["username", "name", "lastName", "password"],
+        required: ["username", "password", "email"],
         additionalProperties: false
     }
 };

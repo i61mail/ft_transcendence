@@ -2,10 +2,10 @@ import Fastify from "fastify";
 const createUserHandler = async (request, reply) => {
     const server = request.server;
     try {
-        const { name, password, lastName, username } = request.body;
+        const { email, password, username } = request.body;
         const db = server.db;
-        const insertStm = db.prepare(`INSERT INTO users (name, lastName, username, password) VALUES (?,?,?,?)`);
-        insertStm.run(name, lastName, username, password);
+        const insertStm = db.prepare(`INSERT INTO users (email, username, password) VALUES (?,?,?)`);
+        insertStm.run(email, username, password);
         reply.send(`User ${username} is created`);
     }
     catch (err) {
@@ -21,7 +21,6 @@ const getUserById = async (request, reply) => {
         reply.status(404).send("not found!");
     else
         reply.send({
-            name: foundUser.name,
             username: foundUser.username
         });
 };
@@ -31,8 +30,6 @@ const getAllUsers = async (request, reply) => {
     if (allData) {
         reply.send(allData.map(user => ({
             id: user.id,
-            name: user.name,
-            lastName: user.lastName,
             username: user.username
         })));
     }

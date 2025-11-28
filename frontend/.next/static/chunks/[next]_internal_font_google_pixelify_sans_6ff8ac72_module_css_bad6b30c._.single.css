@@ -1,0 +1,47 @@
+/* [next]/internal/font/google/pixelify_sans_6ff8ac72.module.css [app-client] (css) */
+@font-face {
+  font-family: Pixelify Sans;
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../media/99c6cdb74b1a9f21-s.d7fd5574.woff2") format("woff2");
+  unicode-range: U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116;
+}
+
+@font-face {
+  font-family: Pixelify Sans;
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../media/9b2952c75e1b82c6-s.ae1b0c1f.woff2") format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: Pixelify Sans;
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../media/01d67e7cc17e7674-s.p.5b396bc1.woff2") format("woff2");
+  unicode-range: U+??, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Pixelify Sans Fallback;
+  src: local(Arial);
+  ascent-override: 81.7%;
+  descent-override: 24.87%;
+  line-gap-override: 0.0%;
+  size-adjust: 112.61%;
+}
+
+.pixelify_sans_6ff8ac72-module__g-xoqq__className {
+  font-family: Pixelify Sans, Pixelify Sans Fallback;
+  font-style: normal;
+}
+
+.pixelify_sans_6ff8ac72-module__g-xoqq__variable {
+  --font-pixelify-sans: "Pixelify Sans", "Pixelify Sans Fallback";
+}
+
+/*# sourceMappingURL=%5Bnext%5D_internal_font_google_pixelify_sans_6ff8ac72_module_css_bad6b30c._.single.css.map*/

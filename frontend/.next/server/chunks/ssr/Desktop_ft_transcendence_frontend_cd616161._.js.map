@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///home/shamdoun/Desktop/ft_transcendence/frontend/app/page.tsx"],"sourcesContent":["'use client'\nimport Login from \"../components/features/auth/Login\";\nimport { useAuth } from \"@/context/AuthProvider\";\nimport { useGlobalContext } from \"@/context/GLobalContextProvider\";\nimport useglobalStore from \"@/context/GlobalStore\";\nimport {useRouter} from \"next/navigation\";\nimport { useEffect } from \"react\";\n\nexport default function Home() {\n  const router = useRouter();\n  const manager = useglobalStore();\n\n  useEffect(() =>\n  {\n    if (!manager.isLogged)\n      router.push('/login');\n  }, [router, manager])\n\n  return (\n    <main >\n    </main>\n  );\n}\n"],"names":[],"mappings":";;;;;AAIA;AACA;AACA;AANA;;;;;AAQe,SAAS;IACtB,MAAM,SAAS,IAAA,0LAAS;IACxB,MAAM,UAAU,IAAA,4KAAc;IAE9B,IAAA,6PAAS,EAAC;QAER,IAAI,CAAC,QAAQ,QAAQ,EACnB,OAAO,IAAI,CAAC;IAChB,GAAG;QAAC;QAAQ;KAAQ;IAEpB,qBACE,yRAAC;;;;;AAGL","debugId":null}},
+    {"offset": {"line": 35, "column": 0}, "map": {"version":3,"sources":["file:///home/shamdoun/Desktop/ft_transcendence/frontend/node_modules/next/navigation.js"],"sourcesContent":["module.exports = require('./dist/client/components/navigation')\n"],"names":[],"mappings":"AAAA,OAAO,OAAO","ignoreList":[0],"debugId":null}}]
+}

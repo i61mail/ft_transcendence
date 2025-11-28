@@ -5,46 +5,49 @@ import MainChat from './MainChat'
 import { MessageProps } from '@/types/common.types'
 import { useAuth } from '../../../context/AuthProvider'
 import { useChatContext } from '@/context/ChatContextProvider'
+import { useRouter } from 'next/router';
+import useglobalStore from '@/context/GlobalStore'
 
 
-const ChatsWrapper = () => {
-  const auth = useAuth();
-  const chatContext = useChatContext();
-  const socket = useRef<WebSocket | null>(null) ;
+const ChatsWrapper = ({chat_id}: {chat_id: number}) => {
+  const manager = useglobalStore();
+  const socket = useRef<WebSocket | null>(null);
+  const currentChatId = useRef<number>(null);
   
-  useEffect(()=>
+  useEffect(() =>
   {
-    if (!socket.current)
+    if (currentChatId.current == chat_id)
+        return ;
+    console.log("now in", chat_id, currentChatId);
+    manager.updateCurrentChat(chat_id);
+    currentChatId.current = chat_id;
+    manager.friends.forEach(element => {
+    if (element.id == currentChatId.current)
+        manager.changePointedUser(element);
+    });
+    if (manager.socket)
     {
-      socket.current = new WebSocket("ws://localhost:4000/sockets/messages");
-      socket.current.onopen = () =>
-      {
-        let data = {
-          type: "auth",
-          content: auth.user?.username 
+        manager.socket.onmessage = (msg) =>
+        {
+          console.log("received message on", currentChatId.current, typeof(currentChatId.current));
+          const {receiver, sender, content, id, friendship_id} = JSON.parse(msg.data);
+          const newMessage: MessageProps = {sender: sender, receiver: receiver, content: content, id: id, friendship_id: friendship_id};
+          if (currentChatId.current == friendship_id)
+          {
+              manager.addMessage(newMessage);
+          }
+          else
+          {
+            console.log("updating latest message...");
+            manager.updateLatestMessage(newMessage);
+          }
         }
-        if (socket.current?.readyState === WebSocket.OPEN)
-          socket.current.send(JSON.stringify(data));
-      }
-      socket.current.onmessage = (msg)=>
-      {
-        const {receiver, sender, content, id} = JSON.parse(msg.data);
-        const newMessage: MessageProps = {sender: sender, receiver: receiver, content: content, id: id}
-        console.log("adding new message", newMessage);
-        chatContext.updateMessages((previous) => [newMessage, ...previous]);
-      }
-      socket.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
     }
-  },[])
+  }, [chat_id])
 
   return (   
-    auth.isLogged && auth.user && <>
-        <div className='h-dvh flex gap-3'>
-          <AllChats />
+    <>
           <MainChat ref={socket}/>
-        </div>
     </>
   )
 }

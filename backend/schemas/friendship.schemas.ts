@@ -4,8 +4,8 @@ const registerFriendSchema = {
         type: "object",
         properties: 
         {
-            user1: {type: "string"},
-            user2: {type: "string"},
+            user1: {type: "number"},
+            user2: {type: "number"},
         },
         required: ["user1", "user2"],
         additionalProperties: false

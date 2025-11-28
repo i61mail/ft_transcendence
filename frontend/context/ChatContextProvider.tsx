@@ -1,7 +1,7 @@
 "use client"
 import { useContext, createContext, useState } from "react";
 import { MessageProps, UserProps } from "@/types/common.types";
-import type { FriendshipProps } from "@/components/features/chat/AllChats";
+import type { FriendshipProps } from "@/types/common.types";
 
 interface ChatContextProps 
 {

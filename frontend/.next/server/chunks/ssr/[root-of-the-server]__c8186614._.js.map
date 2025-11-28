@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 19, "column": 0}, "map": {"version":3,"sources":["file:///home/shamdoun/Desktop/ft_transcendence/frontend/app/chats/%5Bid%5D/page.tsx"],"sourcesContent":["import ChatsWrapper from \"@/components/features/chat/ChatsWrapper\";\nimport AllChats from \"@/components/features/chat/AllChats\"\nimport useglobalStore from \"@/context/GlobalStore\";\n\nconst chat = async ({params}: {params: Promise<{id: number}>}) =>\n{\n    const {id} = await params;\n    return (\n    <>\n            {/* <AllChats /> */}\n            {/* <ChatsWrapper chat_id={id}/> */}\n    </>\n)\n};\n\nexport default chat;"],"names":[],"mappings":";;;;;;AAIA,MAAM,OAAO,OAAO,EAAC,MAAM,EAAkC;IAEzD,MAAM,EAAC,EAAE,EAAC,GAAG,MAAM;IACnB,qBACA;AAKJ;uCAEe","debugId":null}}]
+}

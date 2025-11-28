@@ -1,14 +1,14 @@
 export interface UserProps
 {
-    id: bigint,
+    id: number,
     username: string,
-    name: string,
-    lastName: string,
+    name?: string,
+    lastName?: string,
 }
 
 export interface CurrentUser
 {
-    name: string,
+    name?: string,
     username: string;
 }
 
@@ -16,21 +16,23 @@ export interface CurrentUser
 export interface LoginProps 
 {
     username: string | null,
-    name: string | null;
+    password: string | null;
 }
 
 export interface MessageProps 
 {
     id: number,
-    receiver: string,
-    sender: string,
+    receiver: number,
+    sender: number,
     content: string,
-    date?: Date
+    date?: Date,
+    friendship_id?: number,
 }
 
 export interface FriendshipProps
 {
     id: number,
+    friend_id: number,
     username: string
 }
 

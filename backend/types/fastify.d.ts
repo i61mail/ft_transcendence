@@ -7,6 +7,8 @@ declare module 'fastify' {
     interface FastifyInstance {
         db: Database.Database;
         chatConnections: Map<WebSocket, string>,
-        chatPreviewNotifications: Map<WebSocket, Chat>
+        chatPreviewNotifications: Map<WebSocket, Chat>,
+        globalSockets: Map<WebSocket, id>,
+        gameSockets: Map<WebSocket, id>
     }
 }

@@ -14,7 +14,7 @@ const postMessageHandler = async (request: Fastify.FastifyRequest<{
         const db = server.db;
         const insertStm = db.prepare(`INSERT INTO messages (friendship_id, sender, receiver, content) VALUES (?,?,?,?)`)
         const result = insertStm.run(friendship_id, sender, receiver, content);
-        reply.send({sender: sender, receiver: receiver, content: content, id: result.lastInsertRowid});
+        reply.send({sender: sender, receiver: receiver, content: content, id: result.lastInsertRowid, friendship_id: friendship_id});
     }
     catch (err)
     {

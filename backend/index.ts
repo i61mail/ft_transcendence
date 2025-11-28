@@ -18,6 +18,8 @@ async function startServer()
 {
     server.decorate("chatConnections", new Map<WebSocket, string>());
     server.decorate("chatPreviewNotifications", new Map<WebSocket, Chat>());
+    server.decorate("globalSockets", new Map<WebSocket, number>());
+    server.decorate("gameSockets", new Map<WebSocket, number>());
     await server.register(fp(dbConnector));
     await server.register(cors, corsOptions);
     await server.register(ws);

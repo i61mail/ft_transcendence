@@ -14,6 +14,8 @@ const server = Fastify(fastifyOptions);
 async function startServer() {
     server.decorate("chatConnections", new Map());
     server.decorate("chatPreviewNotifications", new Map());
+    server.decorate("globalSockets", new Map());
+    server.decorate("gameSockets", new Map());
     await server.register(fp(dbConnector));
     await server.register(cors, corsOptions);
     await server.register(ws);

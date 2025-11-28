@@ -1,8 +1,8 @@
 export interface Message {
     id: BigInteger,
     friendship_id: number,
-    sender: string,
-    receiver: string,
+    sender: number,
+    receiver: number,
     content: string,
     createdAt?: Date
 }
