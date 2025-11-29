@@ -1,6 +1,7 @@
 "use client"
 
 import useglobalStore from "@/context/GlobalStore"
+import { startGame } from "@/lib/pong/game";
 import { useEffect, useRef, useState } from "react";
 
 const OnlineGame = () =>
@@ -8,6 +9,7 @@ const OnlineGame = () =>
     const manager = useglobalStore();
     const [start, setStart] = useState(false);
     const sentRef = useRef<boolean>(false);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() =>
     {
@@ -17,19 +19,25 @@ const OnlineGame = () =>
             const data = {gameType: "online", data: {player: {id: manager.user?.id}}};
             manager.gameSocket.send(JSON.stringify(data));
             sentRef.current = true;
-            manager.gameSocket.onmessage = (msg) =>
+            manager.gameSocket.onmessage = (msg) => 
             {
-                const state = JSON.parse(msg.data.toString());
-                console.log("received online: ", state);
+                console.log(msg.data);
                 setStart(true);
+                if (canvasRef.current && manager.gameSocket)
+                {
+                    console.log("start")
+                    startGame(canvasRef.current, manager.gameSocket, msg.data);
+                }
             }
         }
     }, [manager.gameSocket])
 
     return (
         <>
-            {!start && <div>Loading...</div>}
-            {start && <div>game begins</div>}
+            {/* {!start && <div>Loading...</div>} */}
+            {<canvas ref={canvasRef} width={800} height={600}>
+            if you see this message, than the canvas did not load propraly
+        </canvas>}
         </>
     )
 }

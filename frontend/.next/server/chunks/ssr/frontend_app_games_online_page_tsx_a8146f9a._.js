@@ -17,6 +17,7 @@ const OnlineGame = ()=>{
     const manager = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$context$2f$GlobalStore$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"])();
     const [start, setStart] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const sentRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(false);
+    const canvasRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(null);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         if (manager.gameSocket && !sentRef.current) {
             console.log("starting online game...");
@@ -30,11 +31,7 @@ const OnlineGame = ()=>{
             };
             manager.gameSocket.send(JSON.stringify(data));
             sentRef.current = true;
-            manager.gameSocket.onmessage = (msg)=>{
-                const state = JSON.parse(msg.data.toString());
-                console.log("received online: ", state);
-                setStart(true);
-            };
+            if (canvasRef.current) star(canvasRef.current, manager.gameSocket);
         }
     }, [
         manager.gameSocket
@@ -45,14 +42,17 @@ const OnlineGame = ()=>{
                 children: "Loading..."
             }, void 0, false, {
                 fileName: "[project]/frontend/app/games/online/page.tsx",
-                lineNumber: 31,
+                lineNumber: 28,
                 columnNumber: 24
             }, ("TURBOPACK compile-time value", void 0)),
-            start && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                children: "game begins"
+            start && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("canvas", {
+                ref: canvasRef,
+                width: 800,
+                height: 600,
+                children: "if you see this message, than the canvas did not load propraly"
             }, void 0, false, {
                 fileName: "[project]/frontend/app/games/online/page.tsx",
-                lineNumber: 32,
+                lineNumber: 29,
                 columnNumber: 23
             }, ("TURBOPACK compile-time value", void 0))
         ]

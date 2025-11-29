@@ -2,41 +2,44 @@
 import useglobalStore from "@/context/GlobalStore";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { startGame } from "@/lib/pong/game";
 
+let hh = 0;
 
 const LocalGame = () =>
 {
+
     const manager = useglobalStore();
     const router = useRouter();
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const conditionT = useRef<boolean>(false);
 
     useEffect(()=>
     {
+        if (conditionT.current)
+            return ;
         if (manager.gameSocket)
         {
             console.log("starting game...");
             const data = {gameType: "local", data: {player: {id: manager.user?.id}}};
             manager.gameSocket.send(JSON.stringify(data));
+            conditionT.current = true;
             manager.gameSocket.onmessage = (msg) =>
             {
-                const packet = JSON.parse(msg.data.toString());
-                console.log("received local: ", packet);
+                if (canvasRef.current)
+                    startGame(canvasRef.current, manager.gameSocket!, msg.data.toString());
             }
-        }
-    }, [manager.gameSocket])
+        }else
+            router.push("/games");
+    }, [manager.socket])
 
     return (
     <>
-            <div className="h-screen w-screen flex items-center justify-center gap-x-10 ">
-                <div onClick={()=>{
-                    const data = {gameType: "local", data: {gameType: "local", player: {id: "1"}}};
-                    manager.gameSocket?.send(JSON.stringify(data));
-                }} className="size-40 bg-green-300 text-[20px] flex items-center justify-center">player1</div>
-                <div onClick={()=>{
-                    const data = {gameType: "local", data: {gameType: "local", player: {id: "2"}}};
-                    manager.gameSocket?.send(JSON.stringify(data));
-                }}className="size-40 bg-green-300 text-[20px] flex items-center justify-center">player2</div>
-            </div>
-        </>
+        <canvas ref={canvasRef} width={800} height={600}>
+            if you see this message, than the canvas did not load propraly
+        </canvas>
+
+    </>
 );
 }
 

@@ -16,13 +16,16 @@ var _s = __turbopack_context__.k.signature();
 ;
 ;
 ;
+let hh = 0;
 const LocalGame = ()=>{
     _s();
     const manager = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$context$2f$GlobalStore$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"])();
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"])();
+    const canvasRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
+    const conditionT = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(false);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "LocalGame.useEffect": ()=>{
-            if (manager.gameSocket) {
+            if (manager.gameSocket && !conditionT.current) {
                 var _manager_user;
                 console.log("starting game...");
                 const data = {
@@ -36,70 +39,31 @@ const LocalGame = ()=>{
                 manager.gameSocket.send(JSON.stringify(data));
                 manager.gameSocket.onmessage = ({
                     "LocalGame.useEffect": (msg)=>{
-                        const packet = JSON.parse(msg.data.toString());
-                        console.log("received local: ", packet);
+                        return;
                     }
                 })["LocalGame.useEffect"];
-            }
+                conditionT.current = true;
+            // if (canvasRef.current)
+            //     startGame(canvasRef.current, manager.gameSocket);
+            } else router.push("/games");
         }
     }["LocalGame.useEffect"], [
-        manager.gameSocket
+        0
     ]);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
-        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-            className: "h-screen w-screen flex items-center justify-center gap-x-10 ",
-            children: [
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    onClick: ()=>{
-                        var _manager_gameSocket;
-                        const data = {
-                            gameType: "local",
-                            data: {
-                                gameType: "local",
-                                player: {
-                                    id: "1"
-                                }
-                            }
-                        };
-                        (_manager_gameSocket = manager.gameSocket) === null || _manager_gameSocket === void 0 ? void 0 : _manager_gameSocket.send(JSON.stringify(data));
-                    },
-                    className: "size-40 bg-green-300 text-[20px] flex items-center justify-center",
-                    children: "player1"
-                }, void 0, false, {
-                    fileName: "[project]/frontend/app/games/local/page.tsx",
-                    lineNumber: 30,
-                    columnNumber: 17
-                }, ("TURBOPACK compile-time value", void 0)),
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    onClick: ()=>{
-                        var _manager_gameSocket;
-                        const data = {
-                            gameType: "local",
-                            data: {
-                                gameType: "local",
-                                player: {
-                                    id: "2"
-                                }
-                            }
-                        };
-                        (_manager_gameSocket = manager.gameSocket) === null || _manager_gameSocket === void 0 ? void 0 : _manager_gameSocket.send(JSON.stringify(data));
-                    },
-                    className: "size-40 bg-green-300 text-[20px] flex items-center justify-center",
-                    children: "player2"
-                }, void 0, false, {
-                    fileName: "[project]/frontend/app/games/local/page.tsx",
-                    lineNumber: 34,
-                    columnNumber: 17
-                }, ("TURBOPACK compile-time value", void 0))
-            ]
-        }, void 0, true, {
+        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("canvas", {
+            ref: canvasRef,
+            width: 800,
+            height: 600,
+            children: "if you see this message, than the canvas did not load propraly"
+        }, void 0, false, {
             fileName: "[project]/frontend/app/games/local/page.tsx",
-            lineNumber: 29,
-            columnNumber: 13
+            lineNumber: 37,
+            columnNumber: 9
         }, ("TURBOPACK compile-time value", void 0))
     }, void 0, false);
 };
-_s(LocalGame, "vQduR7x+OPXj6PSmJyFnf+hU7bg=", false, function() {
+_s(LocalGame, "aRV7X3N+srgsHrvPxaW8os9K1Cc=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"]
     ];

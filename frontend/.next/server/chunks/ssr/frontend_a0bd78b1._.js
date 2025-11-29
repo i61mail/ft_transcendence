@@ -15,11 +15,14 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$
 ;
 ;
 ;
+let hh = 0;
 const LocalGame = ()=>{
     const manager = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$context$2f$GlobalStore$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"])();
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRouter"])();
+    const canvasRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(null);
+    const conditionT = (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(false);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
-        if (manager.gameSocket) {
+        if (manager.gameSocket && !conditionT.current) {
             console.log("starting game...");
             const data = {
                 gameType: "local",
@@ -31,62 +34,25 @@ const LocalGame = ()=>{
             };
             manager.gameSocket.send(JSON.stringify(data));
             manager.gameSocket.onmessage = (msg)=>{
-                const packet = JSON.parse(msg.data.toString());
-                console.log("received local: ", packet);
+                return;
             };
-        }
+            conditionT.current = true;
+        // if (canvasRef.current)
+        //     startGame(canvasRef.current, manager.gameSocket);
+        } else router.push("/games");
     }, [
-        manager.gameSocket
+        0
     ]);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
-        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-            className: "h-screen w-screen flex items-center justify-center gap-x-10 ",
-            children: [
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    onClick: ()=>{
-                        const data = {
-                            gameType: "local",
-                            data: {
-                                gameType: "local",
-                                player: {
-                                    id: "1"
-                                }
-                            }
-                        };
-                        manager.gameSocket?.send(JSON.stringify(data));
-                    },
-                    className: "size-40 bg-green-300 text-[20px] flex items-center justify-center",
-                    children: "player1"
-                }, void 0, false, {
-                    fileName: "[project]/frontend/app/games/local/page.tsx",
-                    lineNumber: 30,
-                    columnNumber: 17
-                }, ("TURBOPACK compile-time value", void 0)),
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    onClick: ()=>{
-                        const data = {
-                            gameType: "local",
-                            data: {
-                                gameType: "local",
-                                player: {
-                                    id: "2"
-                                }
-                            }
-                        };
-                        manager.gameSocket?.send(JSON.stringify(data));
-                    },
-                    className: "size-40 bg-green-300 text-[20px] flex items-center justify-center",
-                    children: "player2"
-                }, void 0, false, {
-                    fileName: "[project]/frontend/app/games/local/page.tsx",
-                    lineNumber: 34,
-                    columnNumber: 17
-                }, ("TURBOPACK compile-time value", void 0))
-            ]
-        }, void 0, true, {
+        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("canvas", {
+            ref: canvasRef,
+            width: 800,
+            height: 600,
+            children: "if you see this message, than the canvas did not load propraly"
+        }, void 0, false, {
             fileName: "[project]/frontend/app/games/local/page.tsx",
-            lineNumber: 29,
-            columnNumber: 13
+            lineNumber: 37,
+            columnNumber: 9
         }, ("TURBOPACK compile-time value", void 0))
     }, void 0, false);
 };

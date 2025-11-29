@@ -1,5 +1,7 @@
 import { WebSocket } from "ws";
 import Fastify from "fastify";
+import { pongLocal, pongOnline } from "../plugins/pong/gameLogic.js";
+import { GameMode } from "../plugins/pong/interfaces.js";
 const chatMessageHandler = (socket, request) => {
     const server = request.server;
     socket.on('open', () => {
@@ -116,14 +118,16 @@ class Queue {
             return (true);
         return (false);
     }
+    remove(item) {
+        this.items = this.items.filter(p => p !== item);
+    }
 }
 const queue = new Queue;
-const handleLocalGame = async (socket, player) => {
-    console.log("game local is ongoing", player);
-    socket.send(JSON.stringify(player));
-};
 const handleOnlineGame = async (socket, player) => {
     const p1 = { socket: socket, id: player };
+    socket.onclose = () => {
+        queue.remove(p1);
+    };
     if (!queue.size()) {
         console.log("finding second player for", player, queue.size());
         queue.enqueue(p1);
@@ -132,8 +136,9 @@ const handleOnlineGame = async (socket, player) => {
         console.log("starting online game now...", queue.size());
         const p2 = queue.dequeue();
         if (p1 && p2) {
-            p1.socket.send(JSON.stringify({ state: "true" }));
-            p2.socket.send(JSON.stringify({ state: "true" }));
+            p1.socket.send(JSON.stringify({ gm: GameMode.online, playerIndex: 0 }));
+            p2.socket.send(JSON.stringify({ gm: GameMode.online, playerIndex: 1 }));
+            pongOnline(p1, p2);
         }
     }
 };
@@ -156,16 +161,19 @@ const handleTournament = async (socket, player) => {
         }
     }
 };
+let lists = [];
 export const gameController = async (socket, request) => {
     const server = request.server;
     socket.onmessage = (msg) => {
         const { gameType, data } = JSON.parse(msg.data.toString());
-        if (gameType === "init")
+        if (gameType === "init") {
             console.log("created new game socket...");
-        else if (gameType === "close")
-            socket.close();
-        else if (gameType === "local")
-            handleLocalGame(socket, data);
+        }
+        else if (gameType === "local") {
+            console.log("local .... dsafd");
+            socket.send(JSON.stringify({ gm: GameMode.local, plyI: 0 }));
+            pongLocal({ id: data, socket: socket });
+        }
         else if (gameType === "online")
             handleOnlineGame(socket, data);
         else if (gameType === "tournament")

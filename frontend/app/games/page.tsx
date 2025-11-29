@@ -50,6 +50,7 @@ const Games = () =>
         <>
             <div className="h-screen w-screen flex items-center justify-center gap-x-10 ">
                 <div onClick={()=>{
+                    console.log("salut");
                     router.push('/games/local');
                 }} className="size-40 bg-green-300 text-[20px] flex items-center justify-center">Local</div>
                 <div onClick={() =>
