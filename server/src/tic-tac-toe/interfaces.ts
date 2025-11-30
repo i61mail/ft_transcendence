@@ -42,6 +42,7 @@ export enum messageType
 // 	cookies: 
 // }
 
+
 export interface gameMessage
 {
 	type: messageType.midGame;
@@ -62,4 +63,12 @@ export interface playerInfo
 {
   id: number;
   socket: WebSocket;
+  username: string;
+}
+
+export interface tttDataBase
+{
+	x_player_id: number,
+	o_player_id: number,
+	winner: 'x' | 'o' | 'draw'
 }

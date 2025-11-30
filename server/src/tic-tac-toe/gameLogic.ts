@@ -1,12 +1,12 @@
-import { send } from "process";
 import * as intf from "./interfaces";
+import { fastify } from '../server';
 
 class Player
 {
 	private	socket: WebSocket;
-	private symbol: intf.Symbol;
 	private ttt: TicTacToeGame;
-	private playerId : number;
+	public	symbol: intf.Symbol;
+	public 	playerId : number;
 
 	constructor(symbol: intf.Symbol, ttt: TicTacToeGame, playerInfo : intf.playerInfo)
 	{
@@ -77,10 +77,11 @@ export class TicTacToeGame
 				type: intf.messageType.midGame,
 				board: this.board,
 				currentPLayer: this.currentPlayer
-			}
-			// add the match history when there is a winner
+			};
 			this.player1.send(gameMsg);
 			this.player2.send(gameMsg);
+			if (hasWinner)
+				this.addToDatabase();
 		}
 	}
 
@@ -145,5 +146,38 @@ export class TicTacToeGame
 		}
 
 		return (false);
+	}
+	
+	addToDatabase()
+	{
+		const insertMatchStmt = fastify.db.prepare(`
+			INSERT INTO pong_matches (
+				x_player_id, 
+				o_player_id, 
+				winner,
+			) VALUES (
+				@x_player_id, 
+				@o_player_id, 
+				@winner,
+			)
+		`);
+
+		const matchData: intf.tttDataBase = {
+			x_player_id: this.player1.symbol == 'X'
+				? this.player1.playerId: this.player2.playerId,
+			o_player_id: this.player1.symbol == 'O'
+				? this.player1.playerId: this.player2.playerId,
+			winner: this.winner == 'X'
+				? 'x' : this.winner == 'O'
+				? 'o' : 'draw'
+		};
+		try
+		{
+			insertMatchStmt.run(matchData);
+		}
+		catch (err)
+		{
+			console.error("Failed to insert match:", err);
+		}
 	}
 }

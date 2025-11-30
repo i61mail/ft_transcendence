@@ -38,8 +38,3 @@ CREATE TABLE IF NOT EXISTS tic_tac_toe_matches (
     FOREIGN KEY(x_player_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY(o_player_id) REFERENCES users(id) ON DELETE SET NULL
 );
-
-
-
-1 M
-4 m

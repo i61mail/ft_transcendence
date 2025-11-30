@@ -4,6 +4,7 @@ import websocketPlugin from '@fastify/websocket';
 import { PongGame } from './pong/gameLogic';
 import { GameMode, Difficulty } from './pong/interfaces';
 import { TicTacToeGame } from './tic-tac-toe/gameLogic';
+import { startTournament } from './tournament/tournament';
 
 interface playerInfo
 {
@@ -11,9 +12,10 @@ interface playerInfo
   socket: WebSocket;
 }
 
-// [id, Socket]
+export const fastify = Fastify({ logger: true });
+fastify.register(dbPlugin);
 
-const fastify = Fastify({ logger: true });
+// [id, Socket]
 
 export function pongOnline(player1 : playerInfo, player2 : playerInfo)
 {
@@ -41,8 +43,8 @@ export function ticTacToe(player1 : playerInfo, player2 : playerInfo)
 
 
 async function start() {
-  await fastify.register(dbPlugin);
 
+  startTournament()
   fastify.get('/users', async () => {
     // Now TypeScript knows `db` exists
     const rows = fastify.db.prepare('SELECT * FROM users').all();
@@ -50,7 +52,7 @@ async function start() {
     return rows;
   });
 
-  await fastify.listen({ port: 4000 });
+  // await fastify.listen({ port: 4000 });
 }
 
 start();

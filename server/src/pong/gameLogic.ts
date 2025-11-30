@@ -3,11 +3,9 @@ import * as intf from "./interfaces";
 import { EventEmitter } from "events";
 import Fastify from 'fastify';
 import dbPlugin from '../plugins/db';
+import { fastify } from '../server';
 
 const event: EventEmitter = new EventEmitter();
-
-const fastify = Fastify({ logger: true });
-fastify.register(dbPlugin);
 
 class ScoreBoard
 {
@@ -211,7 +209,7 @@ abstract class Controller
     public  id: number;
     public  _status: intf.keyStat;
 
-    constructor(paddle: Padle, player: intf.PlayerInfo)
+    constructor(paddle: Padle, player: intf.playerInfo)
     {
         this.paddle = paddle;
         this._status = intf.keyStat.none;
@@ -243,7 +241,7 @@ abstract class Controller
 
 class LocalController extends Controller // remove this later
 {
-    constructor(paddle: Padle, player: intf.PlayerInfo)
+    constructor(paddle: Padle, player: intf.playerInfo)
     {
         super(paddle, player);
     }
@@ -263,7 +261,7 @@ class LocalController extends Controller // remove this later
 
 class onlineController extends Controller
 {
-    constructor(paddle: Padle, player: intf.PlayerInfo)
+    constructor(paddle: Padle, player: intf.playerInfo)
     {
         super(paddle, player);
     }
@@ -288,7 +286,7 @@ class AIController extends Controller
     private _target: number = 0;
     private _difficulty: intf.Difficulty;
 
-    constructor(paddle: Padle, court: Court, difficulty: intf.Difficulty, player: intf.PlayerInfo)
+    constructor(paddle: Padle, court: Court, difficulty: intf.Difficulty, player: intf.playerInfo)
     {
         super(paddle, player);
 
@@ -351,11 +349,11 @@ class Court
     public  gameMode: intf.GameMode;
     public  leftPlayerController: Controller;
     public  rightPlayerController: Controller;
+    public  _scoreBoard: ScoreBoard; // changed
     private _ball: Ball;
-    private _scoreBoard: ScoreBoard;
     private aiDifficulty: intf.Difficulty;
 
-    constructor(gameMode: intf.GameMode, difficulty: intf.Difficulty, player1 : intf.PlayerInfo, player2 : intf.PlayerInfo)
+    constructor(gameMode: intf.GameMode, difficulty: intf.Difficulty, player1 : intf.playerInfo, player2 : intf.playerInfo)
     {
         this._ball = new Ball(this);
         this.gameMode = gameMode;
@@ -457,7 +455,14 @@ class Court
                 right_score: this._scoreBoard.rightPlayerScore,
                 ai_difficulty: difficulty
             };
-            const result = insertMatchStmt.run(matchData);
+            try
+            {
+                insertMatchStmt.run(matchData);
+            }
+            catch (err)
+            {
+                console.error("Failed to insert match:", err);
+            }
     }
 
     scorePoint(playerIndex: number)
@@ -519,7 +524,7 @@ export class PongGame
 {
     private _court: Court;
 
-    constructor(gameMode: intf.GameMode, player1 : intf.PlayerInfo, player2 : intf.PlayerInfo = player1, difficulty: intf.Difficulty = intf.Difficulty.impossible)
+    constructor(gameMode: intf.GameMode, player1 : intf.playerInfo, player2 : intf.playerInfo = player1, difficulty: intf.Difficulty = intf.Difficulty.impossible)
     {
         this._court = new Court(gameMode, difficulty, player1, player2);
         let that = this;
@@ -551,4 +556,9 @@ export class PongGame
         }, intf.SETTINGS.getIntervalLength());
     }
 
+    //changed
+    get winner(): number
+    {
+        return (this._court._scoreBoard.winner);
+    }
 }
