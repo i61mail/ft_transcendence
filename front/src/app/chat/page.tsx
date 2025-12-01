@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useGlobalStore from '@/store/globalStore';
 import AllChats from '@/components/chat/AllChats';
-import ChatsWrapper from '@/components/chat/ChatsWrapper';
+import Header from '@/components/Header';
 import { FriendshipProps } from '@/types/chat.types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -31,7 +31,9 @@ export default function ChatPage() {
         manager.login(userData.user);
 
         // Create WebSocket connection
-        manager.createSocket();
+        if (!manager.socket) {
+          manager.createSocket();
+        }
 
         // Fetch friendships
         const friendsResponse = await fetch(`${API_URL}/friendships/${userData.user.id}`, {
@@ -44,15 +46,6 @@ export default function ChatPage() {
         const friendsData: FriendshipProps[] = await friendsResponse.json();
         manager.updateFriendList(friendsData);
 
-        // Auto-select first friend if exists
-        if (friendsData.length > 0) {
-          manager.changePointedUser(friendsData[0]);
-          manager.updateCurrentChat(friendsData[0].id);
-          router.push(`/chats/${friendsData[0].id}`);
-        } else {
-          // No friends, stay on /chat
-        }
-
         setLoading(false);
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -61,13 +54,6 @@ export default function ChatPage() {
     };
 
     checkAuth();
-
-    return () => {
-      // Cleanup WebSocket on unmount
-      if (manager.socket) {
-        manager.socket.close();
-      }
-    };
   }, []);
 
   if (loading) {
@@ -84,9 +70,21 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="h-dvh flex gap-3">
-      <AllChats />
-      <ChatsWrapper chat_id={manager.currentChat} />
+    <div className="min-h-screen bg-[#bcc3d4] flex flex-col">
+      <Header user={manager.user} onUserUpdate={(user) => manager.login(user)} activeRoute="chat" />
+
+      <div className="flex-1 flex gap-3 p-6">
+        <div className="w-[400px]">
+          <AllChats />
+        </div>
+        <div className="flex-1 flex items-center justify-center bg-[#B0BBCF] rounded-2xl">
+          <div className="text-center">
+            <p className="font-pixelify text-2xl text-gray-600 mb-2">No conversation selected</p>
+            <p className="font-pixelify text-sm text-gray-500">Select a friend to start chatting</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
+
