@@ -9,8 +9,6 @@ import useGlobalStore from "@/store/globalStore";
 const Chat = ({ params }: { params: Promise<{ id: string }> }) => {
   const router = useRouter();
   const manager = useGlobalStore();
-  const [chatId, setChatId] = useState<number | null>(null);
-  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -22,6 +20,7 @@ const Chat = ({ params }: { params: Promise<{ id: string }> }) => {
       
       // Wait for friends to be loaded
       if (manager.friends.length === 0) {
+        router.push('/chats');
         return;
       }
 
@@ -30,7 +29,6 @@ const Chat = ({ params }: { params: Promise<{ id: string }> }) => {
       
       if (!friendExists) {
         // Friend doesn't exist, redirect to first friend
-        setIsRedirecting(true);
         if (manager.friends.length > 0) {
           router.replace(`/chats/${manager.friends[0].id}`);
         } else {
@@ -44,8 +42,6 @@ const Chat = ({ params }: { params: Promise<{ id: string }> }) => {
       if (friend && mounted) {
         manager.changePointedUser(friend);
         manager.updateCurrentChat(friendshipId);
-        setChatId(friendshipId);
-        setIsRedirecting(false);
       }
     });
 
@@ -54,12 +50,10 @@ const Chat = ({ params }: { params: Promise<{ id: string }> }) => {
     };
   }, [params, manager.friends, router]);
 
-  if (isRedirecting || !chatId) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#B0BBCF] rounded-2xl">
-        <div className="text-xl text-gray-600">Loading chat...</div>
-      </div>
-    );
+
+  if (manager.friends.length === 0)
+  {
+    return <></>
   }
 
   return (
