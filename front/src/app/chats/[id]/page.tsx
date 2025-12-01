@@ -20,7 +20,7 @@ const Chat = ({ params }: { params: Promise<{ id: string }> }) => {
       
       // Wait for friends to be loaded
       if (manager.friends.length === 0) {
-        router.push('/chats');
+        // router.push('/chats');
         return;
       }
 
@@ -32,7 +32,7 @@ const Chat = ({ params }: { params: Promise<{ id: string }> }) => {
         if (manager.friends.length > 0) {
           router.replace(`/chats/${manager.friends[0].id}`);
         } else {
-          router.replace('/dashboard');
+          router.replace('/chats');
         }
         return;
       }
