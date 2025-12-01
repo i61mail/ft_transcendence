@@ -5,13 +5,19 @@ import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
 import cookie from '@fastify/cookie';
+import websocket from '@fastify/websocket';
 import Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
 import authRoutes from './routes/auth';
 import oauthRoutes from './routes/oauth';
 import profileRoutes from './routes/profile';
+import messageRoutes from './routes/message';
+import friendshipRoutes from './routes/friendship';
+import socketRoutes from './routes/socket';
 import fastifyStatic from '@fastify/static';
+import { WebSocket } from 'ws';
+import { Chat } from './types/chat.types';
 
 const app = Fastify({
   logger: true,
@@ -25,6 +31,14 @@ app.register(cors, {
   allowedHeaders: ['Content-Type', 'Authorization'],
 });
 
+// Decorate app with WebSocket Maps before registering websocket plugin
+app.decorate('chatConnections', new Map<WebSocket, string>());
+app.decorate('chatPreviewNotifications', new Map<WebSocket, Chat>());
+app.decorate('globalSockets', new Map<WebSocket, number>());
+app.decorate('gameSockets', new Map<WebSocket, number>());
+
+// Register WebSocket
+app.register(websocket);
 
 // Register cookie plugin
 app.register(cookie);
@@ -121,6 +135,9 @@ if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
 app.register(authRoutes, { prefix: '/auth' });
 app.register(oauthRoutes, { prefix: '/auth' });
 app.register(profileRoutes, { prefix: '/profile' });
+app.register(messageRoutes);
+app.register(friendshipRoutes);
+app.register(socketRoutes);
 
 // Health check endpoint
 app.get('/', async (request, reply) => {

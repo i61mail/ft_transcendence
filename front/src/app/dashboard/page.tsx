@@ -62,7 +62,10 @@ export default function Dashboard() {
 
         <nav className="flex items-center gap-50">
           <button className="font-pixelify text-lg text-black hover:text-[#5A789E] transition-colors border-b-2 border-[#5A789E] pb-1">HOME</button>
-          <button className="font-pixelify text-lg text-black hover:text-[#5A789E] transition-colors flex items-center gap-2">
+          <button 
+            onClick={() => router.push('/chats/1')}
+            className="font-pixelify text-lg text-black hover:text-[#5A789E] transition-colors flex items-center gap-2"
+          >
             <span className="w-2 h-2 bg-[#5A789E] rounded-full"></span>
             CHAT
           </button>

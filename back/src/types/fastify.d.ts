@@ -1,9 +1,15 @@
 import 'fastify';
 import { Database } from 'better-sqlite3';
+import { WebSocket } from 'ws';
+import { Chat } from './chat.types';
 
 declare module 'fastify' {
   interface FastifyInstance {
     db: Database;
+    chatConnections: Map<WebSocket, string>;
+    chatPreviewNotifications: Map<WebSocket, Chat>;
+    globalSockets: Map<WebSocket, number>;
+    gameSockets: Map<WebSocket, number>;
   }
 
   interface FastifyRequest {
