@@ -11,7 +11,7 @@ const  SocketManager = () =>
 {
     const manager = useglobalStore();
     const router = useRouter();
-
+    
     useEffect(() =>
     {
         if (manager.socket || !manager.user)

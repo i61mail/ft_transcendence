@@ -10,7 +10,6 @@ export default function chatsLayout({children}: {children: React.ReactNode})
 {
     const manager = useGlobalStore();
     const router = useRouter();   
-    const [loading, setLoading] = useState(true);
 
     useEffect(()=>
     {
@@ -25,32 +24,6 @@ export default function chatsLayout({children}: {children: React.ReactNode})
             return;
           }
 
-          const userData = await response.json();
-          manager.updateUser(userData.user);
-
-          // Fetch and set up WebSocket if not already done
-          if (!manager.socket) {
-            manager.createSocket();
-          }
-
-          // Fetch friendships
-          const friendsResponse = await fetch(`${API_URL}/friendships/${userData.user.id}`, {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          const friendsData = await friendsResponse.json();
-          manager.updateFriendList(friendsData);
-
-          // If no friends, redirect to /chat (empty state)
-          if (!friendsData || friendsData.length === 0) {
-            router.push('/chat');
-            return;
-          }
-
-          setLoading(false);
         } catch (error) {
           console.error('Auth check failed:', error);
           router.push('/');
@@ -59,14 +32,6 @@ export default function chatsLayout({children}: {children: React.ReactNode})
 
       checkAuth();
     }, []);
-
-    if (loading) {
-      return (
-        <div className="h-screen flex items-center justify-center bg-[#bcc3d4]">
-          <div className="text-xl text-gray-600">Loading...</div>
-        </div>
-      );
-    }
 
     return (
     manager.user && <>

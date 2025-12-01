@@ -99,7 +99,7 @@ const useglobalStore = create<GLobalState>((set,get) => (
     },
     changePointedUser: (newPointedUser: FriendshipProps | null) =>
     {
-        if (newPointedUser !== get().pointedUser)
+        if (newPointedUser?.id !== get().pointedUser?.id)
             set({messages: []});
         set({pointedUser: newPointedUser});
     },

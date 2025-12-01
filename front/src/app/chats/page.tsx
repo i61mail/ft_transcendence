@@ -14,23 +14,6 @@ export default function ChatPage() {
   const manager = useGlobalStore();
 
   useEffect(() => {
-    // Check authentication
-    const checkAuth = async () => {
-      try {
-        const response = await fetch(`${API_URL}/auth/me`, {
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          router.push('/');
-          return;
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        router.push('/');
-      }
-    };
-    checkAuth();
     manager.changePointedUser(null);
   }, []);
 
