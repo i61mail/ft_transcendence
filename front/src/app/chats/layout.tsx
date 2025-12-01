@@ -12,60 +12,66 @@ export default function chatsLayout({children}: {children: React.ReactNode})
     const router = useRouter();   
     const [loading, setLoading] = useState(true);
 
-    // useEffect(()=>
-    // {
-    //   const checkAuth = async () => {
-    //     try {
-    //       const response = await fetch(`${API_URL}/auth/me`, {
-    //         credentials: 'include',
-    //       });
+    useEffect(()=>
+    {
+      const checkAuth = async () => {
+        try {
+          const response = await fetch(`${API_URL}/auth/me`, {
+            credentials: 'include',
+          });
 
-    //       if (!response.ok) {
-    //         router.push('/');
-    //         return;
-    //       }
+          if (!response.ok) {
+            router.push('/');
+            return;
+          }
 
-    //       const userData = await response.json();
-    //       manager.login(userData.user);
+          const userData = await response.json();
+          manager.updateUser(userData.user);
 
-    //       // Fetch and set up WebSocket if not already done
-    //       if (!manager.socket) {
-    //         manager.createSocket();
-    //       }
+          // Fetch and set up WebSocket if not already done
+          if (!manager.socket) {
+            manager.createSocket();
+          }
 
-    //       // Fetch friendships
-    //       const friendsResponse = await fetch(`${API_URL}/friendships/${userData.user.id}`, {
-    //         method: 'GET',
-    //         credentials: 'include',
-    //         headers: {
-    //           'Content-Type': 'application/json',
-    //         },
-    //       });
-    //       const friendsData = await friendsResponse.json();
-    //       manager.updateFriendList(friendsData);
+          // Fetch friendships
+          const friendsResponse = await fetch(`${API_URL}/friendships/${userData.user.id}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          const friendsData = await friendsResponse.json();
+          manager.updateFriendList(friendsData);
 
-    //       setLoading(false);
-    //     } catch (error) {
-    //       console.error('Auth check failed:', error);
-    //       router.push('/');
-    //     }
-    //   };
+          // If no friends, redirect to /chat (empty state)
+          if (!friendsData || friendsData.length === 0) {
+            router.push('/chat');
+            return;
+          }
 
-    //   checkAuth();
-    // }, []);
+          setLoading(false);
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          router.push('/');
+        }
+      };
 
-    // if (loading) {
-    //   return (
-    //     <div className="h-screen flex items-center justify-center bg-[#bcc3d4]">
-    //       <div className="text-xl text-gray-600">Loading...</div>
-    //     </div>
-    //   );
-    // }
+      checkAuth();
+    }, []);
+
+    if (loading) {
+      return (
+        <div className="h-screen flex items-center justify-center bg-[#bcc3d4]">
+          <div className="text-xl text-gray-600">Loading...</div>
+        </div>
+      );
+    }
 
     return (
-    <>
+    manager.user && <>
             <div className="min-h-screen bg-[#bcc3d4] flex flex-col">
-              {<Header user={manager.user} onUserUpdate={(user) => manager.updateUser(user)} activeRoute="chat" />}
+              <Header user={manager.user} onUserUpdate={(user) => manager.updateUser(user)} activeRoute="chat" />
               <div className='h-dvh bg-[#bcc3d4] flex gap-3 mt-6'>
                   {children}
               </div>
