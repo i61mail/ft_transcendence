@@ -2,6 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { register, login } from "@/lib/api";
+import { Maname } from "next/font/google";
+import useglobalStore from "@/store/globalStore";
+import { resumeToPipeableStream } from "react-dom/server";
 
 export default function Home() {
   const [isLogin, setIsLogin] = useState(true);
@@ -29,7 +32,7 @@ export default function Home() {
   const [registerDisplayName, setRegisterDisplayName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
-
+  const manager = useglobalStore();
   // Handle Login
 const handleLogin = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -45,7 +48,7 @@ const handleLogin = async (e: React.FormEvent) => {
 
     // Store user data in localStorage for quick access
     localStorage.setItem("user", JSON.stringify(result.user));
-
+    manager.updateUser(result.user);
     // Redirect to dashboard
     setTimeout(() => {
       window.location.href = '/dashboard';
@@ -75,7 +78,8 @@ const handleRegister = async (e: React.FormEvent) => {
 
     // Store user data in localStorage for quick access
     localStorage.setItem("user", JSON.stringify(result.user));
-
+    manager.updateUser(result.user);
+    // manager.updateUser(result.user);
     // Redirect to dashboard
     setTimeout(() => {
       window.location.href = '/dashboard';

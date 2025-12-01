@@ -47,7 +47,7 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
             HOME
           </button>
           <button 
-            onClick={() => router.push('/chat')}
+            onClick={() => router.push('/chats')}
             className={`font-pixelify text-lg text-black hover:text-[#5A789E] transition-colors flex items-center gap-2 ${activeRoute === 'chat' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}
           >
             {activeRoute === 'chat' && <span className="w-2 h-2 bg-[#5A789E] rounded-full"></span>}

@@ -17,6 +17,6 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  display_name?: string;
-  avatar_url?: string;
+  display_name?: string | undefined;
+  avatar_url?: string | null | undefined;
 }

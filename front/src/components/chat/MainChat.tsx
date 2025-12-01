@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useEffect } from 'react'
 import Image from 'next/image'
 import defaultUser from '../../../public/defaultUser.svg'
@@ -11,7 +13,7 @@ interface MainChatProps {
   ref: React.RefObject<WebSocket | null>;
 }
 
-const MainChat = (client: MainChatProps) => {
+const MainChat = () => {
   const manager = useGlobalStore();
 
   useEffect(() => {
@@ -51,7 +53,7 @@ const MainChat = (client: MainChatProps) => {
           ))
         }
       </div>
-      <MessageForm ref={client.ref}></MessageForm>
+      <MessageForm ></MessageForm>
     </div>
   )
 };

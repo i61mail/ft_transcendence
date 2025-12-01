@@ -7,7 +7,7 @@ interface MessageFormProps {
   ref: React.RefObject<WebSocket | null>;
 }
 
-const MessageForm = (user: MessageFormProps) => {
+const MessageForm = () => {
   const manager = useGlobalStore();
 
   const sendMessage = async (data: FormData) => {
