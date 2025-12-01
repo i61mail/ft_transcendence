@@ -1,9 +1,10 @@
-const API_URL = 'http://localhost:4000';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 interface RegisterData {
   email: string;
   username: string;
   password: string;
+  display_name?: string;
 }
 
 interface LoginData {
@@ -13,12 +14,12 @@ interface LoginData {
 
 interface AuthResponse {
   message: string;
-  token: string;
   user: {
     id: number;
     email: string;
     username: string;
-    avatar_url?: string | null; // Add this
+    display_name?: string;
+    avatar_url?: string | null;
   };
 }
 
@@ -35,6 +36,7 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -56,6 +58,7 @@ export async function login(data: LoginData): Promise<AuthResponse> {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -69,14 +72,28 @@ export async function login(data: LoginData): Promise<AuthResponse> {
 }
 
 /**
+ * Logout user
+ */
+export async function logout() {
+  const response = await fetch(`${API_URL}/auth/logout`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok && response.status !== 204) {
+    throw new Error('Logout failed');
+  }
+
+  return true;
+}
+
+/**
  * Get current user info (requires authentication)
  */
-export async function getCurrentUser(token: string) {
+export async function getCurrentUser() {
   const response = await fetch(`${API_URL}/auth/me`, {
     method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
+    credentials: 'include',
   });
 
   const result = await response.json();
@@ -91,15 +108,13 @@ export async function getCurrentUser(token: string) {
 /**
  * Upload user avatar
  */
-export async function uploadAvatar(file: File, token: string) {
+export async function uploadAvatar(file: File) {
   const formData = new FormData();
   formData.append('file', file);
 
   const response = await fetch(`${API_URL}/profile/avatar`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
+    credentials: 'include',
     body: formData,
   });
 
@@ -110,4 +125,33 @@ export async function uploadAvatar(file: File, token: string) {
   }
 
   return result;
+}
+
+/**
+ * Update user profile (e.g., username)
+ */
+export async function updateProfile(data: { display_name?: string }) {
+  try {
+    const response = await fetch(`${API_URL}/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to update profile');
+    }
+
+    return result;
+  } catch (err: any) {
+    // Network error (e.g., CORS, timeout, or backend unreachable)
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      throw new Error('Network error: Cannot reach the server. Check if backend is running.');
+    }
+    throw err;
+  }
 }

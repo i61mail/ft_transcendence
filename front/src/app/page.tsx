@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { register, login } from "@/lib/api";
 
 export default function Home() {
@@ -8,6 +8,17 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  
+  // Surface OAuth errors from callback redirects (e.g., ?error=oauth_failed)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get('error');
+      if (err === 'oauth_failed') {
+        setError('Google sign-in failed. Please try again.');
+      }
+    }
+  }, []);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
@@ -15,6 +26,7 @@ export default function Home() {
 
   // Register form state
   const [registerName, setRegisterName] = useState("");
+  const [registerDisplayName, setRegisterDisplayName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
 
@@ -31,12 +43,8 @@ const handleLogin = async (e: React.FormEvent) => {
       password: loginPassword,
     });
 
-    // Store token in localStorage
-    localStorage.setItem("token", result.token);
+    // Store user data in localStorage for quick access
     localStorage.setItem("user", JSON.stringify(result.user));
-
-    // setSuccess(`Welcome back, ${result.user.username}!`);
-    // console.log("Logged in:", result);
 
     // Redirect to dashboard
     setTimeout(() => {
@@ -62,14 +70,11 @@ const handleRegister = async (e: React.FormEvent) => {
       email: registerEmail,
       username: registerName,
       password: registerPassword,
+      display_name: registerDisplayName || undefined,
     });
 
-    // Store token in localStorage
-    localStorage.setItem("token", result.token);
+    // Store user data in localStorage for quick access
     localStorage.setItem("user", JSON.stringify(result.user));
-
-    // setSuccess(`Account created! Welcome, ${result.user.username}!`);
-    // console.log("Registered:", result);
 
     // Redirect to dashboard
     setTimeout(() => {
@@ -80,8 +85,13 @@ const handleRegister = async (e: React.FormEvent) => {
   } finally {
     setLoading(false);
   }
-};
+  };
 
+  // Handle Google OAuth
+  const handleGoogleSignIn = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    window.location.href = `${apiUrl}/auth/google`;
+  };
 
   return (
     <div className="flex min-h-screen w-full bg-white">
@@ -144,6 +154,7 @@ const handleRegister = async (e: React.FormEvent) => {
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     required
+                    placeholder="email@mail.com"
                     className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-thin text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
@@ -202,6 +213,7 @@ const handleRegister = async (e: React.FormEvent) => {
 
                 <button
                   type="button"
+                  onClick={handleGoogleSignIn}
                   className="w-full h-[47px] bg-white rounded-[20px] border border-solid border-[#dadce0] font-pixelify font-medium text-[#3c4043] text-sm text-center tracking-[0.25px] leading-[17px] hover:bg-gray-50 transition-colors flex items-center justify-center"
                 >
                   <img
@@ -212,17 +224,6 @@ const handleRegister = async (e: React.FormEvent) => {
                   Sign in with Google
                 </button>
 
-                <button
-                  type="button"
-                  className="w-full h-[47px] bg-white rounded-[20px] border border-solid border-[#dadce0] font-pixelify font-medium text-[#3c4043] text-sm text-center tracking-[0.25px] leading-[17px] hover:bg-gray-50 transition-colors flex items-center justify-center"
-                >
-                  <img
-                    className="w-[27px] h-[43px] mr-3 object-cover"
-                    alt="Intra logo"
-                    src="/rectangle-63.png"
-                  />
-                  Sign in with Intra
-                </button>
               </form>
             </>
           ) : (
@@ -259,7 +260,24 @@ const handleRegister = async (e: React.FormEvent) => {
                     onChange={(e) => setRegisterName(e.target.value)}
                     required
                     placeholder="Name"
-                    className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-thin text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-normal text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="register-display-name"
+                    className="block font-pixelify font-normal text-black text-base tracking-[0] leading-normal"
+                  >
+                    Display name
+                  </label>
+                  <input
+                    id="register-display-name"
+                    type="text"
+                    value={registerDisplayName}
+                    onChange={(e) => setRegisterDisplayName(e.target.value)}
+                    placeholder="Shown to others"
+                    className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-normal text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
 
@@ -276,8 +294,8 @@ const handleRegister = async (e: React.FormEvent) => {
                     value={registerEmail}
                     onChange={(e) => setRegisterEmail(e.target.value)}
                     required
-                    placeholder="you.ME@mail.com"
-                    className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-thin text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
+                    placeholder="email@mail.com"
+                    className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-normal text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
 
@@ -296,7 +314,7 @@ const handleRegister = async (e: React.FormEvent) => {
                     required
                     minLength={8}
                     placeholder="Min. 8 character"
-                    className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-thin text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter font-normal text-black text-sm tracking-[0] leading-normal focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
 
@@ -335,6 +353,7 @@ const handleRegister = async (e: React.FormEvent) => {
 
                 <button
                   type="button"
+                  onClick={handleGoogleSignIn}
                   className="w-full h-[47px] bg-white rounded-[20px] border border-solid border-[#dadce0] font-pixelify font-medium text-[#3c4043] text-sm text-center tracking-[0.25px] leading-[17px] hover:bg-gray-50 transition-colors flex items-center justify-center"
                 >
                   <img
@@ -345,17 +364,6 @@ const handleRegister = async (e: React.FormEvent) => {
                   Sign up with Google
                 </button>
 
-                <button
-                  type="button"
-                  className="w-full h-[47px] bg-white rounded-[20px] border border-solid border-[#dadce0] font-pixelify font-medium text-[#3c4043] text-sm text-center tracking-[0.25px] leading-[17px] hover:bg-gray-50 transition-colors flex items-center justify-center"
-                >
-                  <img
-                    className="w-[27px] h-[43px] mr-3 object-cover"
-                    alt="Intra logo"
-                    src="/rectangle-63.png"
-                  />
-                  Sign in with Intra
-                </button>
               </form>
             </>
           )}

@@ -78,6 +78,10 @@ if [ -d "$BACK_DIR" ]; then
   if [ -f "package.json" ]; then
     echo -e "${YELLOW}📦 Installing backend dependencies...${RESET}"
     npm install
+    echo -e "${YELLOW}📦 Installing cookie and CORS plugins for auth...${RESET}"
+    npm install @fastify/cookie @fastify/cors
+    echo -e "${YELLOW}📦 Installing OAuth2 plugin for Google authentication...${RESET}"
+    npm install @fastify/oauth2
     echo -e "${GREEN}✅ Backend dependencies installed!${RESET}"
   else
     echo -e "${YELLOW}⚠️  No package.json found in back/. Skipping backend.${RESET}"

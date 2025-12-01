@@ -33,17 +33,17 @@ export default async function authRoutes(app: FastifyInstance) {
               maxLength: 20,             // optional cap
               pattern: '^[a-zA-Z0-9_]+$' // optional charset (letters, numbers, _)
             },
-            password: { type: 'string', minLength: 8, maxLength: 72 }
+            password: { type: 'string', minLength: 8, maxLength: 72 },
+            display_name: { type: 'string', maxLength: 50 }
           },
           additionalProperties: false
         },
         response: {
           201: {
             type: 'object',
-            required: ['message', 'token', 'user'],
+            required: ['message', 'user'],
             properties: {
               message: { type: 'string' },
-              token: { type: 'string' },
               user: {
                 type: 'object',
                 required: ['id', 'email', 'username'],
@@ -51,7 +51,8 @@ export default async function authRoutes(app: FastifyInstance) {
                   id: { type: 'number' },
                   email: { type: 'string' },
                   username: { type: 'string' },
-                  avatar_url: { type: ['string', 'null'] }
+                  display_name: { type: 'string' },
+                  avatar_url: { anyOf: [ { type: 'string' }, { type: 'null' } ] }
                 }
               }
             }
@@ -60,10 +61,10 @@ export default async function authRoutes(app: FastifyInstance) {
       }
     },
     async (
-      request: FastifyRequest<{ Body: RegisterBody }>,
+      request: FastifyRequest<{ Body: RegisterBody & { display_name?: string } }>,
       reply: FastifyReply
     ) => {
-      const { email, username, password } = request.body;
+      const { email, username, password, display_name } = request.body;
 
       // You may keep manual checks as a safety net (optional)
       if (password.length < 8) {
@@ -71,6 +72,7 @@ export default async function authRoutes(app: FastifyInstance) {
       }
 
       try {
+        const DEFAULT_AVATAR = '/uploads/default-avatar.png';
         // Check if user already exists
         const existingUser = app.db
           .prepare('SELECT id FROM users WHERE email = ? OR username = ?')
@@ -88,21 +90,30 @@ export default async function authRoutes(app: FastifyInstance) {
         // Insert new user
         const result = app.db
           .prepare(
-            'INSERT INTO users (email, username, password) VALUES (?, ?, ?)'
+            'INSERT INTO users (email, username, password, avatar_url, display_name) VALUES (?, ?, ?, ?, ?)'
           )
-          .run(email, username, hashedPassword);
+          .run(email, username, hashedPassword, DEFAULT_AVATAR, display_name ?? username);
 
         // Generate JWT token
         const token = generateToken(app, result.lastInsertRowid as number, email);
 
+        // Set HTTP-only cookie
+        reply.setCookie('access_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+        });
+
         return reply.code(201).send({
           message: 'User registered successfully',
-          token,
           user: {
             id: result.lastInsertRowid,
             email,
             username,
-            avatar_url: null,
+            display_name: display_name ?? username,
+            avatar_url: DEFAULT_AVATAR,
           },
         });
       } catch (err) {
@@ -145,13 +156,22 @@ export default async function authRoutes(app: FastifyInstance) {
             id: number;
             email: string;
             username: string;
-            password: string;
+            password: string | null;
             avatar_url: string | null;
+            display_name: string | null;
+            auth_provider?: string | null;
           } | undefined;
 
         if (!user) {
           return reply.code(401).send({
             error: 'Invalid email or password',
+          });
+        }
+
+        // If this account was created via OAuth, it may not have a password
+        if (!user.password) {
+          return reply.code(400).send({
+            error: 'This account uses Google sign-in. Please click "Sign in with Google".',
           });
         }
 
@@ -167,13 +187,22 @@ export default async function authRoutes(app: FastifyInstance) {
         // Generate JWT token
         const token = generateToken(app, user.id, user.email);
 
+        // Set HTTP-only cookie
+        reply.setCookie('access_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+        });
+
         return reply.code(200).send({
           message: 'Login successful',
-          token,
           user: {
             id: user.id,
             email: user.email,
             username: user.username,
+            display_name: user.display_name,
             avatar_url: user.avatar_url,
           },
         });
@@ -191,23 +220,23 @@ export default async function authRoutes(app: FastifyInstance) {
   // ═══════════════════════════════════════════════════════════
   app.get('/me', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // Get token from Authorization header
+      // Try to get token from cookie first, then fallback to Authorization header
       const authHeader = request.headers.authorization;
+      const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+      const token = (request as any).cookies?.access_token || bearer;
 
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      if (!token) {
         return reply.code(401).send({
-          error: 'Missing or invalid authorization header',
+          error: 'Missing or invalid authorization',
         });
       }
-
-      const token = authHeader.replace('Bearer ', '');
 
       // Verify token
       const decoded = app.jwt.verify(token) as { id: number; email: string };
 
       // Get user from database
       const user = app.db
-        .prepare('SELECT id, email, username, avatar_url, created_at FROM users WHERE id = ?')
+        .prepare('SELECT id, email, username, display_name, avatar_url, created_at FROM users WHERE id = ?')
         .get(decoded.id);
 
       if (!user) {
@@ -224,5 +253,13 @@ export default async function authRoutes(app: FastifyInstance) {
         error: 'Invalid or expired token',
       });
     }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // POST /auth/logout - Logout user and clear cookie
+  // ═══════════════════════════════════════════════════════════
+  app.post('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
+    reply.clearCookie('access_token', { path: '/' });
+    return reply.code(204).send();
   });
 }

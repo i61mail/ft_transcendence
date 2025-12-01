@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { uploadAvatar } from "@/lib/api";
+import { uploadAvatar, API_URL } from "@/lib/api";
 
 interface AvatarUploadProps {
   currentAvatar?: string | null;
@@ -14,7 +14,7 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -38,6 +38,28 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
       setPreview(reader.result as string);
     };
     reader.readAsDataURL(file);
+
+    // Immediately upload after selecting a valid file
+    setUploading(true);
+    try {
+      const result = await uploadAvatar(file);
+      // Update user in localStorage
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        user.avatar_url = result.avatar_url;
+        localStorage.setItem("user", JSON.stringify(user));
+      }
+      onUploadSuccess(result.avatar_url);
+      setPreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleUpload = async () => {
@@ -48,12 +70,7 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
     setError("");
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
-
-      const result = await uploadAvatar(file, token);
+      const result = await uploadAvatar(file);
       
       // Update user in localStorage
       const userStr = localStorage.getItem("user");
@@ -75,8 +92,11 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
     }
   };
 
+  // Handle both local paths (/uploads/...) and external URLs (https://...)
   const avatarSrc = preview || 
-    (currentAvatar ? `http://localhost:4000${currentAvatar}` : "/default-avatar.png");
+    (currentAvatar 
+      ? (currentAvatar.startsWith('http') ? currentAvatar : `${API_URL}${currentAvatar}`)
+      : "/default-avatar.png");
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -106,15 +126,7 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
           Choose Image
         </label>
 
-        {preview && (
-          <button
-            onClick={handleUpload}
-            disabled={uploading}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-pixelify disabled:opacity-50"
-          >
-            {uploading ? "Uploading..." : "Upload"}
-          </button>
-        )}
+        {/* Upload happens automatically after selecting a file; no separate Upload button */}
       </div>
 
       {/* Error Message */}

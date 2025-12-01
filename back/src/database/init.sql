@@ -2,7 +2,9 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT UNIQUE NOT NULL,
   username TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL,
+  password TEXT,
   avatar_url TEXT DEFAULT NULL,
+  google_id TEXT UNIQUE DEFAULT NULL,
+  auth_provider TEXT DEFAULT 'local',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

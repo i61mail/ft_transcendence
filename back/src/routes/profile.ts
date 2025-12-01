@@ -13,16 +13,16 @@ export default async function profileRoutes(app: FastifyInstance) {
   // ═══════════════════════════════════════════════════════════
   app.post('/avatar', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // Get token from Authorization header
+      // Try to get token from cookie first, then fallback to Authorization header
       const authHeader = request.headers.authorization;
+      const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+      const token = (request as any).cookies?.access_token || bearer;
       
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      if (!token) {
         return reply.code(401).send({
-          error: 'Missing or invalid authorization header',
+          error: 'Missing or invalid authorization',
         });
       }
-
-      const token = authHeader.replace('Bearer ', '');
 
       // Verify token
       const decoded = app.jwt.verify(token) as { id: number; email: string };
@@ -73,6 +73,52 @@ export default async function profileRoutes(app: FastifyInstance) {
       return reply.code(500).send({
         error: 'Failed to upload avatar',
       });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // PUT /profile - Update basic user information (e.g., username)
+  // ═══════════════════════════════════════════════════════════
+  app.put('/', {
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          display_name: { type: 'string', minLength: 2 },
+        },
+        additionalProperties: false,
+      }
+    }
+  }, async (request: FastifyRequest<{ Body: { display_name?: string } }>, reply: FastifyReply) => {
+    try {
+      const authHeader = request.headers.authorization;
+      const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+      const token = (request as any).cookies?.access_token || bearer;
+
+      if (!token) {
+        app.log.warn('PUT /profile: Missing auth token');
+        return reply.code(401).send({ error: 'Missing or invalid authorization' });
+      }
+
+      const decoded = app.jwt.verify(token) as { id: number; email: string };
+
+      const { display_name } = request.body || {};
+      if (display_name) {
+        if (display_name.trim().length < 2) {
+          return reply.code(400).send({ error: 'Display name must be at least 2 characters' });
+        }
+        app.db.prepare('UPDATE users SET display_name = ? WHERE id = ?').run(display_name.trim(), decoded.id);
+        app.log.info(`Updated display_name for user ${decoded.id} to "${display_name.trim()}"`);
+      }
+
+      const updated = app.db
+        .prepare('SELECT id, email, username, display_name, avatar_url, created_at FROM users WHERE id = ?')
+        .get(decoded.id);
+
+      return reply.code(200).send({ message: 'Profile updated', user: updated });
+    } catch (err) {
+      app.log.error(err);
+      return reply.code(500).send({ error: 'Failed to update profile' });
     }
   });
 }
