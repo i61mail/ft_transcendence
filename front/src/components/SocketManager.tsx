@@ -30,14 +30,11 @@ const  SocketManager = () =>
     {
         if (manager.user || window.location.pathname === "/")
             return ;
-        const token = localStorage.getItem("token");
-        let user: any = undefined;
-        if (!token)
-        {
-            router.push('/');
-        }
+        
         async function getFriends(user: User) {
-            const res = await fetch(`http://localhost:4000/friendships/${user?.id}`);
+            const res = await fetch(`http://localhost:4000/friendships/${user?.id}`, {
+                credentials: 'include'
+            });
             const friends: FriendshipProps[] = await res.json();
             if (friends.length > 0)
             {
@@ -46,25 +43,23 @@ const  SocketManager = () =>
             //   console.log("first friend", friends[0], manager.user!.id);
             }
         }
-        async function retrive()
+        async function retrieve()
         {
-            if (token)
-                user = await getCurrentUser();
-            if (!user)
-                throw new Error("user not found");
-            console.log(user);
-            setTimeout(() => getFriends(user.user), 300);
-            manager.updateUser(user.user);
+            try {
+                const userData = await getCurrentUser();
+                if (!userData || !userData.user) {
+                    throw new Error("user not found");
+                }
+                console.log(userData);
+                setTimeout(() => getFriends(userData.user), 300);
+                manager.updateUser(userData.user);
+            } catch (err) {
+                console.error("Failed to retrieve user:", err);
+                router.push('/');
+            }
         }
-        try
-        {
-            console.log("trying...");
-            retrive();
-        }
-        catch (err)
-        {
-            alert(err);
-        }        
+        
+        retrieve();
     }, [manager.user])
 
 
