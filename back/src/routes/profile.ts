@@ -121,4 +121,48 @@ export default async function profileRoutes(app: FastifyInstance) {
       return reply.code(500).send({ error: 'Failed to update profile' });
     }
   });
+
+  // ═══════════════════════════════════════════════════════════
+  // GET /profile/search?username=... - Search for users by username
+  // ═══════════════════════════════════════════════════════════
+  app.get('/search', async (request: FastifyRequest<{ Querystring: { username?: string } }>, reply: FastifyReply) => {
+    try {
+      const authHeader = request.headers.authorization;
+      const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+      const token = (request as any).cookies?.access_token || bearer;
+
+      if (!token) {
+        return reply.code(401).send({ error: 'Missing or invalid authorization' });
+      }
+
+      const decoded = app.jwt.verify(token) as { id: number; email: string };
+      const { username } = request.query;
+
+      if (!username || username.trim().length === 0) {
+        return reply.code(400).send({ error: 'Username query parameter is required' });
+      }
+
+      // Search for users by username (case-insensitive, partial match)
+      const users = app.db
+        .prepare('SELECT id, username, display_name, avatar_url FROM users WHERE username LIKE ? AND id != ? LIMIT 10')
+        .all(`%${username.trim()}%`, decoded.id);
+
+      // Check friendship status for each user
+      const usersWithFriendshipStatus = users.map((user: any) => {
+        const friendship = app.db
+          .prepare('SELECT id FROM friendships WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)')
+          .get(decoded.id, user.id, user.id, decoded.id);
+        
+        return {
+          ...user,
+          isFriend: !!friendship
+        };
+      });
+
+      return reply.code(200).send({ users: usersWithFriendshipStatus });
+    } catch (err) {
+      app.log.error(err);
+      return reply.code(500).send({ error: 'Failed to search users' });
+    }
+  });
 }

@@ -5,6 +5,8 @@ import { FriendshipProps } from '@/types/chat.types';
 import useGlobalStore from '@/store/globalStore';
 import { useRouter } from 'next/navigation';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
 interface Props {
   friend: FriendshipProps;
 }
@@ -37,11 +39,15 @@ const ChatPreview = (data: Props) => {
         manager.pointedUser?.username === data.friend.username && 'bg-[#B0BBCF]'
       } ${notification && 'border-2 bg-blue-100 border-white'}`}
     >
-      <div className="size-[60px] rounded-full bg-gray-200 flex items-center justify-center">
-        <span className="text-3xl">👤</span>
+      <div className="size-[60px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+        <img 
+          src={data.friend.avatar_url ? (data.friend.avatar_url.startsWith('http') ? data.friend.avatar_url : `${API_URL}${data.friend.avatar_url}`) : "/default-avatar.png"} 
+          alt="Avatar" 
+          className="w-full h-full object-cover"
+        />
       </div>
       <div className="flex flex-col gap-y-0.5">
-        <h1 className="text-[24px]">{data.friend.username}</h1>
+        <h1 className="text-[24px]">{data.friend.display_name || data.friend.username}</h1>
         <p className="px-3">{latestMessage}</p>
       </div>
     </div>
