@@ -53,7 +53,9 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
             {activeRoute === 'chat' && <span className="w-2 h-2 bg-[#5A789E] rounded-full"></span>}
             CHAT
           </button>
-          <button className={`font-pixelify text-lg text-black hover:text-[#5A789E] transition-colors ${activeRoute === 'game' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}>GAME</button>
+          <button
+             onClick={() => router.push('/games')}
+            className={`font-pixelify text-lg text-black hover:text-[#5A789E] transition-colors ${activeRoute === 'game' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}>GAME</button>
         </nav>
 
         <div className="flex items-center gap-8">

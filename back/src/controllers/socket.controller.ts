@@ -1,6 +1,8 @@
 import { WebSocket } from 'ws';
 import { FastifyRequest } from 'fastify';
 import { Chat } from '../types/chat.types';
+import { pongLocal, pongOnline } from '../routes/pong';
+import { GameMode } from '../types/pong.types';
 
 const chatMessageHandler = (socket: WebSocket, request: FastifyRequest) => {
   const server = request.server;
@@ -120,5 +122,148 @@ export const createGlobalSocket = async (
         }
     }
 };
+
+interface Player 
+{
+    socket: WebSocket,
+    id: number
+}
+
+
+class Queue{
+    private items: Player[] = [];
+    private offset = 0;
+
+    enqueue(item: Player) {
+        this.items.push(item);
+    }
+
+    dequeue(): Player | undefined {
+        if (this.size() === 0) return undefined;
+
+        const item = this.items[this.offset];
+        this.offset++;
+
+        if (this.offset * 2 >= this.items.length) {
+            this.items = this.items.slice(this.offset);
+            this.offset = 0;
+        }
+
+        return item;
+    }
+
+    peek(): Player | undefined {
+        return this.items[this.offset];
+    }
+
+    size() {
+        return this.items.length - this.offset;
+    }
+
+    isEmpty() {
+        return this.size() === 0;
+    }
+    contains(item: Player): boolean
+    {
+        const found = this.items.find(val => val.socket === item.socket);
+        if (found)
+            return (true);
+        return (false);
+    }
+    remove (item: Player)
+    {
+        this.items = this.items.filter(p => p !== item);
+    }
+}
+
+
+
+const queue = new Queue; 
+
+
+
+const handleOnlineGame = async (socket: WebSocket, player: any) => 
+{
+    const p1: Player = {socket: socket, id: player};
+
+    socket.onclose = () =>
+    {
+        queue.remove(p1);
+    }
+
+    if (!queue.size())
+    {
+        console.log("finding second player for", player, queue.size());
+        queue.enqueue(p1);
+    }
+    else
+    {
+        console.log("starting online game now...", queue.size())
+        const p2: Player | undefined = queue.dequeue();
+        if (p1 && p2)
+        {
+            p1.socket.send(JSON.stringify({gm: GameMode.online, playerIndex: 0}));
+            p2.socket.send(JSON.stringify({gm: GameMode.online, playerIndex: 1}));
+            pongOnline(p1, p2);
+        }
+    }
+}
+
+const handleTournament = async (socket: WebSocket, player: any) =>
+{
+    const p: Player = {socket: socket, id: player};
+
+    if (queue.size() < 3)
+    {
+        console.log("waiting for other players to join...");
+        queue.enqueue(p);
+    }
+    else
+    {
+        const p1: Player | undefined = queue.dequeue();
+        const p2: Player | undefined = queue.dequeue();
+        const p3: Player | undefined = queue.dequeue();
+        const p4: Player | undefined = p;
+
+        if (p1 && p2 && p3 && p4)
+        {
+            p1.socket.send(JSON.stringify({state: "true"}));
+            p2.socket.send(JSON.stringify({state: "true"}));
+            p3.socket.send(JSON.stringify({state: "true"}));
+            p4.socket.send(JSON.stringify({state: "true"}));
+        }
+    }
+}
+
+let lists: WebSocket[] = [];
+
+export const gameController = async (socket: WebSocket, request: FastifyRequest) =>
+{
+    const server = request.server;
+    socket.onmessage = (msg) =>
+    {
+        const {gameType, data} = JSON.parse(msg.data.toString());
+        if (gameType === "init")
+        {
+            console.log("created new game socket...");
+        }
+        else if (gameType === "local")
+        {
+            console.log("local .... dsafd");
+            socket.send(JSON.stringify({gm: GameMode.local, plyI: 0}))
+            pongLocal({id: data, socket: socket});
+        }
+        else if (gameType === "online")
+            handleOnlineGame(socket, data);
+        else if (gameType === "tournament")
+            handleTournament(socket, data);
+    }
+
+    socket.onclose = () =>
+    {
+        console.log("closed game socket....");
+    }
+}
+
 
 export default chatMessageHandler;
