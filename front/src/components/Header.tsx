@@ -78,8 +78,8 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                 <span className="text-xl">⚙️</span>
               </button>
               {showSettingsMenu && (
-                <div className="absolute right-0 mt-2 w-48 rounded-xl z-20 overflow-hidden">
-                  <div className="bg-[#a8b0c5] border-2 border-[#8aabd6] rounded-xl shadow-md">
+                <div className="absolute right-0 top-full pt-2 w-48 z-20">
+                  <div className="bg-[#a8b0c5] border-2 border-[#8aabd6] rounded-xl shadow-md overflow-hidden">
                     <button
                       onClick={() => { setShowEditModal(true); setNewDisplayName(user?.display_name || user?.username || ""); }}
                       className="block w-full text-left px-4 py-3 font-pixelify text-sm text-black hover:bg-[#8aabd6] hover:text-white transition-colors"
