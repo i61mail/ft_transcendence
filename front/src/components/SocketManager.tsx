@@ -48,13 +48,16 @@ const  SocketManager = () =>
             try {
                 const userData = await getCurrentUser();
                 if (!userData || !userData.user) {
-                    throw new Error("user not found");
+                    // User not authenticated, silently redirect
+                    router.push('/');
+                    return;
                 }
                 console.log(userData);
                 setTimeout(() => getFriends(userData.user), 300);
                 manager.updateUser(userData.user);
             } catch (err) {
-                console.error("Failed to retrieve user:", err);
+                // User not authenticated (expected when accessing protected route without login)
+                // Silently redirect without logging error
                 router.push('/');
             }
         }
