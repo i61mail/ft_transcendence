@@ -104,7 +104,7 @@ const  SocketManager = () =>
               }
             }
         }
-    }, [manager.socket])
+    }, [manager.socket, manager.user?.id, manager.pointedUser?.id])
 
     return (<></>)
 };

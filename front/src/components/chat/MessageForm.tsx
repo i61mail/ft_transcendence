@@ -42,30 +42,34 @@ const MessageForm = ({ isBlocked = false }: MessageFormProps) => {
       }
 
       const responseData = await response.json();
-      console.log('sending message to', manager.pointedUser, responseData);
+      console.log('Message sent successfully:', responseData);
+      console.log('Current pointed user:', manager.pointedUser);
       
       // Clear the input field
       const form = (data as any).target;
       if (form) form.reset();
       
-      // add message locally so UI updates immediately
-      try {
-        manager.addMessage({
-          id: responseData.id,
-          sender: responseData.sender,
-          receiver: responseData.receiver,
-          content: responseData.content,
-          friendship_id: responseData.friendship_id,
-        });
-      } catch (e) {
-        // ignore if store update fails
-      }
-      let reply = { type: 'message', content: responseData };
+      // Add message locally so UI updates immediately
+      const newMessage = {
+        id: responseData.id,
+        sender: responseData.sender,
+        receiver: responseData.receiver,
+        content: responseData.content,
+        friendship_id: responseData.friendship_id,
+      };
+      
+      console.log('Adding message to local state:', newMessage);
+      manager.addMessage(newMessage);
+      console.log('Message added, current messages count:', manager.messages.length);
+      
+      // Send via WebSocket to notify the receiver
+      let reply = { type: 'message', content: newMessage };
       if (manager.socket?.readyState === WebSocket.CLOSED) {
         setErrorMessage('Unexpected socket disconnection');
         setTimeout(() => setErrorMessage(''), 3000);
       } else if (manager.socket?.readyState === WebSocket.OPEN) {
         manager.socket?.send(JSON.stringify(reply));
+        console.log('Message sent via WebSocket');
       }
     } catch (err) {
       setErrorMessage(String(err));

@@ -17,6 +17,9 @@ interface MainChatProps {
 
 const MainChat = () => {
   const manager = useGlobalStore();
+  const messages = useGlobalStore(state => state.messages);
+  const pointedUser = useGlobalStore(state => state.pointedUser);
+  const user = useGlobalStore(state => state.user);
   const [isBlocked, setIsBlocked] = useState(false);
   const [showBlockMenu, setShowBlockMenu] = useState(false);
 
@@ -24,7 +27,7 @@ const MainChat = () => {
     async function getMessages() {
       try {
         const response = await fetch(
-          `${API_URL}/messages/friendship/${manager.pointedUser?.id}?user_id=${manager.user?.id}`,
+          `${API_URL}/messages/friendship/${pointedUser?.id}?user_id=${user?.id}`,
           {
             method: 'GET',
             credentials: 'include',
@@ -41,16 +44,16 @@ const MainChat = () => {
     }
     let timeout = setTimeout(getMessages, 100);
     return () => clearTimeout(timeout);
-  }, [manager.pointedUser?.id]);
+  }, [pointedUser?.id, user?.id]);
 
   // Check if user is blocked
   useEffect(() => {
     async function checkBlockStatus() {
-      if (!manager.pointedUser?.friend_id || !manager.user?.id) return;
+      if (!pointedUser?.friend_id || !user?.id) return;
       
       try {
         const response = await fetch(
-          `${API_URL}/blocks/${manager.user.id}/check/${manager.pointedUser.friend_id}`,
+          `${API_URL}/blocks/${user.id}/check/${pointedUser.friend_id}`,
           {
             method: 'GET',
             credentials: 'include',
@@ -66,17 +69,17 @@ const MainChat = () => {
       }
     }
     checkBlockStatus();
-  }, [manager.pointedUser?.friend_id, manager.user?.id]);
+  }, [pointedUser?.friend_id, user?.id]);
 
   const handleBlockToggle = async () => {
-    if (!manager.pointedUser?.friend_id || !manager.user?.id) return;
+    if (!pointedUser?.friend_id || !user?.id) return;
 
     try {
       const method = isBlocked ? 'DELETE' : 'POST';
-      console.log(`Attempting to ${isBlocked ? 'unblock' : 'block'} user ${manager.pointedUser.friend_id}`);
+      console.log(`Attempting to ${isBlocked ? 'unblock' : 'block'} user ${pointedUser.friend_id}`);
       
       const response = await fetch(
-        `${API_URL}/blocks/${manager.pointedUser.friend_id}`,
+        `${API_URL}/blocks/${pointedUser.friend_id}`,
         {
           method,
           credentials: 'include',
@@ -84,7 +87,7 @@ const MainChat = () => {
             'Content-type': 'application/json',
           },
           body: JSON.stringify({
-            blocker_id: manager.user.id
+            blocker_id: user.id
           }),
         }
       );
@@ -109,14 +112,12 @@ const MainChat = () => {
   return (
     <div className='relative flex-3 flex flex-col rounded-t-[30] bg-[#B0BBCF]'>
       <div className='flex-1 flex justify-between items-center gap-4 bg-[#92A0BD] rounded-tl-[30] px-14'>
-        <div className='flex items-center gap-4'>
+          <div className='flex items-center gap-4'>
           <div className='size-11 flex justify-center items-end rounded-full bg-gray-200'>
             <Image className='fill-current' alt='user' src={defaultUser} />
           </div>
-          <h1 className='text-[24px]'>{manager.pointedUser?.username}</h1>
-        </div>
-        
-        <div className="relative" onMouseLeave={() => setShowBlockMenu(false)}>
+          <h1 className='text-[24px]'>{pointedUser?.username}</h1>
+        </div>        <div className="relative" onMouseLeave={() => setShowBlockMenu(false)}>
           <button
             onClick={() => setShowBlockMenu(!showBlockMenu)}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-[#5A789E] hover:bg-[#4a6888] transition-colors"
@@ -150,8 +151,8 @@ const MainChat = () => {
               <p className="font-pixelify text-lg">You have blocked this user</p>
             </div>
           ) : (
-            manager.messages.map(msg => (
-              <Message key={msg.id} message={msg.content} type={msg.receiver === manager.pointedUser?.friend_id ? 'sent' : 'received'} />
+            messages.map(msg => (
+              <Message key={msg.id} message={msg.content} type={msg.receiver === pointedUser?.friend_id ? 'sent' : 'received'} />
             ))
           )
         }

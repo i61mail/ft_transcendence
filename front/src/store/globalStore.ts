@@ -112,6 +112,7 @@ const useglobalStore = create<GLobalState>((set,get) => (
     },
     addMessage: (message: MessageProps) =>
     {
+        console.log('Adding message to store:', message);
         set((state) => ({messages: [message, ...state.messages]}))
     },
     updateGameSocket: (s: WebSocket | null) =>
