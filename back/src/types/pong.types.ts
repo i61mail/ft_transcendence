@@ -1,5 +1,3 @@
-import type { WebSocket } from "ws";
-
 interface settingsInterface {
     // canvas
     canvasColor: string;
@@ -47,7 +45,7 @@ export const SETTINGS: settingsInterface =
     getIntervalLength: function() { return (1000 / this.targetFps); }, // milliseconds
     targetFps: 60,
     // paddle
-    paddleSpeed: 200, // pixels per second
+    paddleSpeed: 400, // pixels per second
     playerOneColor: "#0000FF",
     playerTwoColor: "#FF0000",
     paddleWidth: 12,
@@ -103,19 +101,13 @@ export enum Difficulty // might need to be balanced later, also you can add as m
     impossible = 0 // might remove later
 }
 
-export interface playerInfo
-{
-  id: number;
-  socket: WebSocket;
-}
-
 export interface PongDataBase
 {
-  game_mode: 'online' | 'local' | 'ai';
+  game_mode: string;
   left_player_id: number;
-  right_player_id?: number | null;
-  winner: 'left' | 'right';
+  right_player_id: number | null;
+  winner: string;
   left_score: number;
   right_score: number;
-  ai_difficulty?: string | null;
+  ai_difficulty: string | null;
 }

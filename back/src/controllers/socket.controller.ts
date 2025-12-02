@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws';
-import { FastifyRequest } from 'fastify';
+import fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import { Chat } from '../types/chat.types';
 import { pongLocal, pongOnline } from '../routes/pong';
 import { GameMode } from '../types/pong.types';
@@ -135,7 +135,8 @@ export const createGlobalSocket = async (
 interface Player 
 {
     socket: WebSocket,
-    id: number
+    id: number,
+    username: string
 }
 
 
@@ -191,9 +192,9 @@ const queue = new Queue;
 
 
 
-const handleOnlineGame = async (socket: WebSocket, player: any) => 
+const handleOnlineGame = async (socket: WebSocket, player: any, server: FastifyInstance) => 
 {
-    const p1: Player = {socket: socket, id: player};
+    const p1: Player = {socket: socket, id: player, username: "John Doe"};
 
     socket.onclose = () =>
     {
@@ -213,14 +214,14 @@ const handleOnlineGame = async (socket: WebSocket, player: any) =>
         {
             p1.socket.send(JSON.stringify({gm: GameMode.online, playerIndex: 0}));
             p2.socket.send(JSON.stringify({gm: GameMode.online, playerIndex: 1}));
-            pongOnline(p1, p2);
+            pongOnline(p1, p2, server);
         }
     }
 }
 
 const handleTournament = async (socket: WebSocket, player: any) =>
 {
-    const p: Player = {socket: socket, id: player};
+    const p: Player = {socket: socket, id: player, username: "John Doe"};
 
     if (queue.size() < 3)
     {
@@ -258,12 +259,11 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
         }
         else if (gameType === "local")
         {
-            console.log("local .... dsafd");
             socket.send(JSON.stringify({gm: GameMode.local, plyI: 0}))
-            pongLocal({id: data, socket: socket});
+            pongLocal({id: data, socket: socket, username: "John Doe"}, server);
         }
         else if (gameType === "online")
-            handleOnlineGame(socket, data);
+            handleOnlineGame(socket, data, server);
         else if (gameType === "tournament")
             handleTournament(socket, data);
     }

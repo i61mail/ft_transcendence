@@ -34,3 +34,38 @@ CREATE TABLE IF NOT EXISTS blocks (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(blocker_id, blocked_id)
 );
+
+CREATE TABLE IF NOT EXISTS pong_matches (
+    id INTEGER PRIMARY key AUTOINCREMENT,
+    
+    game_mode TEXT NOT NULL, -- CHECK (game_mode IN('online', 'local', 'ai')),
+
+    left_player_id INTEGER NOT NULL,
+    right_player_id INTEGER,
+
+    winner TEXT NOT NULL, -- CHECK (winner IN ('left', 'right')),
+
+    left_score INTEGER NOT NULL,
+    right_score INTEGER NOT NULL,
+
+    ai_difficulty TEXT DEFAULT NULL,
+
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(left_player_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY(right_player_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS tic_tac_toe_matches (
+    id INTEGER PRIMARY key AUTOINCREMENT,
+
+    x_player_id INTEGER NOT NULL,
+    o_player_id INTEGER NOT NULL,
+
+    winner TEXT NOT NULL CHECK (winner IN ('x', 'o', 'draw')),
+  
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(x_player_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY(o_player_id) REFERENCES users(id) ON DELETE SET NULL
+);
