@@ -73,18 +73,24 @@ const  SocketManager = () =>
             manager.socket.onmessage = (msg) =>
             {
                 const {type, data} = JSON.parse(msg.data);
-              console.log("received ", type, data);
+              
               if (type === "message")
               {
                   const {receiver, sender, content, id, friendship_id} = data;
                   const newMessage: MessageProps = {sender: sender, receiver: receiver, content: content, id: id, friendship_id: friendship_id};
+                  
+                  // Only ignore if I'm the SENDER (echo back to me)
+                  // Accept if I'm the RECEIVER (someone else sent to me)
+                  if (sender === manager.user?.id) {
+                      return;
+                  }
+                  
                   if (manager.pointedUser?.id == friendship_id)
                   {
                       manager.addMessage(newMessage);
                   }
                   else
                   {
-                    console.log("updating latest message...");
                     manager.updateLatestMessage(newMessage);
                   }
               }
@@ -98,7 +104,7 @@ const  SocketManager = () =>
               }
             }
         }
-    }, [manager.pointedUser])
+    }, [manager.socket])
 
     return (<></>)
 };

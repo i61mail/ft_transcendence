@@ -11,10 +11,21 @@ export const postMessageHandler = async (
   try {
     const { sender, receiver, content, friendship_id } = request.body;
     const db = server.db;
+    
+    // Check if either user has blocked the other
+    const blockCheck = db.prepare(
+      `SELECT * FROM blocks 
+       WHERE (blocker_id = ? AND blocked_id = ?) 
+       OR (blocker_id = ? AND blocked_id = ?)`
+    ).get(sender, receiver, receiver, sender);
+
+    // Save the message but mark it as blocked if there's a block relationship
+    const isBlocked = blockCheck ? 1 : 0;
     const insertStm = db.prepare(
-      `INSERT INTO messages (friendship_id, sender, receiver, content) VALUES (?,?,?,?)`
+      `INSERT INTO messages (friendship_id, sender, receiver, content, is_blocked) VALUES (?,?,?,?,?)`
     );
-    const result = insertStm.run(friendship_id, sender, receiver, content);
+    const result = insertStm.run(friendship_id, sender, receiver, content, isBlocked);
+    
     reply.send({
       sender: sender,
       receiver: receiver,
@@ -63,12 +74,31 @@ export const getMessagesInFriendship = async (
     Params: {
       id: string;
     };
+    Querystring: {
+      user_id?: string;
+    };
   }>,
   reply: FastifyReply
 ) => {
-  const findMessages = request.server.db.prepare<[number], Message>(
-    'SELECT * FROM messages WHERE friendship_id = ?'
-  );
-  const messages = findMessages.all(parseInt(request.params.id));
+  const friendshipId = parseInt(request.params.id);
+  const userId = request.query.user_id ? parseInt(request.query.user_id) : null;
+  
+  let messages;
+  
+  // If user_id is provided, filter to show:
+  // - All non-blocked messages (is_blocked = 0)
+  // - Blocked messages sent by this user (is_blocked = 1 AND sender = user_id)
+  if (userId) {
+    const findMessages = request.server.db.prepare<[number, number], Message>(
+      'SELECT * FROM messages WHERE friendship_id = ? AND (is_blocked = 0 OR (is_blocked = 1 AND sender = ?))'
+    );
+    messages = findMessages.all(friendshipId, userId);
+  } else {
+    const findMessages = request.server.db.prepare<[number], Message>(
+      'SELECT * FROM messages WHERE friendship_id = ?'
+    );
+    messages = findMessages.all(friendshipId);
+  }
+  
   reply.send(messages);
 };

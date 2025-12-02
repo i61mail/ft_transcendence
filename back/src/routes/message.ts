@@ -9,7 +9,7 @@ import {
 
 const messageRoutes = async (server: FastifyInstance) => {
   server.get('/messages', getAllMessages);
-  server.get<{ Params: { id: string } }>(
+  server.get<{ Params: { id: string }; Querystring: { user_id?: string } }>(
     '/messages/friendship/:id',
     getMessagesInFriendship
   );

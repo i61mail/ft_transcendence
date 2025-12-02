@@ -109,16 +109,25 @@ export const createGlobalSocket = async (
         }
         else if (type === "message")
         {
-            console.log("new message", server.globalSockets.get(socket), server.globalSockets.size);
+            // Check if receiver has blocked the sender (one-way check)
+            const db = server.db;
+            const blockCheck = db.prepare(
+              `SELECT * FROM blocks 
+               WHERE blocker_id = ? AND blocked_id = ?`
+            ).get(content.receiver, content.sender);
+
+            // Send back to sender (echo) - always send to the sender
             socket.send(`${JSON.stringify({type: "message", data: content})}`);
-            server.globalSockets.forEach((user, sock) => {
-                console.log(user, content.friendship_id);
-                if ((user === content.receiver || user === content.sender) && sock !== socket)
-                {
-                    console.log("sending to ", user)
-                    sock.send(`${JSON.stringify({type: "message", data: content})}`)
-                }
-            });
+            
+            // Only send to receiver if they haven't blocked the sender
+            if (!blockCheck) {
+                server.globalSockets.forEach((user, sock) => {
+                    if (user === content.receiver && sock !== socket)
+                    {
+                        sock.send(`${JSON.stringify({type: "message", data: content})}`)
+                    }
+                });
+            }
         }
     }
 };
