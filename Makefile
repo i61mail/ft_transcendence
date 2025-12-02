@@ -1,26 +1,26 @@
-# Makefile to run npm run dev in client and server directories
+# Makefile to run npm run dev in front and back directories
 
-.PHONY: client server dev help
+.PHONY: front back dev help
 
 .DEFAULT_GOAL := dev
 
-client:
-	cd client && npm run dev
+front:
+	cd front && npm run dev
 
-server:
-	cd server && npm run dev
+back:
+	cd back && npm run dev
 
 setup:
-	npm install --prefix client
-	npm install --prefix server
+	npm install --prefix front
+	npm install --prefix back
 
 dev:
-	@echo "Starting client in background and server in foreground..."
-	npm run dev --prefix client& \
-	npm run dev --prefix server
+	@echo "Starting front in background and back in foreground..."
+	npm run dev --prefix front& \
+	npm run dev --prefix back
 
 help:
 	@echo "Usage:"
-	@echo "  make client   # run npm run dev in ./client"
-	@echo "  make server   # run npm run dev in ./server"
-	@echo "  make dev      # run client in background, server in foreground (default)"
+	@echo "  make front   # run npm run dev in ./front"
+	@echo "  make back   # run npm run dev in ./back"
+	@echo "  make dev      # run front in background, back in foreground (default)"
