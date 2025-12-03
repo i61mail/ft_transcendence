@@ -8,14 +8,17 @@ export enum trnmtStatus
     finished
 }
 
-interface Match {
-  player1: string;
-  player2: string;
-  winner: 'player1' | 'player2' | null;
+interface Match
+{
+    player1: string;
+    player2: string;
+    winner: 'player1' | 'player2' | null;
 }
 
-export interface TournamentData {
-  status: string;
-  semiFinals: Match[];
-  final: Match;
+export interface TournamentData
+{
+    code: string;
+    status: string;
+    semiFinals: Match[];
+    final: Match;
 }

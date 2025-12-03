@@ -1,7 +1,7 @@
 import * as types from "../types/pong.types";
 import { EventEmitter } from "events";
 import type { WebSocket } from "ws";
-import { FastifyInstance, FastifyRequest } from 'fastify';
+import { FastifyInstance } from 'fastify';
 import { playerInfo } from "../types/playerInfo.types";
 
 // const fastify = Fastify({ logger: true });
@@ -253,7 +253,8 @@ class LocalController extends Controller // remove this later
 
     static listener(socket: WebSocket, leftPlayer: LocalController, rightPlayer: LocalController)
     {
-        socket.onmessage = (msg) => {
+        socket.onmessage = (msg) =>
+        {
             const data: string = msg.data.toString();
             if (data.length != 2)
                 return ;
@@ -261,7 +262,7 @@ class LocalController extends Controller // remove this later
                 leftPlayer._status = parseInt(data[1]!, 10); // i should problem check the message length before using it
             else
                 rightPlayer._status = parseInt(data[1]!, 10);
-        }
+        };
     }
 }
 

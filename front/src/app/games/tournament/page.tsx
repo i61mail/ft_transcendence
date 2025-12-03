@@ -1,7 +1,6 @@
 "use client"
 
-
-import useglobalStore from "@/context/GlobalStore"
+import useglobalStore from "@/store/globalStore";
 import { useEffect, useRef, useState } from "react";
 
 const Tournament = () =>

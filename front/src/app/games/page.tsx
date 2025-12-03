@@ -59,9 +59,24 @@ const Games = () =>
                 } className="size-40 bg-green-300 text-[20px] flex items-center justify-center">Online</div>
                 <div onClick={() =>
                     {
-                        router.push('/games/tournament')
+
+                        router.push('/tournament')
                     }
-                } className="size-40 bg-green-300 text-[20px] flex items-center justify-center">Tournament</div>
+                } className="size-40 bg-green-300 text-[20px] flex items-center justify-center">Start Tournament</div>
+                <div className="flex items-center gap-x-4">
+                    <input id="tournament-code" placeholder="Enter tournament code" className="px-3 py-2 border rounded" />
+                    <button
+                        onClick={() => {
+                            const input = document.getElementById('tournament-code') as HTMLInputElement | null;
+                            const code = input?.value.trim() ?? '';
+                            if (!code) return;
+                            router.push(`/tournament?code=${encodeURIComponent(code)}`);
+                        }}
+                        className="px-4 py-2 bg-blue-500 text-white rounded"
+                    >
+                        Join Tournament
+                    </button>
+                </div>
             </div>
         </>
     )

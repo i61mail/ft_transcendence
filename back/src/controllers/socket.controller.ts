@@ -3,6 +3,7 @@ import fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import { Chat } from '../types/chat.types';
 import { pongLocal, pongOnline } from '../routes/pong';
 import { GameMode } from '../types/pong.types';
+import { joinTournament, startTournament } from '../routes/tournament';
 
 const chatMessageHandler = (socket: WebSocket, request: FastifyRequest) => {
   const server = request.server;
@@ -265,7 +266,9 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
         else if (gameType === "online")
             handleOnlineGame(socket, data, server);
         else if (gameType === "tournament")
-            handleTournament(socket, data);
+            startTournament({id: data, socket: socket, username: "John Doe"}, server);
+        else if (gameType === "joinTournament")
+          joinTournament({id: data.id, socket: socket,username: "James bond"}, data.code);
     }
 
     socket.onclose = () =>

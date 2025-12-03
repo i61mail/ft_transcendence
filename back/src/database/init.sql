@@ -38,12 +38,12 @@ CREATE TABLE IF NOT EXISTS blocks (
 CREATE TABLE IF NOT EXISTS pong_matches (
     id INTEGER PRIMARY key AUTOINCREMENT,
     
-    game_mode TEXT NOT NULL, -- CHECK (game_mode IN('online', 'local', 'ai')),
+    game_mode TEXT NOT NULL CHECK (game_mode IN('online', 'local', 'ai')),
 
     left_player_id INTEGER NOT NULL,
     right_player_id INTEGER,
 
-    winner TEXT NOT NULL, -- CHECK (winner IN ('left', 'right')),
+    winner TEXT NOT NULL CHECK (winner IN ('left', 'right')),
 
     left_score INTEGER NOT NULL,
     right_score INTEGER NOT NULL,

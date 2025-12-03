@@ -1,6 +1,11 @@
-import { PongGame } from 'pong/gameLogic';
-import { playerInfo, trnmtStatus, TournamentData } from './interfaces';
-import { GameMode } from 'pong/interfaces';
+import { trnmtStatus, TournamentData } from '../types/tournaments.types';
+import { GameMode } from '../types/pong.types';
+import { PongGame } from './pong';
+import { playerInfo } from '../types/playerInfo.types';
+import { WebSocket } from 'ws';
+import { FastifyInstance } from 'fastify';
+
+const tournaments: Map<string, Tournament> = new Map<string, Tournament>();
 
 class Tournament
 {
@@ -9,8 +14,10 @@ class Tournament
     game2!: PongGame;
     finaleGame!: PongGame;
     status: trnmtStatus = trnmtStatus.waiting;
+    static server: FastifyInstance | null;
     tournamentData: TournamentData =
     {
+        code: "",
         status: this.statusString,
         semiFinals: [
         {
@@ -30,15 +37,31 @@ class Tournament
             winner: null
         }
     };
-    
+
+    constructor(code: string)
+    {
+        this.tournamentData.code = code;
+    }
+
     addPlayer(player: playerInfo): boolean
     {
+        let doesExist: boolean = false;
+        this.players.forEach((currPlayer: playerInfo) =>
+        {
+            if (player.id == currPlayer.id)
+            {
+                doesExist = true;
+                currPlayer.socket = player.socket;
+            }
+        });
+        if (doesExist) return (true);
+
         if (this.status != trnmtStatus.waiting)
             return (false);
         let rand: number = Math.floor(Math.random() * 4);
         for (; this.players.has(rand); rand = (rand + 1) % 4);
         this.players.set(rand, player);
-        this.playerName = rand;
+        this.setPlayerName(rand, player.username);
         this.broadcastTournamentData();
         if (this.players.size == 4)
         {
@@ -48,21 +71,21 @@ class Tournament
         return (true);
     }
     
-    set playerName(pos: number)
+    setPlayerName(pos: number, username: string)
     {
         switch (pos)
         {
             case 0:
-                this.tournamentData.semiFinals[0].player1 = "get first player username";
+                this.tournamentData.semiFinals[0].player1 = username;
                 break;
             case 1:
-                this.tournamentData.semiFinals[0].player2 = "get second player username";
+                this.tournamentData.semiFinals[0].player2 = username;
                 break;
             case 2:
-                this.tournamentData.semiFinals[1].player1 = "get third player username";
+                this.tournamentData.semiFinals[1].player1 = username;
                 break;
             case 3:
-                this.tournamentData.semiFinals[1].player2 = "get forth player username";
+                this.tournamentData.semiFinals[1].player2 = username;
                 break;
         }
     }
@@ -82,7 +105,7 @@ class Tournament
             case trnmtStatus.playingFinal:
                 return ("Playing Final Match");
             case trnmtStatus.finished:
-                return ("Congratulations " + this.players.get(6).username + " !!")
+                return ("Congratulations " + this.players.get(6)?.username + " !!")
             default:
                 return ("Unknown Status");
         }
@@ -108,8 +131,8 @@ class Tournament
     startSemiGame()
     {
         this.status = trnmtStatus.playingSemi;
-        this.game1 = new PongGame(GameMode.online, this.players.get(0)!, this.players.get(1)!);
-        this.game2 = new PongGame(GameMode.online, this.players.get(2)!, this.players.get(3)!);
+        this.game1 = new PongGame(GameMode.online, Tournament.server!, this.players.get(0)!, this.players.get(1)!);
+        this.game2 = new PongGame(GameMode.online, Tournament.server!, this.players.get(2)!, this.players.get(3)!);
         const intervalId1: NodeJS.Timeout = setInterval(()=>
         {
             this.semiInterval(this.game1.winner, this.players.get(0)!, this.players.get(1)!, intervalId1, 4);
@@ -130,7 +153,7 @@ class Tournament
 
     startFinaleGame()
     {
-        this.finaleGame = new PongGame(GameMode.online, this.players.get(4)!, this.players.get(5)!);
+        this.finaleGame = new PongGame(GameMode.online, Tournament.server!, this.players.get(4)!, this.players.get(5)!);
         const intervalId: NodeJS.Timeout = setInterval(()=>
         {
             if (this.finaleGame.winner == 0)
@@ -155,14 +178,13 @@ class Tournament
     {
         const data: string = JSON.stringify(this.tournamentData);
 
+        console.log(this.tournamentData);
         this.players.forEach((player: playerInfo) =>
         {
             player.socket.send(data);
         });
     }
 }
-
-const tournaments: Map<string, Tournament> = new Map<string, Tournament>();
 
 function generateCode(): string
 {
@@ -180,16 +202,22 @@ function generateCode(): string
     return (code);
 }
 
-export function startTournament(host: playerInfo)
+export function startTournament(host: playerInfo, server: FastifyInstance)
 {
     const code: string = generateCode();
 
-    tournaments.set(code, new Tournament());
+    if (Tournament.server == null)
+        Tournament.server = server;
+    tournaments.set(code, new Tournament(code));
     joinTournament(host, code);
 }
 
 export function joinTournament(player: playerInfo, code: string) // maybe return true or false to show that is not possible to join
 {
+    // player.socket.onmessage= () =>
+    // {
+
+    // };
     if (!tournaments.has(code))
         console.log("tournament doesnt exist");
     else if (!tournaments.get(code)?.addPlayer(player))
