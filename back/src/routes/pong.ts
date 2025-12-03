@@ -428,8 +428,10 @@ class Court
             ? 'online' : this.gameMode == types.GameMode.local
             ? 'local' : 'ai';
         
-        const difficulty : string=
-            this.aiDifficulty == types.Difficulty.easy
+        const difficulty : string | null =
+            this.gameMode != types.GameMode.AI
+            ? null
+            : this.aiDifficulty == types.Difficulty.easy
             ? 'easy' : this.aiDifficulty == types.Difficulty.meduim
             ? 'meduim' : this.aiDifficulty == types.Difficulty.hard
             ? 'hard' : 'impossible'
@@ -440,9 +442,20 @@ class Court
             ? 'left' : 'right';
         
         const leftId: number = this.leftPlayerController.id;
-        const rightId: number = this.rightPlayerController.id;
+        const rightId: number | null = this.gameMode == types.GameMode.online
+            ? this.rightPlayerController.id
+            : null ;
         try
         {
+            console.log("Pong match values:", {
+                gameMode,
+                leftId,
+                rightId,
+                winner,
+                leftScore: this._scoreBoard.leftPlayerScore,
+                rightScore: this._scoreBoard.rightPlayerScore,
+                difficulty
+            });
             insertMatchStmt.run(
                 gameMode,
                 leftId,

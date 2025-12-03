@@ -16,7 +16,7 @@ const OnlineGame = () =>
         if (manager.gameSocket && !sentRef.current)
         {
             console.log("starting online game...");
-            const data = {gameType: "online", data: {player: {id: manager.user?.id}}};
+            const data = {gameType: "online", data: manager.user?.id};
             manager.gameSocket.send(JSON.stringify(data));
             sentRef.current = true;
             manager.gameSocket.onmessage = (msg) => 

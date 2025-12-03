@@ -51,7 +51,7 @@ export const SETTINGS: settingsInterface =
     paddleWidth: 12,
     paddleHeight: 80,
     // scoreboard
-    winningScore: 7,
+    winningScore: 1,
     smallFont: "20px Arial",
     largeFont: "30px Arial",
     scoreTextColor: "#F0EAD6", // eggshell white
