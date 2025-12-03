@@ -106,6 +106,42 @@ export async function getCurrentUser() {
 }
 
 /**
+ * Get current user's profile
+ */
+export async function getProfile() {
+  const response = await fetch(`${API_URL}/profile`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to get profile');
+  }
+
+  return result;
+}
+
+/**
+ * Get a user's profile by ID
+ */
+export async function getUserProfile(userId: number) {
+  const response = await fetch(`${API_URL}/profile/${userId}`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to get user profile');
+  }
+
+  return result;
+}
+
+/**
  * Upload user avatar
  */
 export async function uploadAvatar(file: File) {

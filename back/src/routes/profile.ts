@@ -9,6 +9,108 @@ const pump = promisify(pipeline);
 export default async function profileRoutes(app: FastifyInstance) {
   
   // ═══════════════════════════════════════════════════════════
+  // GET /profile - Get current user's profile
+  // ═══════════════════════════════════════════════════════════
+  app.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      // Try to get token from cookie first, then fallback to Authorization header
+      const authHeader = request.headers.authorization;
+      const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+      const token = (request as any).cookies?.access_token || bearer;
+      
+      if (!token) {
+        return reply.code(401).send({
+          error: 'Missing or invalid authorization',
+        });
+      }
+
+      // Verify token
+      const decoded = app.jwt.verify(token) as { id: number; email: string };
+
+      // Get user profile from database
+      const user = app.db
+        .prepare('SELECT id, email, username, display_name, avatar_url, created_at FROM users WHERE id = ?')
+        .get(decoded.id) as any;
+
+      if (!user) {
+        return reply.code(404).send({
+          error: 'User not found',
+        });
+      }
+
+      return reply.code(200).send({
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          display_name: user.display_name,
+          avatar_url: user.avatar_url,
+          created_at: user.created_at,
+        },
+      });
+    } catch (err) {
+      app.log.error(err);
+      return reply.code(500).send({
+        error: 'Failed to fetch profile',
+      });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // GET /profile/:id - Get a user's profile by ID
+  // ═══════════════════════════════════════════════════════════
+  app.get('/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    try {
+      // Try to get token from cookie first, then fallback to Authorization header
+      const authHeader = request.headers.authorization;
+      const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+      const token = (request as any).cookies?.access_token || bearer;
+      
+      if (!token) {
+        return reply.code(401).send({
+          error: 'Missing or invalid authorization',
+        });
+      }
+
+      // Verify token (authentication required to view profiles)
+      app.jwt.verify(token) as { id: number; email: string };
+
+      const userId = parseInt(request.params.id);
+      if (isNaN(userId)) {
+        return reply.code(400).send({
+          error: 'Invalid user ID',
+        });
+      }
+
+      // Get user profile from database (exclude sensitive info like email for other users)
+      const user = app.db
+        .prepare('SELECT id, username, display_name, avatar_url, created_at FROM users WHERE id = ?')
+        .get(userId) as any;
+
+      if (!user) {
+        return reply.code(404).send({
+          error: 'User not found',
+        });
+      }
+
+      return reply.code(200).send({
+        user: {
+          id: user.id,
+          username: user.username,
+          display_name: user.display_name,
+          avatar_url: user.avatar_url,
+          created_at: user.created_at,
+        },
+      });
+    } catch (err) {
+      app.log.error(err);
+      return reply.code(500).send({
+        error: 'Failed to fetch profile',
+      });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
   // POST /profile/avatar - Upload user avatar
   // ═══════════════════════════════════════════════════════════
   app.post('/avatar', async (request: FastifyRequest, reply: FastifyReply) => {

@@ -9,7 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 interface HeaderProps {
   user: any;
   onUserUpdate?: (user: any) => void;
-  activeRoute?: 'dashboard' | 'chat' | 'game';
+  activeRoute?: 'dashboard' | 'chat' | 'game' | 'profile';
 }
 
 export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }: HeaderProps) {
@@ -150,6 +150,12 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
               {showSettingsMenu && (
                 <div className="absolute right-0 top-full pt-2 w-48 z-20">
                   <div className="bg-[#a8b0c5] border-2 border-[#8aabd6] rounded-xl shadow-md overflow-hidden">
+                    <button
+                      onClick={() => router.push('/profile')}
+                      className="block w-full text-left px-4 py-3 font-pixelify text-sm text-black hover:bg-[#8aabd6] hover:text-white transition-colors"
+                    >
+                      My Profile
+                    </button>
                     <button
                       onClick={() => { setShowEditModal(true); setNewDisplayName(user?.display_name || user?.username || ""); }}
                       className="block w-full text-left px-4 py-3 font-pixelify text-sm text-black hover:bg-[#8aabd6] hover:text-white transition-colors"
