@@ -35,7 +35,8 @@ class Tournament
             player1: "-",
             player2: "-",
             winner: null
-        }
+        },
+        isPlaying: 1
     };
 
     constructor(code: string)
@@ -54,20 +55,23 @@ class Tournament
                 currPlayer.socket = player.socket;
             }
         });
-        if (doesExist) return (true);
-
+        if (doesExist)
+        {
+            this.broadcastTournamentData();
+            return (true);
+        }
         if (this.status != trnmtStatus.waiting)
             return (false);
         let rand: number = Math.floor(Math.random() * 4);
         for (; this.players.has(rand); rand = (rand + 1) % 4);
         this.players.set(rand, player);
         this.setPlayerName(rand, player.username);
-        this.broadcastTournamentData();
         if (this.players.size == 4)
         {
             this.status = trnmtStatus.startingSemi;
             setTimeout(() => this.startSemiGame(), 3000);
         }
+        this.broadcastTournamentData();
         return (true);
     }
     
@@ -117,11 +121,19 @@ class Tournament
             return ;
         if (winner == 1)
         {
+            if (pos == 4)
+                this.players.delete(0);
+            else
+                this.players.delete(2);
             this.players.set(pos, player1);
             this.tournamentData.semiFinals[pos - 4].winner = 'player1';
         }
         else
         {
+            if (pos == 4)
+                this.players.delete(1);
+            else
+                this.players.delete(3);
             this.players.set(pos, player2);
             this.tournamentData.semiFinals[pos - 4].winner = 'player2';
         }
@@ -133,6 +145,7 @@ class Tournament
         this.status = trnmtStatus.playingSemi;
         this.game1 = new PongGame(GameMode.online, Tournament.server!, this.players.get(0)!, this.players.get(1)!);
         this.game2 = new PongGame(GameMode.online, Tournament.server!, this.players.get(2)!, this.players.get(3)!);
+        this.broadcastTournamentData();
         const intervalId1: NodeJS.Timeout = setInterval(()=>
         {
             this.semiInterval(this.game1.winner, this.players.get(0)!, this.players.get(1)!, intervalId1, 4);
@@ -143,8 +156,19 @@ class Tournament
         }, 1000);
         const intervalId3: NodeJS.Timeout = setInterval(() =>
         {
-            if (this.players.size == 6)
+            if (this.players.has(4) && this.players.has(5))
             {
+                this.status = trnmtStatus.startingFinal;
+                this.players.forEach((players: playerInfo) =>
+                {
+                    players.socket.onmessage = (msg) =>
+                    {
+                        const {gameType, data} = JSON.parse(msg.data.toString());
+                        startTournament({id: data, socket: players.socket, username: "John Doe"}, Tournament.server!);
+                    }
+                });
+                this.tournamentData.final.player1 = this.players.get(4)!.username;
+                this.tournamentData.final.player2 = this.players.get(5)!.username;
                 setTimeout(() => this.startFinaleGame(), 3000);
                 clearInterval(intervalId3);
             }
@@ -153,7 +177,9 @@ class Tournament
 
     startFinaleGame()
     {
+        this.status = trnmtStatus.playingFinal;
         this.finaleGame = new PongGame(GameMode.online, Tournament.server!, this.players.get(4)!, this.players.get(5)!);
+        this.broadcastTournamentData();
         const intervalId: NodeJS.Timeout = setInterval(()=>
         {
             if (this.finaleGame.winner == 0)
@@ -168,6 +194,15 @@ class Tournament
                 this.players.set(6, this.players.get(5)!);
                 this.tournamentData.final.winner = 'player2';
             }
+            this.status = trnmtStatus.finished;
+            this.players.forEach((players: playerInfo) =>
+            {
+                players.socket.onmessage = (msg) =>
+                {
+                    const {gameType, data} = JSON.parse(msg.data.toString());
+                    startTournament({id: data, socket: players.socket, username: "John Doe"}, Tournament.server!);
+                }
+            });
             this.broadcastTournamentData();
 
             clearInterval(intervalId);
@@ -176,13 +211,31 @@ class Tournament
 
     broadcastTournamentData()
     {
-        const data: string = JSON.stringify(this.tournamentData);
+        this.tournamentData.status = this.statusString;
+       
 
-        console.log(this.tournamentData);
-        this.players.forEach((player: playerInfo) =>
+        // console.log(this.tournamentData);
+        this.tournamentData.isPlaying = 1;
+        this.players.forEach(( player: playerInfo, key: number) =>
         {
+            if (this.status == trnmtStatus.playingFinal)
+                this.tournamentData.isPlaying = key < 4 ? 0 : 1;
+            const data: string = JSON.stringify(this.tournamentData);
+            console.log("hhhhhhh", this.tournamentData.isPlaying);
             player.socket.send(data);
         });
+        // });
+        // this.players.forEach(( player: playerInfo, key: number) =>
+        // {
+        //     if (this.status == trnmtStatus.playingSemi
+        //         || (this.status == trnmtStatus.playingFinal && (key == 4 || key == 5)))
+        //         this.tournamentData.isPlaying = true;
+        //     else
+        //         this.tournamentData.isPlaying = false;
+        //     console.log("hhhhhhh", this.tournamentData.isPlaying);
+        //     const data: string = JSON.stringify(this.tournamentData);
+        //     player.socket.send(data);
+        // });
     }
 }
 
@@ -202,22 +255,41 @@ function generateCode(): string
     return (code);
 }
 
+const playersInTournaments: Map<number, string> = new Map<number, string>();
+
+function findPlayer(player: playerInfo): boolean
+{
+    const code: string | null = playersInTournaments.get(player.id) ?? null;
+
+    if (code)
+    {
+        tournaments.get(code)!.addPlayer(player);
+        console.log("user:", player.id, "rejoined");
+        return (true);
+    }
+    return (false);
+}
+
 export function startTournament(host: playerInfo, server: FastifyInstance)
 {
+    console.log("start!!!");
+    if (findPlayer(host))
+        return ;
     const code: string = generateCode();
 
+    playersInTournaments.set(host.id, code);
     if (Tournament.server == null)
         Tournament.server = server;
     tournaments.set(code, new Tournament(code));
     joinTournament(host, code);
+    
 }
 
 export function joinTournament(player: playerInfo, code: string) // maybe return true or false to show that is not possible to join
 {
-    // player.socket.onmessage= () =>
-    // {
-
-    // };
+    if (findPlayer(player))
+        return ;
+    playersInTournaments.set(player.id, code);
     if (!tournaments.has(code))
         console.log("tournament doesnt exist");
     else if (!tournaments.get(code)?.addPlayer(player))

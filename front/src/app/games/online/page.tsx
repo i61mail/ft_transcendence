@@ -3,6 +3,9 @@
 import useglobalStore from "@/store/globalStore";
 import { startGame } from "@/lib/pong/game";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+
+
 
 const OnlineGame = () =>
 {
@@ -10,11 +13,19 @@ const OnlineGame = () =>
     const [start, setStart] = useState(false);
     const sentRef = useRef<boolean>(false);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const router = useRouter(); 
 
+    const handleFinished = () => {
+        if (manager.gameSocket)
+        {
+            router.push('/games/tournament');
+        }
+    };
     useEffect(() =>
     {
         if (manager.gameSocket && !sentRef.current)
         {
+            
             console.log("starting online game...");
             const data = {gameType: "online", data: manager.user?.id};
             manager.gameSocket.send(JSON.stringify(data));
@@ -25,8 +36,8 @@ const OnlineGame = () =>
                 setStart(true);
                 if (canvasRef.current && manager.gameSocket)
                 {
-                    console.log("start")
-                    startGame(canvasRef.current, manager.gameSocket, msg.data);
+                    console.log("start");
+                    startGame(canvasRef.current, manager.gameSocket, msg.data, handleFinished);
                 }
             }
         }

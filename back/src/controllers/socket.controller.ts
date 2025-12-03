@@ -268,7 +268,7 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
         else if (gameType === "tournament")
             startTournament({id: data, socket: socket, username: "John Doe"}, server);
         else if (gameType === "joinTournament")
-          joinTournament({id: data.id, socket: socket,username: "James bond"}, data.code);
+            joinTournament({id: data.id, socket: socket,username: "James bond"}, data.code);
     }
 
     socket.onclose = () =>

@@ -3,6 +3,7 @@ import { EventEmitter } from "events";
 import type { WebSocket } from "ws";
 import { FastifyInstance } from 'fastify';
 import { playerInfo } from "../types/playerInfo.types";
+import { startTournament } from "./tournament";
 
 // const fastify = Fastify({ logger: true });
 // fastify.register(dbPlugin);
@@ -482,6 +483,8 @@ class Court
         if (this._scoreBoard.winner != 0)
         {
             this._isMatchStarted = false;
+            this.leftPlayerController.socket.send("finished");
+            this.rightPlayerController.socket.send("finished");
             this.addToDatabase();
         }
         else

@@ -1,4 +1,6 @@
+"use client";
 import * as intf from "./interfaces";
+import { useRouter } from "next/navigation";
 
 class ScoreBoard
 {
@@ -249,7 +251,12 @@ class PongGame
 
 }
 
-export function startGame(canvas: HTMLCanvasElement, socket: WebSocket, data: string)
+export function startGame(
+    canvas: HTMLCanvasElement,
+    socket: WebSocket,
+    data: string,
+    onFinish: () => void
+)
 {
     let pong: PongGame;
 
@@ -260,7 +267,9 @@ export function startGame(canvas: HTMLCanvasElement, socket: WebSocket, data: st
 
     socket.onmessage = (msg) =>
     {
-        console.log("on message working!")
-        pong.listen(JSON.parse(msg.data));
+        if (msg.data == "finished")
+            onFinish();
+        else
+            pong.listen(JSON.parse(msg.data));
     }
 }

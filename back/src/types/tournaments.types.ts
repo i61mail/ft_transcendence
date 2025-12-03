@@ -18,6 +18,7 @@ interface Match
 export interface TournamentData
 {
     code: string;
+    isPlaying: number;
     status: string;
     semiFinals: Match[];
     final: Match;

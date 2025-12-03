@@ -1,37 +1,12 @@
-"use client"
+// app/tournament/page.tsx
+import PongTournament from "./PongTournament";
 
-import useglobalStore from "@/store/globalStore";
-import { useEffect, useRef, useState } from "react";
+type PageProps = {
+  searchParams: Promise<{ code?: string }>;
+};
 
-const Tournament = () =>
-{
-    const manager = useglobalStore();
-    const [start, setStart] = useState(false);
-    const sentRef = useRef<boolean>(false);
-
-    useEffect(() =>
-    {
-        if (manager.gameSocket && !sentRef.current)
-        {
-            console.log("starting tournament...");
-            const data = {gameType: "tournament", data: {player: {id: manager.user?.id}}};
-            manager.gameSocket.send(JSON.stringify(data));
-            sentRef.current = true;
-            manager.gameSocket.onmessage = (msg) =>
-            {
-                const state = JSON.parse(msg.data.toString());
-                console.log("received tournament: ", state);
-                setStart(true);
-            }
-        }
-    }, [manager.gameSocket])
-
-    return (
-        <>
-            {!start && <div>Waiting for others...</div>}
-            {start && <div>tournament begins</div>}
-        </>
-    )
+export default async function Page({ searchParams }: PageProps) {
+  const sp = await searchParams;         // unwrap the async value
+  const code = sp.code ?? null;         // now this is safe
+  return <PongTournament initialCode={code} />;
 }
-
-export default Tournament;
