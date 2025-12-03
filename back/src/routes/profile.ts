@@ -267,4 +267,165 @@ export default async function profileRoutes(app: FastifyInstance) {
       return reply.code(500).send({ error: 'Failed to search users' });
     }
   });
+
+  // ═══════════════════════════════════════════════════════════
+  // GET /profile/match-history - Get current user's match history
+  // ═══════════════════════════════════════════════════════════
+  app.get('/match-history', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const authHeader = request.headers.authorization;
+      const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+      const token = (request as any).cookies?.access_token || bearer;
+
+      if (!token) {
+        return reply.code(401).send({ error: 'Missing or invalid authorization' });
+      }
+
+      const decoded = app.jwt.verify(token) as { id: number; email: string };
+
+      // Get pong matches where user is either left or right player
+      const matches = app.db
+        .prepare(`
+          SELECT 
+            pm.id,
+            pm.game_mode,
+            pm.left_player_id,
+            pm.right_player_id,
+            pm.winner,
+            pm.left_score,
+            pm.right_score,
+            pm.ai_difficulty,
+            pm.created_at,
+            u1.username as left_player_username,
+            u1.display_name as left_player_display_name,
+            u1.avatar_url as left_player_avatar,
+            u2.username as right_player_username,
+            u2.display_name as right_player_display_name,
+            u2.avatar_url as right_player_avatar
+          FROM pong_matches pm
+          LEFT JOIN users u1 ON pm.left_player_id = u1.id
+          LEFT JOIN users u2 ON pm.right_player_id = u2.id
+          WHERE pm.left_player_id = ? OR pm.right_player_id = ?
+          ORDER BY pm.created_at DESC
+          LIMIT 50
+        `)
+        .all(decoded.id, decoded.id);
+
+      // Calculate stats
+      let wins = 0;
+      let losses = 0;
+
+      matches.forEach((match: any) => {
+        const isLeftPlayer = match.left_player_id === decoded.id;
+        const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
+        
+        if (isWinner) wins++;
+        else losses++;
+      });
+
+      const totalGames = wins + losses;
+      const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+
+      return reply.code(200).send({
+        stats: {
+          wins,
+          losses,
+          totalGames,
+          winRate
+        },
+        matches
+      });
+    } catch (err) {
+      app.log.error(err);
+      return reply.code(500).send({ error: 'Failed to fetch match history' });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // GET /profile/:id/match-history - Get a user's match history by ID
+  // ═══════════════════════════════════════════════════════════
+  app.get('/:id/match-history', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    try {
+      const authHeader = request.headers.authorization;
+      const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+      const token = (request as any).cookies?.access_token || bearer;
+
+      if (!token) {
+        return reply.code(401).send({ error: 'Missing or invalid authorization' });
+      }
+
+      // Verify token (authentication required)
+      app.jwt.verify(token) as { id: number; email: string };
+
+      const userId = parseInt(request.params.id);
+      if (isNaN(userId)) {
+        return reply.code(400).send({ error: 'Invalid user ID' });
+      }
+
+      // Check if user exists
+      const user = app.db
+        .prepare('SELECT id FROM users WHERE id = ?')
+        .get(userId);
+
+      if (!user) {
+        return reply.code(404).send({ error: 'User not found' });
+      }
+
+      // Get pong matches where user is either left or right player
+      const matches = app.db
+        .prepare(`
+          SELECT 
+            pm.id,
+            pm.game_mode,
+            pm.left_player_id,
+            pm.right_player_id,
+            pm.winner,
+            pm.left_score,
+            pm.right_score,
+            pm.ai_difficulty,
+            pm.created_at,
+            u1.username as left_player_username,
+            u1.display_name as left_player_display_name,
+            u1.avatar_url as left_player_avatar,
+            u2.username as right_player_username,
+            u2.display_name as right_player_display_name,
+            u2.avatar_url as right_player_avatar
+          FROM pong_matches pm
+          LEFT JOIN users u1 ON pm.left_player_id = u1.id
+          LEFT JOIN users u2 ON pm.right_player_id = u2.id
+          WHERE pm.left_player_id = ? OR pm.right_player_id = ?
+          ORDER BY pm.created_at DESC
+          LIMIT 50
+        `)
+        .all(userId, userId);
+
+      // Calculate stats
+      let wins = 0;
+      let losses = 0;
+
+      matches.forEach((match: any) => {
+        const isLeftPlayer = match.left_player_id === userId;
+        const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
+        
+        if (isWinner) wins++;
+        else losses++;
+      });
+
+      const totalGames = wins + losses;
+      const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+
+      return reply.code(200).send({
+        stats: {
+          wins,
+          losses,
+          totalGames,
+          winRate
+        },
+        matches
+      });
+    } catch (err) {
+      app.log.error(err);
+      return reply.code(500).send({ error: 'Failed to fetch match history' });
+    }
+  });
 }

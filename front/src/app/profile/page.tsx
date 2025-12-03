@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import { getProfile, API_URL } from "@/lib/api";
+import { getProfile, getMatchHistory, API_URL } from "@/lib/api";
 
 interface UserProfile {
   id: number;
@@ -14,10 +14,37 @@ interface UserProfile {
   created_at: string;
 }
 
+interface MatchStats {
+  wins: number;
+  losses: number;
+  totalGames: number;
+  winRate: number;
+}
+
+interface Match {
+  id: number;
+  game_mode: string;
+  left_player_id: number;
+  right_player_id: number | null;
+  winner: string;
+  left_score: number;
+  right_score: number;
+  ai_difficulty: string | null;
+  created_at: string;
+  left_player_username: string;
+  left_player_display_name: string | null;
+  left_player_avatar: string | null;
+  right_player_username: string | null;
+  right_player_display_name: string | null;
+  right_player_avatar: string | null;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +64,12 @@ export default function ProfilePage() {
         // Load profile
         const profileData = await getProfile();
         setProfile(profileData.user);
+
+        // Load match history
+        const matchData = await getMatchHistory();
+        setMatchStats(matchData.stats);
+        setMatches(matchData.matches);
+
         setLoading(false);
       } catch (e: any) {
         console.error("Error loading profile:", e);
@@ -168,25 +201,71 @@ export default function ProfilePage() {
 
             {/* Game Stats section */}
             <div className="w-full mt-6 bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Game Statistics</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Game Statistics (Pong)</h2>
               <div className="grid grid-cols-3 gap-4 mb-4">
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-green-600">0</p>
+                  <p className="text-3xl font-bold text-green-600">{matchStats?.wins || 0}</p>
                   <p className="text-sm text-gray-500">Wins</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-red-600">0</p>
+                  <p className="text-3xl font-bold text-red-600">{matchStats?.losses || 0}</p>
                   <p className="text-sm text-gray-500">Losses</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-blue-600">0%</p>
+                  <p className="text-3xl font-bold text-blue-600">{matchStats?.winRate || 0}%</p>
                   <p className="text-sm text-gray-500">Win Rate</p>
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mt-4 text-center italic">
-                Stats will be tracked in future updates
-              </p>
+              {matchStats && matchStats.totalGames === 0 && (
+                <p className="text-xs text-gray-400 mt-4 text-center italic">
+                  No games played yet. Start playing to see your stats!
+                </p>
+              )}
             </div>
+
+            {/* Match History */}
+            {matches && matches.length > 0 && (
+              <div className="w-full mt-6 bg-white rounded-2xl p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Matches</h2>
+                <div className="space-y-3">
+                  {matches.slice(0, 10).map((match) => {
+                    const isLeftPlayer = match.left_player_id === profile?.id;
+                    const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
+                    const opponentName = isLeftPlayer 
+                      ? (match.right_player_display_name || match.right_player_username || 'AI')
+                      : (match.left_player_display_name || match.left_player_username);
+                    const userScore = isLeftPlayer ? match.left_score : match.right_score;
+                    const opponentScore = isLeftPlayer ? match.right_score : match.left_score;
+
+                    return (
+                      <div 
+                        key={match.id}
+                        className={`flex items-center justify-between p-4 rounded-xl border-2 ${
+                          isWinner ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${isWinner ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                          <div>
+                            <p className="font-semibold text-gray-800">
+                              {isWinner ? '🏆 Victory' : '💔 Defeat'} vs {opponentName}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(match.created_at).toLocaleDateString()} • {match.game_mode}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-gray-800">
+                            {userScore} - {opponentScore}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>

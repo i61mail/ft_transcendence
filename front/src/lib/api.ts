@@ -191,3 +191,39 @@ export async function updateProfile(data: { display_name?: string }) {
     throw err;
   }
 }
+
+/**
+ * Get current user's match history
+ */
+export async function getMatchHistory() {
+  const response = await fetch(`${API_URL}/profile/match-history`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to get match history');
+  }
+
+  return result;
+}
+
+/**
+ * Get a user's match history by ID
+ */
+export async function getUserMatchHistory(userId: number) {
+  const response = await fetch(`${API_URL}/profile/${userId}/match-history`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to get user match history');
+  }
+
+  return result;
+}
