@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
-    {"offset": {"line": 15, "column": 0}, "map": {"version":3,"sources":["file:///home/shamdoun/Desktop/ft_transcendence/frontend/app/page.tsx"],"sourcesContent":["import Login from \"../components/features/auth/Login\";\nimport { useAuth } from \"@/context/AuthProvider\";\nimport {useRouter} from \"next/navigation\";\n\nexport default function Home() {\n  const router = useRouter();\n  const auth = useAuth();\n  if (!auth.isLogged)\n    router.push('/login');\n  \n  return (\n    <main>\n      \n    </main>\n  );\n}\n"],"names":[],"mappings":";;;;;AACA;AACA;AAAA;;;;AAEe,SAAS;IACtB,MAAM,SAAS,IAAA,6OAAS;IACxB,MAAM,OAAO,IAAA,8KAAO;IACpB,IAAI,CAAC,KAAK,QAAQ,EAChB,OAAO,IAAI,CAAC;IAEd,qBACE,yRAAC;;;;;AAIL","debugId":null}}]
-}

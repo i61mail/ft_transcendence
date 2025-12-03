@@ -1,4 +1,5 @@
 import { FriendshipProps, User, MessageProps } from "@/types/chat.types";
+import { stat } from "fs";
 import { Frijole, Maname } from "next/font/google";
 import { create } from "zustand";
 
@@ -20,6 +21,7 @@ interface GLobalState {
     messages: MessageProps[],
     latestMessage: MessageProps | null,
     status: Status | null,
+    onlineUsers: Set<number>,
     chatIsReady: boolean,
     setChatIsReady: (s: boolean) => void,
     updateGameSocket: (s: WebSocket | null) => void,
@@ -32,7 +34,9 @@ interface GLobalState {
     updateCurrentChat: (id: number) => void,
     loadMessage: (messages: MessageProps[]) => void,
     addMessage: (message: MessageProps) => void,
-    updateLatestMessage: (message: MessageProps | null) => void
+    updateLatestMessage: (message: MessageProps | null) => void,
+    addOnlineUser: (id: number) => void,
+    removeOnlineUser: (id: number) => void
 }
 
 
@@ -50,6 +54,7 @@ const useglobalStore = create<GLobalState>((set,get) => (
     latestMessage: null,
     status: null,
     chatIsReady: false,
+    onlineUsers: new Set<number>(),
     setChatIsReady: (s: boolean) =>
     {
         set({chatIsReady: s});
@@ -87,17 +92,16 @@ const useglobalStore = create<GLobalState>((set,get) => (
             }
             newSocket.onmessage = (msg) =>
             {
-              const {type, data} = JSON.parse(msg.data.toString());
-              console.log("received", type, data);
+                const {type, data} = JSON.parse(msg.data.toString());
+                console.log("received", type, data);
                 if (type === "friend_online")
-              {
-                  get().updateUserStatus({id: data, status: true});
-              }
-              else if (type === "friend_offline")
-              {
-                  get().updateUserStatus({id: data, status: false});            
-              }
-
+                {
+                    get().addOnlineUser(data);
+                }
+                else if (type === "friend_offline")
+                {
+                    get().removeOnlineUser(data);            
+                }
             }
         }
     },
@@ -125,7 +129,24 @@ const useglobalStore = create<GLobalState>((set,get) => (
     },
     addMessage: (message: MessageProps) =>
     {
+        console.log('Adding message to store:', message);
         set((state) => ({messages: [message, ...state.messages]}))
+    },
+    addOnlineUser(id: number)
+    {
+        set((state) =>{
+            const updated = new Set(state.onlineUsers);
+            updated.add(id);
+            return ({onlineUsers: updated});
+        })
+    },
+    removeOnlineUser(id: number)
+    {
+        set((state)=>{
+            const updated = new Set(state.onlineUsers);
+            updated.delete(id);
+            return ({onlineUsers: updated})
+        })
     },
     updateGameSocket: (s: WebSocket | null) =>
     {

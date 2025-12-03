@@ -12,6 +12,7 @@ const OnlineGame = () =>
     const sentRef = useRef<boolean>(false);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const router = useRouter();
+
     useEffect(() =>
     {
         if (!manager.gameSocket)
@@ -37,7 +38,6 @@ const OnlineGame = () =>
 
     return (
         <>
-            {/* {!start && <div>Loading...</div>} */}
             {<canvas ref={canvasRef} width={800} height={600}>
             if you see this message, than the canvas did not load propraly
         </canvas>}

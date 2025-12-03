@@ -1,6 +1,8 @@
 import * as types from "../types/pong.types";
 import { EventEmitter } from "events";
 import type { WebSocket } from "ws";
+import { FastifyInstance, FastifyRequest } from 'fastify';
+import { playerInfo } from "../types/playerInfo.types";
 
 // const fastify = Fastify({ logger: true });
 // fastify.register(dbPlugin);
@@ -209,15 +211,16 @@ abstract class Controller
     public  id: number;
     public  _status: types.keyStat;
 
-    constructor(paddle: Padle, player: types.playerInfo)
+    constructor(paddle: Padle, player: playerInfo)
     {
         this.paddle = paddle;
         this._status = types.keyStat.none;
-        this.socket = player.socket
-        this.id = player.id
+        this.socket = player.socket;
+        this.id = player.id;
     }
 
     abstract controlling(): void;
+
 
     get velocity()
     {
@@ -241,7 +244,7 @@ abstract class Controller
 
 class LocalController extends Controller // remove this later
 {
-    constructor(paddle: Padle, player: types.playerInfo)
+    constructor(paddle: Padle, player: playerInfo)
     {
         super(paddle, player);
     }
@@ -252,7 +255,6 @@ class LocalController extends Controller // remove this later
     {
         socket.onmessage = (msg) => {
             const data: string = msg.data.toString();
-            console.log("for local", data);
             if (data.length != 2)
                 return ;
             if (data[0] == leftPlayer.paddle.playerIndex.toString())
@@ -265,7 +267,7 @@ class LocalController extends Controller // remove this later
 
 class onlineController extends Controller
 {
-    constructor(paddle: Padle, player: types.playerInfo)
+    constructor(paddle: Padle, player: playerInfo)
     {
         super(paddle, player);
     }
@@ -287,7 +289,7 @@ class AIController extends Controller
     private _target: number = 0;
     private _difficulty: types.Difficulty;
 
-    constructor(paddle: Padle, court: Court, difficulty: types.Difficulty, player: types.playerInfo)
+    constructor(paddle: Padle, court: Court, difficulty: types.Difficulty, player: playerInfo)
     {
         super(paddle, player);
 
@@ -353,9 +355,16 @@ class Court
     public  _scoreBoard: ScoreBoard;
     private _ball: Ball;
     private aiDifficulty: types.Difficulty;
+    private server: FastifyInstance;
 
-    constructor(gameMode: types.GameMode, difficulty: types.Difficulty, player1 : types.playerInfo, player2 : types.playerInfo)
+    constructor(gameMode: types.GameMode,
+        difficulty: types.Difficulty,
+        player1 : playerInfo,
+        player2 : playerInfo,
+        server: FastifyInstance
+    )
     {
+        this.server = server;
         this._ball = new Ball(this);
         this.gameMode = gameMode;
         this.aiDifficulty = difficulty;
@@ -400,59 +409,67 @@ class Court
         this._ball.speed = Ball.minSpeed;
     }
 
-    // addToDatabase()
-    // {
-    //     const insertMatchStmt = fastify.db.prepare(`
-    //         INSERT INTO pong_matches (
-    //             game_mode, 
-    //             left_player_id, 
-    //             right_player_id, 
-    //             winner, 
-    //             left_score, 
-    //             right_score, 
-    //             ai_difficulty
-    //         ) VALUES (
-    //             @game_mode, 
-    //             @left_player_id, 
-    //             @right_player_id, 
-    //             @winner, 
-    //             @left_score, 
-    //             @right_score, 
-    //             @ai_difficulty
-    //         )
-    //     `);
-    //         const gameMode : 'online' | 'local' | 'ai' =
-    //             this.gameMode == intf.GameMode.online
-    //             ? 'online' : this.gameMode == intf.GameMode.local
-    //             ? 'local' : 'ai';
-            
-    //         const difficulty : string | null =
-    //             this.gameMode != intf.GameMode.AI
-    //             ? null : this.aiDifficulty == intf.Difficulty.easy
-    //             ? 'easy' : this.aiDifficulty == intf.Difficulty.meduim
-    //             ? 'meduim' : this.aiDifficulty == intf.Difficulty.hard
-    //             ? 'hard' : 'impossible'
+    addToDatabase()
+    {
+        const insertMatchStmt = this.server.db.prepare(`
+            INSERT INTO pong_matches (
+                game_mode, 
+                left_player_id, 
+                right_player_id, 
+                winner, 
+                left_score, 
+                right_score, 
+                ai_difficulty
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+        const gameMode : string =
+            this.gameMode == types.GameMode.online
+            ? 'online' : this.gameMode == types.GameMode.local
+            ? 'local' : 'ai';
+        
+        const difficulty : string | null =
+            this.gameMode != types.GameMode.AI
+            ? null
+            : this.aiDifficulty == types.Difficulty.easy
+            ? 'easy' : this.aiDifficulty == types.Difficulty.meduim
+            ? 'meduim' : this.aiDifficulty == types.Difficulty.hard
+            ? 'hard' : 'impossible'
 
 
-    //         const matchData: intf.PongDataBase = {
-    //             game_mode: gameMode,
-    //             left_player_id: this.leftPlayerController.id,
-    //             right_player_id: this.rightPlayerController.id,
-    //             winner: this._scoreBoard.winner == intf.PlayerIndex.leftPlayer
-    //                     ? 'left' : 'right',
-    //             left_score: this._scoreBoard.leftPlayerScore,
-    //             right_score: this._scoreBoard.rightPlayerScore,
-    //             ai_difficulty: difficulty
-    //         };
-    //         try
-    //         {
-    //             insertMatchStmt.run(matchData);
-    //         }
-    //         catch (err)
-    //         {
-    //             console.error("Failed to insert match:", err);
-    //         }
-    // }
+
+        const winner: string = this._scoreBoard.winner == types.PlayerIndex.leftPlayer
+            ? 'left' : 'right';
+        
+        const leftId: number = this.leftPlayerController.id;
+        const rightId: number | null = this.gameMode == types.GameMode.online
+            ? this.rightPlayerController.id
+            : null ;
+        try
+        {
+            console.log("Pong match values:", {
+                gameMode,
+                leftId,
+                rightId,
+                winner,
+                leftScore: this._scoreBoard.leftPlayerScore,
+                rightScore: this._scoreBoard.rightPlayerScore,
+                difficulty
+            });
+            insertMatchStmt.run(
+                gameMode,
+                leftId,
+                rightId,
+                winner,
+                this._scoreBoard.leftPlayerScore,
+                this._scoreBoard.rightPlayerScore,
+                difficulty
+            );
+        }
+        catch (err)
+        {
+            console.error("Failed to insert match:", err);
+        }
+    }
 
     scorePoint(playerIndex: number)
     {
@@ -464,7 +481,7 @@ class Court
         if (this._scoreBoard.winner != 0)
         {
             this._isMatchStarted = false;
-            // this.addToDatabase();
+            this.addToDatabase();
         }
         else
             this.spawnBall();
@@ -513,9 +530,15 @@ export class PongGame
 {
     private _court: Court;
 
-    constructor(gameMode: types.GameMode, player1 : types.playerInfo, player2 : types.playerInfo = player1, difficulty: types.Difficulty = types.Difficulty.impossible)
+    constructor(
+        gameMode: types.GameMode,
+        server: FastifyInstance,
+        player1 : playerInfo,
+        player2 : playerInfo = player1,
+        difficulty: types.Difficulty = types.Difficulty.impossible
+    )
     {
-        this._court = new Court(gameMode, difficulty, player1, player2);
+        this._court = new Court(gameMode, difficulty, player1, player2, server);
         let that = this;
         this._court.listenToPlayers();
         this.run();
@@ -545,23 +568,33 @@ export class PongGame
     }
 }
 
-
-export function pongOnline(player1 : types.playerInfo, player2 : types.playerInfo)
+export function pongOnline(
+    player1 : playerInfo,
+    player2 : playerInfo,
+    server: FastifyInstance
+)
 {
     player1.socket.send(JSON.stringify({gm: types.GameMode.local, plyI: 0}));
     player2.socket.send(JSON.stringify({gm: types.GameMode.local, plyI: 1}));
 
-    let pong: PongGame = new PongGame(types.GameMode.online, player1, player2);
+    let pong: PongGame = new PongGame(types.GameMode.online, server, player1, player2);
 }
 
-export function pongLocal(player : types.playerInfo)
+export function pongLocal(
+    player : playerInfo,
+    server: FastifyInstance
+)
 {
     player.socket.send(JSON.stringify({gm: types.GameMode.local, plyI: 0}));
-    let pong: PongGame = new PongGame(types.GameMode.local, player);
+    let pong: PongGame = new PongGame(types.GameMode.local, server, player);
 }
 
-export function pongAI(player : types.playerInfo, difficulty: types.Difficulty)
+export function pongAI(
+    player : playerInfo,
+    difficulty: types.Difficulty,
+    server: FastifyInstance
+)
 {
     player.socket.send(JSON.stringify({gm: types.GameMode.local, plyI: 0}));
-    let pong: PongGame = new PongGame(types.GameMode.AI, player, undefined, difficulty);
+    let pong: PongGame = new PongGame(types.GameMode.AI, server, player, undefined, difficulty);
 }

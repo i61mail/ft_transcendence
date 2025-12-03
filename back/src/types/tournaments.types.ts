@@ -19,11 +19,3 @@ export interface TournamentData {
   semiFinals: Match[];
   final: Match;
 }
-
-
-export interface playerInfo
-{
-  id: number;
-  socket: WebSocket;
-  username: string;
-}

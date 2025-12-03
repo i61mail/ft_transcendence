@@ -14,6 +14,7 @@ import oauthRoutes from './routes/oauth';
 import profileRoutes from './routes/profile';
 import messageRoutes from './routes/message';
 import friendshipRoutes from './routes/friendship';
+import blockRoutes from './routes/block';
 import socketRoutes from './routes/socket';
 import fastifyStatic from '@fastify/static';
 import { WebSocket } from 'ws';
@@ -137,6 +138,7 @@ app.register(oauthRoutes, { prefix: '/auth' });
 app.register(profileRoutes, { prefix: '/profile' });
 app.register(messageRoutes);
 app.register(friendshipRoutes);
+app.register(blockRoutes);
 app.register(socketRoutes);
 
 // Health check endpoint

@@ -63,12 +63,6 @@ export interface winnerMessage
 
 export type Symbol = '' | 'X' | 'O';
 
-export interface playerInfo
-{
-  id: number;
-  socket: WebSocket;
-}
-
 export interface tttDataBase
 {
 	x_player_id: number,

@@ -1,4 +1,5 @@
 'use client'
+import UserProfilePage from '@/app/profile/[id]/page';
 import { getCurrentUser } from '@/lib/api';
 import useglobalStore from '@/store/globalStore';
 import { FriendshipProps, MessageProps, User } from '@/types/chat.types';
@@ -12,7 +13,7 @@ const  SocketManager = () =>
     const manager = useglobalStore();
     const router = useRouter();
     const mounted = useRef<Boolean>(false);
-
+    
     useEffect(() =>
     {
         if (mounted.current || manager.socket || !manager.user)
@@ -24,11 +25,8 @@ const  SocketManager = () =>
             console.log("---", manager.socket, manager.user);
             manager.createSocket();
             mounted.current = true;
-            
         }
     }, [manager.socket, manager.user]);
-
-
 
     useEffect(()=>
     {
@@ -104,29 +102,35 @@ const  SocketManager = () =>
         {
             manager.socket.onmessage = (msg) =>
             {
-              const {type, data} = JSON.parse(msg.data);
-              console.log("received ", type, data);
+                const {type, data} = JSON.parse(msg.data);
+              
               if (type === "message")
               {
                   const {receiver, sender, content, id, friendship_id} = data;
                   const newMessage: MessageProps = {sender: sender, receiver: receiver, content: content, id: id, friendship_id: friendship_id};
+                  
+                  // Only ignore if I'm the SENDER (echo back to me)
+                  // Accept if I'm the RECEIVER (someone else sent to me)
+                  if (sender === manager.user?.id) {
+                      return;
+                  }
+                  
                   if (manager.pointedUser?.id == friendship_id)
                   {
                       manager.addMessage(newMessage);
                   }
                   else
                   {
-                    console.log("updating latest message...");
                     manager.updateLatestMessage(newMessage);
                   }
               }
               else if (type === "friend_online")
               {
-                  manager.updateUserStatus({id: data, status: true});
+                    manager.addOnlineUser(data);
               }
               else if (type === "friend_offline")
               {
-                  manager.updateUserStatus({id: data, status: false});            
+                    manager.removeOnlineUser(data);
               }
             }
         }

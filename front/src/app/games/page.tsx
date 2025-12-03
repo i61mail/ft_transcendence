@@ -8,7 +8,7 @@ import React, { useEffect, useRef } from "react";
 const Games = () =>
 {
     const manager = useglobalStore();
-    const gameSocketRef = useRef<WebSocket | null>(null);
+
     useEffect(() =>
     {
         if (manager.gameSocket)

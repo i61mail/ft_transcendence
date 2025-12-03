@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import useGlobalStore from "@/store/globalStore";
 import Header from "@/components/Header";
 import AllChats from "@/components/chat/AllChats";
-import { read } from "fs";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -12,7 +11,7 @@ export default function chatsLayout({children}: {children: React.ReactNode})
 {
     const manager = useGlobalStore();
     const router = useRouter();   
-    const [ready, setReady] = useState(false);
+
     useEffect(()=>
     {
       const checkAuth = async () => {
@@ -35,14 +34,6 @@ export default function chatsLayout({children}: {children: React.ReactNode})
       checkAuth();
     }, []);
 
-    useEffect(()=>
-    {
-      console.log(manager.chatIsReady);
-      if (manager.chatIsReady)
-      {
-          setReady(true);
-      }
-    }, [manager.chatIsReady])
 
     return (
     manager.user && <>

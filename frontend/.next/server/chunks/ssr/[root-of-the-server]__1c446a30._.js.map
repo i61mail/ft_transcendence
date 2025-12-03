@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
-    {"offset": {"line": 15, "column": 0}, "map": {"version":3,"sources":["file:///home/shamdoun/Desktop/ft_transcendence/frontend/app/games/local/page.tsx"],"sourcesContent":["\n\nconst LocalGame = () =>\n{\n    return (<div>Starting Local game...</div>);\n}\n\nexport default LocalGame;"],"names":[],"mappings":";;;;;;AAEA,MAAM,YAAY;IAEd,qBAAQ,yRAAC;kBAAI;;;;;;AACjB;uCAEe","debugId":null}}]
-}

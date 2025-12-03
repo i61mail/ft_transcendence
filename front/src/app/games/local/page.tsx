@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { startGame } from "@/lib/pong/game";
 
+let hh = 0;
+
 const LocalGame = () =>
 {
 
@@ -20,18 +22,17 @@ const LocalGame = () =>
         if (manager.gameSocket)
         {
             console.log("starting game...");
-            const data = {gameType: "local", data: {player: {id: manager.user?.id}}};
+            const data = {gameType: "local", data: manager.user?.id};
             manager.gameSocket.send(JSON.stringify(data));
             conditionT.current = true;
             manager.gameSocket.onmessage = (msg) =>
             {
-                
                 if (canvasRef.current)
                     startGame(canvasRef.current, manager.gameSocket!, msg.data.toString());
             }
         }else
             router.push("/games");
-    }, [manager.gameSocket])
+    }, [manager.socket])
 
     return (
     <>

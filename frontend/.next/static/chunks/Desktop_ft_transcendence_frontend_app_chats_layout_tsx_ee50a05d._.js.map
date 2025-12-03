@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///home/shamdoun/Desktop/ft_transcendence/frontend/app/chats/layout.tsx"],"sourcesContent":["'use client'\nimport React from \"react\";\nimport { useAuth } from '../../context/AuthProvider'\nimport useR from \"next/navigation\";\nexport default function chatsLayout({children}: {children: React.ReactNode})\n{\n    const auth = useAuth();\n    const router = useRouter();   \n\n    return (   \n    auth.isLogged && auth.user && <>\n          <div className='h-dvh flex gap-3'>\n              {children}\n          </div>\n    </>\n  )\n}"],"names":[],"mappings":";;;;;AAEA;;;AAFA;;AAIe,SAAS,YAAY,KAAuC;QAAvC,EAAC,QAAQ,EAA8B,GAAvC;;IAEhC,MAAM,OAAO,IAAA,iLAAO;IACpB,MAAM,SAAS;IAEf,OACA,KAAK,QAAQ,IAAI,KAAK,IAAI,kBAAI;kBACxB,cAAA,wOAAC;YAAI,WAAU;sBACV;;;;;;;AAIf;GAZwB;;QAEP,iLAAO","debugId":null}}]
-}

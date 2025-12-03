@@ -6,7 +6,7 @@ import AllChats from "@/components/chat/AllChats";
 import MainChat from "@/components/chat/MainChat";
 import useGlobalStore from "@/store/globalStore";
 
-const Chat = ({ params}: { params: Promise<{ id: string }>}) => {
+const Chat = ({ params }: { params: Promise<{ id: string }> }) => {
   const router = useRouter();
   const manager = useGlobalStore();
 
@@ -59,7 +59,6 @@ const Chat = ({ params}: { params: Promise<{ id: string }>}) => {
 
   return (
     <>
-      {/* <AllChats /> */}
       <MainChat />
     </>
   );
