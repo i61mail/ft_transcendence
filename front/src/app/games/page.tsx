@@ -34,9 +34,9 @@ const Games = () =>
     return (
         <>
             <Header user={user} onUserUpdate={setUser} activeRoute="game" />
-            <div className="min-h-screen w-full flex flex-col items-center justify-center p-8 bg-[#bcc3d4]">
+            <div className="min-h-screen w-full flex flex-col items-center justify-center p-8 bg-gradient-to-br from-[#bcc3d4] via-[#a8b0c5] to-[#92A0BD]">
                 <div className="mb-12 text-center">
-                    <h1 className="font-pixelify text-5xl font-bold text-[#2d5a8a] mb-2">
+                    <h1 className="font-pixelify text-5xl font-bold text-[#2d5a8a] mb-2 drop-shadow-lg">
                         SELECT GAME MODE
                     </h1>
                 </div>
@@ -47,10 +47,10 @@ const Games = () =>
                         onClick={() => {
                             router.push('/games/local');
                         }}
-                        className="bg-[#a8b0c5] rounded-3xl p-8 cursor-pointer hover:bg-[#92A0BD] transition-colors duration-200 border-2 border-[#8aabd6] shadow-md"
+                        className="relative bg-gradient-to-br from-[#d4e3ff] via-[#b8c2d9] to-[#a8b0c5] rounded-3xl p-8 cursor-pointer hover:shadow-2xl hover:scale-105 transition-all duration-300 border-2 border-[#8aabd6] shadow-lg hover:border-[#5A789E] overflow-hidden"
                     >
-                        <div className="flex flex-col items-center justify-center h-56">
-                            <h2 className="font-pixelify text-4xl font-bold text-[#1a237e]">LOCAL</h2>
+                        <div className="relative flex flex-col items-center justify-center h-56">
+                            <h2 className="font-pixelify text-4xl font-bold text-[#1a237e] drop-shadow-md">LOCAL</h2>
                         </div>
                     </div>
 
@@ -59,10 +59,10 @@ const Games = () =>
                         onClick={() => {
                             router.push('/games/online');
                         }}
-                        className="bg-[#a8b0c5] rounded-3xl p-8 cursor-pointer hover:bg-[#92A0BD] transition-colors duration-200 border-2 border-[#8aabd6] shadow-md"
+                        className="relative bg-gradient-to-br from-[#d4e3ff] via-[#b8c2d9] to-[#a8b0c5] rounded-3xl p-8 cursor-pointer hover:shadow-2xl hover:scale-105 transition-all duration-300 border-2 border-[#8aabd6] shadow-lg hover:border-[#5A789E] overflow-hidden"
                     >
-                        <div className="flex flex-col items-center justify-center h-56">
-                            <h2 className="font-pixelify text-4xl font-bold text-[#1a237e]">ONLINE</h2>
+                        <div className="relative flex flex-col items-center justify-center h-56">
+                            <h2 className="font-pixelify text-4xl font-bold text-[#1a237e] drop-shadow-md">ONLINE</h2>
                         </div>
                     </div>
                 </div>
@@ -73,10 +73,10 @@ const Games = () =>
                         onClick={() => {
                             router.push('/games/tournament');
                         }}
-                        className="bg-[#a8b0c5] rounded-3xl p-8 cursor-pointer hover:bg-[#92A0BD] transition-colors duration-200 border-2 border-[#8aabd6] shadow-md"
+                        className="relative bg-gradient-to-br from-[#ffd700]/20 via-[#d4e3ff] to-[#a8b0c5] rounded-3xl p-10 cursor-pointer hover:shadow-2xl hover:scale-105 transition-all duration-300 border-2 border-[#8aabd6] shadow-lg hover:border-[#5A789E] overflow-hidden"
                     >
-                        <div className="flex items-center justify-center">
-                            <h2 className="font-pixelify text-4xl font-bold text-[#1a237e]">TOURNAMENT</h2>
+                        <div className="relative flex items-center justify-center">
+                            <h2 className="font-pixelify text-4xl font-bold text-[#1a237e] drop-shadow-md">TOURNAMENT</h2>
                         </div>
                     </div>
                 </div>

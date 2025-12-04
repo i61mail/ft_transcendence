@@ -97,31 +97,49 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-[#bcc3d4] h-[110px] flex items-center justify-between px-12 border-b-2 border-[#8aabd6] shadow-md">
+      <header 
+        className="sticky top-0 z-50 bg-gradient-to-r from-[#d4e3ff] via-[#a8b0c5] to-[#d4e3ff] h-[110px] flex items-center justify-between px-12 border-b-2 border-[#8aabd6] shadow-xl relative overflow-hidden"
+        style={{ boxShadow: '0 10px 30px rgba(90, 120, 158, 0.4), inset 0 -1px 0 rgba(255, 255, 255, 0.6)' }}
+      >
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#5A789E] to-transparent opacity-50"></div>
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 flex items-center justify-center">
-            <span className="text-[#2d5a8a] text-7xl font-serif font-bold" style={{ fontFamily: "Pixelify Sans, sans-serif" }}>𝕭</span>
+            <span className="text-[#2d5a8a] text-7xl font-serif font-bold" style={{ fontFamily: "Pixelify Sans, sans-serif", textShadow: '0 0 10px rgba(45, 90, 138, 0.3)' }}>𝕭</span>
           </div>
-          <h1 className="font-pixelify text-4xl font-bold text-black">ANANA</h1>
+          <h1 className="font-pixelify text-4xl font-bold text-black" style={{ textShadow: '0 0 8px rgba(0, 0, 0, 0.1)' }}>ANANA</h1>
         </div>
 
-        <nav className="flex items-center gap-50">
+        <nav className="flex items-center gap-16">
           <button 
             onClick={() => router.push('/dashboard')} 
-            className={`font-pixelify text-xl text-black hover:text-[#5A789E] transition-colors ${activeRoute === 'dashboard' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}
+            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 overflow-hidden ${
+              activeRoute === 'dashboard' 
+                ? 'bg-gradient-to-br from-[#d4e3ff] via-[#b8c2d9] to-[#a8b0c5] border-[#5A789E] text-[#1a237e] font-bold' 
+                : 'bg-gradient-to-br from-[#c5cfe0] via-[#b0b9cc] to-[#9ca6ba] border-[#8895aa] text-[#2d5a8a] hover:border-[#5A789E]'
+            }`}
           >
-            HOME
+            <span className="relative">HOME</span>
           </button>
           <button 
             onClick={() => router.push('/chats')}
-            className={`font-pixelify text-xl text-black hover:text-[#5A789E] transition-colors flex items-center gap-2 ${activeRoute === 'chat' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}
+            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 overflow-hidden ${
+              activeRoute === 'chat' 
+                ? 'bg-gradient-to-br from-[#d4e3ff] via-[#b8c2d9] to-[#a8b0c5] border-[#5A789E] text-[#1a237e] font-bold' 
+                : 'bg-gradient-to-br from-[#c5cfe0] via-[#b0b9cc] to-[#9ca6ba] border-[#8895aa] text-[#2d5a8a] hover:border-[#5A789E]'
+            }`}
           >
-            {activeRoute === 'chat' && <span className="w-2 h-2 bg-[#5A789E] rounded-full"></span>}
-            CHAT
+            <span className="relative">CHAT</span>
           </button>
           <button
              onClick={() => router.push('/games')}
-            className={`font-pixelify text-xl text-black hover:text-[#5A789E] transition-colors ${activeRoute === 'game' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}>GAME</button>
+            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 overflow-hidden ${
+              activeRoute === 'game' 
+                ? 'bg-gradient-to-br from-[#d4e3ff] via-[#b8c2d9] to-[#a8b0c5] border-[#5A789E] text-[#1a237e] font-bold' 
+                : 'bg-gradient-to-br from-[#c5cfe0] via-[#b0b9cc] to-[#9ca6ba] border-[#8895aa] text-[#2d5a8a] hover:border-[#5A789E]'
+            }`}
+          >
+            <span className="relative">GAME</span>
+          </button>
         </nav>
 
         <div className="flex items-center gap-8">
