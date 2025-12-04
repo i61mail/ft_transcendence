@@ -11,6 +11,8 @@ export interface FriendshipProps {
   id: number;
   friend_id: number;
   username: string;
+  avatar_url?: string;
+  display_name?: string;
 }
 
 export interface User {

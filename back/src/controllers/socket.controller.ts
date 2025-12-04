@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws';
-import { FastifyRequest } from 'fastify';
+import fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import { Chat } from '../types/chat.types';
 import { pongLocal, pongOnline } from '../routes/pong';
 import { GameMode } from '../types/pong.types';
@@ -86,11 +86,12 @@ export const createGlobalSocket = async (
 
     socket.on('close', () =>
     {
+        const id = server.globalSockets.get(socket);
         console.log("closed global connection", server.globalSockets.size);
         server.globalSockets.delete(socket);
         server.globalSockets.forEach((user, sock) =>
         {
-            sock.send(JSON.stringify({type: "friend_offline", data: user}));
+            sock.send(JSON.stringify({type: "friend_offline", data: id}));
         })
     })
 
@@ -102,7 +103,9 @@ export const createGlobalSocket = async (
         {
             server.globalSockets.forEach((user, sock) =>
             {
-                sock.send(JSON.stringify({type: "friend_online", data: user}));
+              sock.send(JSON.stringify({type: "friend_online", data: content}));
+              console.log("sending back to", content, "=", user);
+              socket.send(JSON.stringify({type: "friend_online", data: user}));
             })
             server.globalSockets.set(socket, content);
             console.log("creating new global socket for", content, server.globalSockets.size);
@@ -135,7 +138,8 @@ export const createGlobalSocket = async (
 interface Player 
 {
     socket: WebSocket,
-    id: number
+    id: number,
+    username: string
 }
 
 
@@ -191,9 +195,9 @@ const queue = new Queue;
 
 
 
-const handleOnlineGame = async (socket: WebSocket, player: any) => 
+const handleOnlineGame = async (socket: WebSocket, player: number, server: FastifyInstance) => 
 {
-    const p1: Player = {socket: socket, id: player};
+    const p1: Player = {socket: socket, id: player, username: "John Doe"};
 
     socket.onclose = () =>
     {
@@ -213,14 +217,14 @@ const handleOnlineGame = async (socket: WebSocket, player: any) =>
         {
             p1.socket.send(JSON.stringify({gm: GameMode.online, playerIndex: 0}));
             p2.socket.send(JSON.stringify({gm: GameMode.online, playerIndex: 1}));
-            pongOnline(p1, p2);
+            pongOnline(p1, p2, server);
         }
     }
 }
 
 const handleTournament = async (socket: WebSocket, player: any) =>
 {
-    const p: Player = {socket: socket, id: player};
+    const p: Player = {socket: socket, id: player, username: "John Doe"};
 
     if (queue.size() < 3)
     {
@@ -258,12 +262,11 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
         }
         else if (gameType === "local")
         {
-            console.log("local .... dsafd");
             socket.send(JSON.stringify({gm: GameMode.local, plyI: 0}))
-            pongLocal({id: data, socket: socket});
+            pongLocal({id: data, socket: socket, username: "John Doe"}, server);
         }
         else if (gameType === "online")
-            handleOnlineGame(socket, data);
+            handleOnlineGame(socket, data, server);
         else if (gameType === "tournament")
             handleTournament(socket, data);
     }

@@ -6,6 +6,7 @@ interface User {
   username: string;
   email: string;
   avatar_url?: string;
+  display_name?: string;
 }
 
 export const extractFriendships = async (
@@ -25,10 +26,14 @@ export const extractFriendships = async (
     );
     friendList.forEach((friend) => {
       const extractUserInfo = request.server.db.prepare<[number], User>(
-        'SELECT * FROM users WHERE id = ?'
+        'SELECT id, username, email, avatar_url, display_name FROM users WHERE id = ?'
       );
       const user = extractUserInfo.get(friend.friend_id || request.params.id);
-      if (user !== undefined) friend.username = user.username;
+      if (user !== undefined) {
+        friend.username = user.username;
+        friend.avatar_url = user.avatar_url;
+        friend.display_name = user.display_name;
+      }
     });
     console.log(friendList);
     reply.send(friendList);

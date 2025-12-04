@@ -78,13 +78,13 @@ const MessageForm = ({ isBlocked = false }: MessageFormProps) => {
   };
 
   return (
-    <div className='flex-1 flex flex-col'>
+    <div className='flex-1 flex flex-col sticky bottom-0'>
       {errorMessage && (
         <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-2 text-sm font-pixelify mx-14 mb-2 rounded'>
           {errorMessage}
         </div>
       )}
-      <form action={sendMessage} className='flex justify-between items-center gap-4 bg-[#92A0BD] px-14 pb-4'>
+      <form action={sendMessage} className='flex flex-1 justify-between items-center gap-4 bg-[#92A0BD] px-14 '>
         <div className='flex-8'>
           <input 
             name='message' 

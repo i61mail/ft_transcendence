@@ -8,6 +8,8 @@ export interface Friendship {
     user2_id: number;
     friend_id?: number;
     username: string;
+    avatar_url?: string;
+    display_name?: string;
 }
 
 export interface FriendshipRequest {

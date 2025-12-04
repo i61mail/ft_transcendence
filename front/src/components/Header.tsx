@@ -9,13 +9,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 interface HeaderProps {
   user: any;
   onUserUpdate?: (user: any) => void;
-  activeRoute?: 'dashboard' | 'chat' | 'game';
+  activeRoute?: 'dashboard' | 'chat' | 'game' | 'profile';
 }
 
 export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }: HeaderProps) {
   const router = useRouter();
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchMessage, setSearchMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [newDisplayName, setNewDisplayName] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>("");
@@ -26,6 +31,67 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
     } finally {
       localStorage.removeItem("user");
       router.push("/");
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setSearching(true);
+    try {
+      const response = await fetch(`${API_URL}/profile/search?username=${encodeURIComponent(searchQuery)}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.users || []);
+      } else {
+        setSearchResults([]);
+      }
+    } catch (err) {
+      console.error('Search failed:', err);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleAddFriend = async (friendId: number) => {
+    try {
+      const response = await fetch(`${API_URL}/friendships`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user1: user.id,
+          user2: friendId,
+        }),
+      });
+
+      if (response.ok) {
+        // Remove the user from search results after adding
+        setSearchResults(prev => prev.filter(u => u.id !== friendId));
+        setSearchMessage({ type: 'success', text: 'Friend added successfully!' });
+        setTimeout(() => setSearchMessage(null), 3000);
+      } else {
+        const error = await response.json();
+        setSearchMessage({ type: 'error', text: error.error || 'Failed to add friend' });
+        setTimeout(() => setSearchMessage(null), 3000);
+      }
+    } catch (err) {
+      console.error('Failed to add friend:', err);
+      setSearchMessage({ type: 'error', text: 'Failed to add friend' });
+      setTimeout(() => setSearchMessage(null), 3000);
     }
   };
 
@@ -70,9 +136,11 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="relative w-10 h-10 bg-[#5A789E] rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors">
-              <span className="text-xl">🔔</span>
-              <span className="absolute top-0 right-0 w-3 h-3 bg-[#5A789E] rounded-full border-2 border-white"></span>
+            <button 
+              onClick={() => setShowSearchModal(true)}
+              className="relative w-10 h-10 bg-[#5A789E] rounded-full flex items-center justify-center hover:bg-[#4a6888] transition-colors"
+            >
+              <span className="text-xl">🔍</span>
             </button>
 
             <div className="relative" onMouseEnter={() => setShowSettingsMenu(true)} onMouseLeave={() => setShowSettingsMenu(false)}>
@@ -82,6 +150,12 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
               {showSettingsMenu && (
                 <div className="absolute right-0 top-full pt-2 w-48 z-20">
                   <div className="bg-[#a8b0c5] border-2 border-[#8aabd6] rounded-xl shadow-md overflow-hidden">
+                    <button
+                      onClick={() => router.push('/profile')}
+                      className="block w-full text-left px-4 py-3 font-pixelify text-sm text-black hover:bg-[#8aabd6] hover:text-white transition-colors"
+                    >
+                      My Profile
+                    </button>
                     <button
                       onClick={() => { setShowEditModal(true); setNewDisplayName(user?.display_name || user?.username || ""); }}
                       className="block w-full text-left px-4 py-3 font-pixelify text-sm text-black hover:bg-[#8aabd6] hover:text-white transition-colors"
@@ -101,6 +175,98 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
           </div>
         </div>
       </header>
+
+      {showSearchModal && (
+        <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-[#a8b0c5] rounded-2xl p-6 max-w-md w-full mx-4 border-2 border-[#8aabd6] shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-pixelify text-2xl font-bold text-black">Search Users</h2>
+              <button 
+                onClick={() => {
+                  setShowSearchModal(false);
+                  setSearchQuery("");
+                  setSearchResults([]);
+                  setSearchMessage(null);
+                }} 
+                className="text-black hover:text-white text-2xl bg-[#5A789E] rounded-full w-8 h-8 flex items-center justify-center"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  placeholder="Enter username..."
+                  className="flex-1 h-10 bg-white rounded-lg border border-solid border-[#8aabd6] px-4 font-inter text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#5A789E] placeholder-gray-500"
+                />
+                <button
+                  onClick={handleSearch}
+                  disabled={searching}
+                  className="px-4 py-2 bg-[#5A789E] text-white rounded-lg hover:bg-[#4a6888] font-pixelify text-sm disabled:opacity-50 border-2 border-[#8aabd6]"
+                >
+                  {searching ? '...' : 'Search'}
+                </button>
+              </div>
+            </div>
+
+            {searchMessage && (
+              <div className={`p-3 rounded-lg text-sm font-pixelify mb-3 ${
+                searchMessage.type === 'success' 
+                  ? 'bg-green-100 border border-green-400 text-green-700' 
+                  : 'bg-red-100 border border-red-400 text-red-700'
+              }`}>
+                {searchMessage.text}
+              </div>
+            )}
+
+            <div className="max-h-96 overflow-y-auto">
+              {searchResults.length === 0 && searchQuery && !searching && (
+                <p className="text-center text-gray-600 font-pixelify py-4">No users found</p>
+              )}
+              
+              {searchResults.map((searchUser) => (
+                <div
+                  key={searchUser.id}
+                  className="flex items-center justify-between bg-[#bcc3d4] rounded-xl p-3 mb-2 border border-[#8aabd6]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-400">
+                      <img
+                        src={searchUser.avatar_url ? (searchUser.avatar_url.startsWith('http') ? searchUser.avatar_url : `${API_URL}${searchUser.avatar_url}`) : "/default-avatar.png"}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-pixelify text-sm font-semibold text-black">
+                        {searchUser.display_name || searchUser.username}
+                      </p>
+                      <p className="text-xs text-gray-600">@{searchUser.username}</p>
+                    </div>
+                  </div>
+                  {searchUser.isFriend ? (
+                    <span className="px-3 py-1 bg-gray-400 text-white rounded-lg font-pixelify text-xs border border-[#8aabd6] cursor-not-allowed">
+                      Already Friends
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleAddFriend(searchUser.id)}
+                      className="px-3 py-1 bg-[#5A789E] text-white rounded-lg hover:bg-[#4a6888] font-pixelify text-xs border border-[#8aabd6]"
+                    >
+                      Add Friend
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showEditModal && user && (
         <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50">

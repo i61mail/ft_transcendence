@@ -113,10 +113,14 @@ const MainChat = () => {
     <div className='relative flex-3 flex flex-col rounded-t-[30] bg-[#B0BBCF]'>
       <div className='flex-1 flex justify-between items-center gap-4 bg-[#92A0BD] rounded-tl-[30] px-14'>
           <div className='flex items-center gap-4'>
-          <div className='size-11 flex justify-center items-end rounded-full bg-gray-200'>
-            <Image className='fill-current' alt='user' src={defaultUser} />
+          <div className='size-11 flex justify-center items-center rounded-full bg-gray-200 overflow-hidden'>
+            <img 
+              src={pointedUser?.avatar_url ? (pointedUser.avatar_url.startsWith('http') ? pointedUser.avatar_url : `${API_URL}${pointedUser.avatar_url}`) : "/default-avatar.png"} 
+              alt='user' 
+              className='w-full h-full object-cover'
+            />
           </div>
-          <h1 className='text-[24px]'>{pointedUser?.username}</h1>
+          <h1 className='text-[24px]'>{pointedUser?.display_name || pointedUser?.username}</h1>
         </div>        <div className="relative" onMouseLeave={() => setShowBlockMenu(false)}>
           <button
             onClick={() => setShowBlockMenu(!showBlockMenu)}

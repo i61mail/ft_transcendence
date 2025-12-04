@@ -43,6 +43,7 @@ const Chat = ({ params }: { params: Promise<{ id: string }> }) => {
         manager.changePointedUser(friend);
         manager.updateCurrentChat(friendshipId);
       }
+      manager.setChatIsReady(true);
     });
 
     return () => {
@@ -58,7 +59,6 @@ const Chat = ({ params }: { params: Promise<{ id: string }> }) => {
 
   return (
     <>
-      <AllChats />
       <MainChat />
     </>
   );
