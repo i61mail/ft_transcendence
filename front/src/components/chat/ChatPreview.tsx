@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { FriendshipProps } from '@/types/chat.types';
 import useGlobalStore from '@/store/globalStore';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import onlineStatus from '../../../public/online-status.png'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -17,16 +19,26 @@ const ChatPreview = (data: Props) => {
   const [latestMessage, setLatestMessage] = useState('');
   const [notification, setNotification] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [online, setStatus] = useState(false);
 
   useEffect(() => {
     if (
       manager.latestMessage &&
-      manager.latestMessage.friendship_id === data.friend.id
+      manager.latestMessage.friendship_id === data.friend.id && manager.pointedUser?.id !== data.friend.id
     ) {
       setNotification(true);
       manager.updateLatestMessage(null);
     }
   }, [manager.latestMessage]);
+
+  useEffect(() => {
+    const isOnline = manager.onlineUsers.has(data.friend.friend_id);
+    if (isOnline)
+      setStatus(true);
+    else
+      setStatus(false);
+  }, [manager.onlineUsers]);
+
 
   useEffect(() => {
     const handleClickOutside = () => setContextMenu(null);
@@ -65,12 +77,13 @@ const ChatPreview = (data: Props) => {
             src={data.friend.avatar_url ? (data.friend.avatar_url.startsWith('http') ? data.friend.avatar_url : `${API_URL}${data.friend.avatar_url}`) : "/default-avatar.png"} 
             alt="Avatar" 
             className="w-full h-full object-cover"
-          />
+            />
         </div>
         <div className="flex flex-col gap-y-0.5">
           <h1 className="text-[24px]">{data.friend.display_name || data.friend.username}</h1>
           <p className="px-3">{latestMessage}</p>
         </div>
+        {online && <Image className='size-7 ml-auto' src={onlineStatus} alt='send button'></Image>}
       </div>
 
       {contextMenu && (

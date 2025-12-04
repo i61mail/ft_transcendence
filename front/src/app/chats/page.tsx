@@ -15,12 +15,12 @@ export default function ChatPage() {
 
   useEffect(() => {
     manager.changePointedUser(null);
+    manager.setChatIsReady(true);
   }, []);
 
   
   return (
     <>
-        <AllChats />
         <div className='flex-3 flex items-center justify-center rounded-t-[30] bg-[#B0BBCF]'>
           <div className="text-center">
             <p className="font-pixelify text-2xl text-gray-600 mb-2">No conversation selected</p>

@@ -86,11 +86,12 @@ export const createGlobalSocket = async (
 
     socket.on('close', () =>
     {
+        const id = server.globalSockets.get(socket);
         console.log("closed global connection", server.globalSockets.size);
         server.globalSockets.delete(socket);
         server.globalSockets.forEach((user, sock) =>
         {
-            sock.send(JSON.stringify({type: "friend_offline", data: user}));
+            sock.send(JSON.stringify({type: "friend_offline", data: id}));
         })
     })
 
@@ -102,7 +103,9 @@ export const createGlobalSocket = async (
         {
             server.globalSockets.forEach((user, sock) =>
             {
-                sock.send(JSON.stringify({type: "friend_online", data: user}));
+              sock.send(JSON.stringify({type: "friend_online", data: content}));
+              console.log("sending back to", content, "=", user);
+              socket.send(JSON.stringify({type: "friend_online", data: user}));
             })
             server.globalSockets.set(socket, content);
             console.log("creating new global socket for", content, server.globalSockets.size);

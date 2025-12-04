@@ -1,9 +1,10 @@
 'use client'
+import UserProfilePage from '@/app/profile/[id]/page';
 import { getCurrentUser } from '@/lib/api';
 import useglobalStore from '@/store/globalStore';
 import { FriendshipProps, MessageProps, User } from '@/types/chat.types';
 import { useRouter } from 'next/navigation';
-import React from 'react'
+import React, { useRef } from 'react'
 
 import { useEffect } from "react";
 
@@ -11,10 +12,11 @@ const  SocketManager = () =>
 {
     const manager = useglobalStore();
     const router = useRouter();
+    const mounted = useRef<Boolean>(false);
     
     useEffect(() =>
     {
-        if (manager.socket || !manager.user)
+        if (mounted.current || manager.socket || !manager.user)
         {
             return ;
         }
@@ -22,8 +24,36 @@ const  SocketManager = () =>
         {
             console.log("---", manager.socket, manager.user);
             manager.createSocket();
+            mounted.current = true;
         }
     }, [manager.socket, manager.user]);
+
+    useEffect(()=>
+    {
+        if (manager.gameSocket || !manager.user)
+            return ;
+        console.log("game connection----------");
+        const gameSocket = new WebSocket("ws://localhost:4000/sockets/games");
+        gameSocket.onopen = () =>
+        {
+            const init = {gameType: "init"};
+            gameSocket?.send(JSON.stringify(init));
+            manager.updateGameSocket(gameSocket);
+        }
+
+        gameSocket.onclose = () =>
+        {
+            console.log("closing game socket...");
+            gameSocket?.close();
+        }
+
+        gameSocket.onmessage = (msg) =>
+        {
+            const data = JSON.parse(msg.data.toString());
+            console.log("GAME: ", data);
+        }
+        manager.updateGameSocket(gameSocket);
+    }, [manager.gameSocket, manager.user])
 
 
     useEffect(()=>
@@ -96,15 +126,15 @@ const  SocketManager = () =>
               }
               else if (type === "friend_online")
               {
-                  manager.updateUserStatus({id: data, status: true});
+                    manager.addOnlineUser(data);
               }
               else if (type === "friend_offline")
               {
-                  manager.updateUserStatus({id: data, status: false});            
+                    manager.removeOnlineUser(data);
               }
             }
         }
-    }, [manager.socket, manager.user?.id, manager.pointedUser?.id])
+    }, [manager.pointedUser])
 
     return (<></>)
 };

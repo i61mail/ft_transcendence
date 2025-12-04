@@ -8,42 +8,15 @@ import React, { useEffect, useRef } from "react";
 const Games = () =>
 {
     const manager = useglobalStore();
-    const gameSocketRef = useRef<WebSocket | null>(null);
+
     useEffect(() =>
     {
-        if (gameSocketRef.current !== null)
-        {
-            return ;
-        }
         if (manager.gameSocket)
         {
             manager.gameSocket.close();
             manager.updateGameSocket(null);
         }
-        console.log("creating game socket....");
-
-        gameSocketRef.current = new WebSocket("ws://localhost:4000/sockets/games");
-        
-        gameSocketRef.current.onopen = () =>
-        {
-            const init = {gameType: "init"};
-            gameSocketRef.current?.send(JSON.stringify(init));
-            manager.updateGameSocket(gameSocketRef.current);
-        }
-
-        gameSocketRef.current.onclose = () =>
-        {
-            console.log("closing game socket...");
-            gameSocketRef.current?.close();
-        }
-
-        gameSocketRef.current.onmessage = (msg) =>
-        {
-            const data = JSON.parse(msg.data.toString());
-            console.log("GAME: ", data);
-        }
-
-    }, [manager.gameSocket]);
+    }, []);
 
     const router = useRouter();
     return (
