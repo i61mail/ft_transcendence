@@ -97,45 +97,45 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
 
   return (
     <>
-      <header className="bg-[#bcc3d4] h-[85px] flex items-center justify-between px-8 border-b-2 border-[#8aabd6]">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 flex items-center justify-center">
-            <span className="text-[#2d5a8a] text-6xl font-serif font-bold" style={{ fontFamily: "Pixelify Sans, sans-serif" }}>𝕭</span>
+      <header className="sticky top-0 z-50 bg-[#bcc3d4] h-[110px] flex items-center justify-between px-12 border-b-2 border-[#8aabd6] shadow-md">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 flex items-center justify-center">
+            <span className="text-[#2d5a8a] text-7xl font-serif font-bold" style={{ fontFamily: "Pixelify Sans, sans-serif" }}>𝕭</span>
           </div>
-          <h1 className="font-pixelify text-3xl font-bold text-black">ANANA</h1>
+          <h1 className="font-pixelify text-4xl font-bold text-black">ANANA</h1>
         </div>
 
         <nav className="flex items-center gap-50">
           <button 
             onClick={() => router.push('/dashboard')} 
-            className={`font-pixelify text-lg text-black hover:text-[#5A789E] transition-colors ${activeRoute === 'dashboard' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}
+            className={`font-pixelify text-xl text-black hover:text-[#5A789E] transition-colors ${activeRoute === 'dashboard' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}
           >
             HOME
           </button>
           <button 
             onClick={() => router.push('/chats')}
-            className={`font-pixelify text-lg text-black hover:text-[#5A789E] transition-colors flex items-center gap-2 ${activeRoute === 'chat' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}
+            className={`font-pixelify text-xl text-black hover:text-[#5A789E] transition-colors flex items-center gap-2 ${activeRoute === 'chat' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}
           >
             {activeRoute === 'chat' && <span className="w-2 h-2 bg-[#5A789E] rounded-full"></span>}
             CHAT
           </button>
           <button
              onClick={() => router.push('/games')}
-            className={`font-pixelify text-lg text-black hover:text-[#5A789E] transition-colors ${activeRoute === 'game' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}>GAME</button>
+            className={`font-pixelify text-xl text-black hover:text-[#5A789E] transition-colors ${activeRoute === 'game' ? 'border-b-2 border-[#5A789E] pb-1' : ''}`}>GAME</button>
         </nav>
 
         <div className="flex items-center gap-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-400 ring-2 ring-[#5A789E]">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-400 ring-2 ring-[#5A789E]">
               <img src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${API_URL}${user.avatar_url}`) : "/default-avatar.png"} alt="Avatar" className="w-full h-full object-cover" />
             </div>
             <div className="text-left">
-              <p className="font-pixelify text-lg font-semibold text-black">{user?.display_name || user?.username}</p>
-              <p className="text-sm text-gray-600">{user?.email}</p>
+              <p className="font-pixelify text-2xl font-semibold text-black">{user?.display_name || user?.username}</p>
+              <p className="text-lg text-gray-600">{user?.email}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button 
               onClick={() => setShowSearchModal(true)}
               className="relative w-10 h-10 bg-[#5A789E] rounded-full flex items-center justify-center hover:bg-[#4a6888] transition-colors"
