@@ -98,10 +98,10 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
   return (
     <>
       <header 
-        className="sticky top-0 z-50 bg-gradient-to-r from-[#d4e3ff] via-[#a8b0c5] to-[#d4e3ff] h-[110px] flex items-center justify-between px-12 border-b-2 border-[#8aabd6] shadow-xl relative overflow-hidden"
-        style={{ boxShadow: '0 10px 30px rgba(90, 120, 158, 0.4), inset 0 -1px 0 rgba(255, 255, 255, 0.6)' }}
+        className="sticky top-0 z-50 bg-transparent backdrop-blur-md h-[110px] flex items-center justify-between px-12 border-b-2 border-[#8aabd6]/30 shadow-xl relative"
+        style={{ boxShadow: '0 10px 30px rgba(90, 120, 158, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.3)' }}
       >
-        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#5A789E] to-transparent opacity-50"></div>
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#5A789E] to-transparent opacity-30"></div>
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 flex items-center justify-center">
             <span className="text-[#2d5a8a] text-7xl font-serif font-bold" style={{ fontFamily: "Pixelify Sans, sans-serif", textShadow: '0 0 10px rgba(45, 90, 138, 0.3)' }}>𝕭</span>
@@ -161,13 +161,13 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
               <span className="text-xl">🔍</span>
             </button>
 
-            <div className="relative" onMouseEnter={() => setShowSettingsMenu(true)} onMouseLeave={() => setShowSettingsMenu(false)}>
+            <div className="relative z-50" onMouseEnter={() => setShowSettingsMenu(true)} onMouseLeave={() => setShowSettingsMenu(false)}>
               <button className="w-10 h-10 bg-[#5A789E] rounded-full flex items-center justify-center hover:bg-[#4a6888] transition-colors border-2 border-[#8aabd6] shadow-sm">
                 <span className="text-xl">⚙️</span>
               </button>
               {showSettingsMenu && (
-                <div className="absolute right-0 top-full pt-2 w-48 z-20">
-                  <div className="bg-[#a8b0c5] border-2 border-[#8aabd6] rounded-xl shadow-md overflow-hidden">
+                <div className="absolute right-0 top-full pt-1 w-48">
+                  <div className="bg-[#a8b0c5] border-2 border-[#8aabd6] rounded-xl shadow-xl overflow-visible">
                     <button
                       onClick={() => router.push('/profile')}
                       className="block w-full text-left px-4 py-3 font-pixelify text-sm text-black hover:bg-[#8aabd6] hover:text-white transition-colors"
