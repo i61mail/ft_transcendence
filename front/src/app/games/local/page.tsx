@@ -15,6 +15,13 @@ const LocalGame = () =>
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const conditionT = useRef<boolean>(false);
 
+    const handleFinished = () =>
+    {
+        if (manager.gameSocket)
+        {
+            router.push('/games');
+        }
+    };
     useEffect(()=>
     {
         if (conditionT.current)
@@ -28,7 +35,7 @@ const LocalGame = () =>
             manager.gameSocket.onmessage = (msg) =>
             {
                 if (canvasRef.current)
-                    startGame(canvasRef.current, manager.gameSocket!, msg.data.toString());
+                    startGame(canvasRef.current, manager.gameSocket!, msg.data.toString(), handleFinished);
             }
         }else
             router.push("/games");

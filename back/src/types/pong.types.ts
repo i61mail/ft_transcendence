@@ -69,6 +69,12 @@ export enum GameMode {
     AI
 }
 
+export enum onlineMode {
+    queue,
+    invite,
+    tournament
+}
+
 export enum PlayerIndex {
     leftPlayer = 1,
     rightPlayer = 2

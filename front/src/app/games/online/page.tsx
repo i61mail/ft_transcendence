@@ -15,7 +15,8 @@ const OnlineGame = () =>
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const router = useRouter(); 
 
-    const handleFinished = () => {
+    const handleFinished = () =>
+    {
         if (manager.gameSocket)
         {
             router.push('/games/tournament');
@@ -32,7 +33,6 @@ const OnlineGame = () =>
             sentRef.current = true;
             manager.gameSocket.onmessage = (msg) => 
             {
-                console.log(msg.data);
                 setStart(true);
                 if (canvasRef.current && manager.gameSocket)
                 {
