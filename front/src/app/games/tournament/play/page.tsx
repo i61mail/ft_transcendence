@@ -19,7 +19,7 @@ const OnlineGame = () =>
     {
         if (manager.gameSocket)
         {
-            router.push('/games');
+            router.push('/games/tournament');
         }
     };
     useEffect(() =>

@@ -81,7 +81,7 @@ export default function PongTournament()
 					(state.status == "Playing Semi-Finals" || state.status == "Playing Final Match"))
 				{
 
-					router.push('/games/online');
+					router.push('/games/tournament/play');
 				}
 				else
 					setTournament(state);

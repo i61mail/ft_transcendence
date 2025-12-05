@@ -175,6 +175,16 @@ class Tournament
         }, 1000);
     }
 
+    closeTournament()
+    {
+        tournaments.delete(this.tournamentData.code);
+        this.players.forEach((player: playerInfo) =>
+        {
+            playersInTournaments.delete(player.id);
+        });
+        
+    }
+
     startFinaleGame()
     {
         this.status = trnmtStatus.playingFinal;
@@ -204,7 +214,7 @@ class Tournament
                 }
             });
             this.broadcastTournamentData();
-
+            setTimeout(() => this.closeTournament(), 3000);
             clearInterval(intervalId);
         }, 1000);
     }

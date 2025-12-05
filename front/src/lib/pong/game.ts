@@ -255,7 +255,7 @@ export function startGame(
     canvas: HTMLCanvasElement,
     socket: WebSocket,
     data: string,
-    onFinish: () => void
+    onFinish: (type: string) => void
 )
 {
     let pong: PongGame;
@@ -267,9 +267,10 @@ export function startGame(
 
     socket.onmessage = (msg) =>
     {
-        if (msg.data == "finished")
-            onFinish();
+        const data: any = JSON.parse(msg.data)
+        if (data.onlineMode != undefined)
+            onFinish(data.onlineMode);
         else
-            pong.listen(JSON.parse(msg.data));
+            pong.listen(data);
     }
 }

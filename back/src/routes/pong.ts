@@ -483,8 +483,8 @@ class Court
         if (this._scoreBoard.winner != 0)
         {
             this._isMatchStarted = false;
-            this.leftPlayerController.socket.send("finished");
-            this.rightPlayerController.socket.send("finished");
+            this.leftPlayerController.socket.send(JSON.stringify({onlineMode: "tournament"}));
+            this.rightPlayerController.socket.send(JSON.stringify({onlineMode: "tournament"}));
             this.addToDatabase();
         }
         else
@@ -500,18 +500,14 @@ class Court
         this._ball.update(deltaTime);
         let data: types.messageInterace =
         {
-            // this is a vector, so eithert change the name of it or make the user teleport to where it's position on the server instead
-
             leftPlayerPosY: this.leftPadle.posY,
             rightPlayerPosY: this.rightPadle.posY,
-
-            //might add the current position in case there was a big delay between the paddle position in the server and in the client 
 
             leftPlayerScore: this._scoreBoard.leftPlayerScore,
             rightPlayerScore: this._scoreBoard.rightPlayerScore,
 
             ballPosX: this._ball.posX,
-            ballPosY: this._ball.posY
+            ballPosY: this._ball.posY,
         }
         
         this.leftPlayerController.socket.send(JSON.stringify(data));
