@@ -217,9 +217,9 @@ export default function ProfilePage() {
             My Profile
           </h1>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Avatar and Basic Info */}
-            <div className="lg:col-span-1 flex flex-col items-center gap-6">
+            <div className="lg:col-span-1 flex flex-col gap-4 items-center">
               {/* Avatar */}
               <div className="relative">
                 <img
@@ -235,8 +235,8 @@ export default function ProfilePage() {
               </div>
 
               {/* Display Name */}
-              <div className="w-full backdrop-blur-md bg-white/20 rounded-2xl p-3 shadow-lg border border-white/30 text-center flex-1 flex flex-col justify-center">
-                <p className="font-pixelify text-sm font-semibold text-[#2d5a8a]/70 uppercase mb-3 tracking-wider">
+              <div className="w-full backdrop-blur-md bg-white/20 rounded-2xl p-4 shadow-lg border border-white/30 text-center">
+                <p className="font-pixelify text-sm font-semibold text-[#2d5a8a]/70 uppercase mb-2 tracking-wider">
                   Display Name
                 </p>
                 <p className="font-pixelify text-2xl font-bold text-[#2d5a8a]">
@@ -245,8 +245,8 @@ export default function ProfilePage() {
               </div>
 
               {/* Username */}
-              <div className="w-full backdrop-blur-md bg-white/20 rounded-2xl p-3 shadow-lg border border-white/30 text-center flex-1 flex flex-col justify-center">
-                <p className="font-pixelify text-sm font-semibold text-[#2d5a8a]/70 uppercase mb-3 tracking-wider">
+              <div className="w-full backdrop-blur-md bg-white/20 rounded-2xl p-4 shadow-lg border border-white/30 text-center">
+                <p className="font-pixelify text-sm font-semibold text-[#2d5a8a]/70 uppercase mb-2 tracking-wider">
                   Username
                 </p>
                 <p className="font-pixelify text-2xl font-bold text-[#2d5a8a]">
@@ -255,8 +255,8 @@ export default function ProfilePage() {
               </div>
 
               {/* Email */}
-              <div className="w-full backdrop-blur-md bg-white/20 rounded-2xl p-3 shadow-lg border border-white/30 text-center flex-1 flex flex-col justify-center">
-                <p className="font-pixelify text-sm font-semibold text-[#2d5a8a]/70 uppercase mb-3 tracking-wider">
+              <div className="w-full backdrop-blur-md bg-white/20 rounded-2xl p-4 shadow-lg border border-white/30 text-center">
+                <p className="font-pixelify text-sm font-semibold text-[#2d5a8a]/70 uppercase mb-2 tracking-wider">
                   Email
                 </p>
                 <p className="font-pixelify text-xl font-bold text-[#2d5a8a] break-all">
@@ -265,8 +265,8 @@ export default function ProfilePage() {
               </div>
 
               {/* Member Since */}
-              <div className="w-full backdrop-blur-md bg-white/20 rounded-2xl p-3 shadow-lg border border-white/30 text-center flex-1 flex flex-col justify-center">
-                <p className="font-pixelify text-sm font-semibold text-[#2d5a8a]/70 uppercase mb-3 tracking-wider">
+              <div className="w-full backdrop-blur-md bg-white/20 rounded-2xl p-4 shadow-lg border border-white/30 text-center flex-1 flex flex-col justify-center">
+                <p className="font-pixelify text-sm font-semibold text-[#2d5a8a]/70 uppercase mb-2 tracking-wider">
                   Member Since
                 </p>
                 <p className="font-pixelify text-lg font-bold text-[#2d5a8a]">
@@ -280,7 +280,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Right Column - Stats and Matches */}
-            <div className="lg:col-span-2 space-y-4">
+            <div className="lg:col-span-2 flex flex-col gap-4">
               {/* Game Stats section */}
               <div className="backdrop-blur-md bg-white/20 rounded-2xl p-5 shadow-lg border border-white/30">
                 <h2 className="font-pixelify text-xl font-bold text-[#2d5a8a] mb-4">Game Statistics</h2>
@@ -298,18 +298,13 @@ export default function ProfilePage() {
                     <p className="font-pixelify text-xs text-[#2d5a8a]/70 mt-1">Win Rate</p>
                   </div>
                 </div>
-                {matchStats && matchStats.totalGames === 0 && (
-                  <p className="font-pixelify text-xs text-[#2d5a8a]/60 mt-3 text-center italic">
-                    No games played yet. Start playing to see your stats!
-                  </p>
-                )}
               </div>
 
               {/* Match History */}
-              {matches && matches.length > 0 && (
-                <div className="backdrop-blur-md bg-white/20 rounded-2xl p-5 shadow-lg border border-white/30">
-                  <h2 className="font-pixelify text-xl font-bold text-[#2d5a8a] mb-4">Recent Matches</h2>
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="backdrop-blur-md bg-white/20 rounded-2xl p-5 shadow-lg border border-white/30 flex-1 flex flex-col">
+                <h2 className="font-pixelify text-xl font-bold text-[#2d5a8a] mb-4">Recent Matches</h2>
+                {matches && matches.length > 0 ? (
+                  <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     {matches.slice(0, 10).map((match) => {
                       const isLeftPlayer = match.left_player_id === profile?.id;
                       const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
@@ -348,8 +343,14 @@ export default function ProfilePage() {
                       );
                     })}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="text-center py-30">
+                    <p className="font-pixelify text-lg text-[#2d5a8a]/60">
+                      No games played yet
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

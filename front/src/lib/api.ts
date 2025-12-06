@@ -166,7 +166,7 @@ export async function uploadAvatar(file: File) {
 /**
  * Update user profile (e.g., username)
  */
-export async function updateProfile(data: { display_name?: string }) {
+export async function updateProfile(data: { display_name?: string; username?: string }) {
   try {
     const response = await fetch(`${API_URL}/profile`, {
       method: 'PUT',

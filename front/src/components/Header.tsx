@@ -23,6 +23,7 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
   const [searching, setSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [newDisplayName, setNewDisplayName] = useState<string>("");
+  const [newUsername, setNewUsername] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>("");
 
@@ -184,7 +185,12 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                       My Profile
                     </button>
                     <button
-                      onClick={() => { setShowEditModal(true); setNewDisplayName(user?.display_name || user?.username || ""); }}
+                      onClick={() => { 
+                        setShowEditModal(true); 
+                        setNewDisplayName(user?.display_name || user?.username || ""); 
+                        setNewUsername(user?.username || "");
+                        setSaveError("");
+                      }}
                       className="block w-full text-left px-4 py-3 font-pixelify text-sm text-black hover:bg-[#8aabd6] hover:text-white transition-colors"
                     >
                       Edit Information
@@ -296,7 +302,7 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
         document.body
       )}
 
-      {showEditModal && user && (
+      {showEditModal && user && createPortal(
         <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-[#a8b0c5] rounded-2xl p-6 max-w-2xl w-full mx-4 border-2 border-[#8aabd6] shadow-lg">
             <div className="flex justify-between items-center mb-4">
@@ -307,8 +313,18 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-4">
                 <div className="bg-[#bcc3d4] rounded-xl p-4 border border-[#8aabd6]">
-                  <label className="block font-pixelify text-sm mb-2 text-black">Name (username)</label>
-                  <input type="text" value={user.username} readOnly className="w-full h-10 bg-gray-200 rounded-lg border border-solid border-[#8aabd6] px-4 font-inter text-sm text-black cursor-not-allowed" />
+                  <label className="block font-pixelify text-sm mb-2 text-black">Username</label>
+                  <input 
+                    type="text" 
+                    value={newUsername} 
+                    onChange={(e) => setNewUsername(e.target.value)} 
+                    minLength={3} 
+                    maxLength={20} 
+                    pattern="[a-zA-Z0-9_]+"
+                    placeholder="Enter username (3-20 chars, letters, numbers, _)"
+                    className="w-full h-10 bg-white rounded-lg border border-solid border-[#8aabd6] px-4 font-inter text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#5A789E] placeholder-gray-500" 
+                  />
+                  <p className="text-xs text-gray-600 mt-1">Letters, numbers, and underscores only</p>
                 </div>
                 <div className="bg-[#bcc3d4] rounded-xl p-4 border border-[#8aabd6]">
                   <label className="block font-pixelify text-sm mb-2 text-black">Email</label>
@@ -316,7 +332,7 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                 </div>
                 <div className="bg-[#bcc3d4] rounded-xl p-4 border border-[#8aabd6]">
                   <label className="block font-pixelify text-sm mb-2 text-black">Display name</label>
-                  <input type="text" value={newDisplayName} onChange={(e) => setNewDisplayName(e.target.value)} minLength={2} maxLength={50} className="w-full h-10 bg-white rounded-lg border border-solid border-[#8aabd6] px-4 font-inter text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#5A789E] placeholder-gray-500" />
+                  <input type="text" value={newDisplayName} onChange={(e) => setNewDisplayName(e.target.value)} minLength={2} maxLength={50} placeholder="Enter display name (optional)" className="w-full h-10 bg-white rounded-lg border border-solid border-[#8aabd6] px-4 font-inter text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#5A789E] placeholder-gray-500" />
                 </div>
               </div>
 
@@ -344,7 +360,24 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                   setSaving(true);
                   setSaveError("");
                   try {
-                    const res = await updateProfile({ display_name: newDisplayName });
+                    // Prepare update data
+                    const updateData: { display_name?: string; username?: string } = {};
+                    
+                    // Only include fields that have changed
+                    if (newDisplayName !== (user.display_name || user.username || "")) {
+                      updateData.display_name = newDisplayName;
+                    }
+                    if (newUsername !== user.username) {
+                      updateData.username = newUsername;
+                    }
+                    
+                    // Only make request if something changed
+                    if (Object.keys(updateData).length === 0) {
+                      setShowEditModal(false);
+                      return;
+                    }
+                    
+                    const res = await updateProfile(updateData);
                     const updatedUser = { ...user, ...res.user };
                     if (onUserUpdate) onUserUpdate(updatedUser);
                     localStorage.setItem("user", JSON.stringify(updatedUser));
@@ -362,7 +395,8 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

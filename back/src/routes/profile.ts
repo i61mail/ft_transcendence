@@ -290,11 +290,12 @@ export default async function profileRoutes(app: FastifyInstance) {
         type: 'object',
         properties: {
           display_name: { type: 'string', minLength: 2 },
+          username: { type: 'string', minLength: 3, maxLength: 20, pattern: '^[a-zA-Z0-9_]+$' },
         },
         additionalProperties: false,
       }
     }
-  }, async (request: FastifyRequest<{ Body: { display_name?: string } }>, reply: FastifyReply) => {
+  }, async (request: FastifyRequest<{ Body: { display_name?: string; username?: string } }>, reply: FastifyReply) => {
     try {
       const authHeader = request.headers.authorization;
       const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
@@ -307,7 +308,41 @@ export default async function profileRoutes(app: FastifyInstance) {
 
       const decoded = app.jwt.verify(token) as { id: number; email: string };
 
-      const { display_name } = request.body || {};
+      const { display_name, username } = request.body || {};
+      
+      // Handle username update
+      if (username) {
+        const trimmedUsername = username.trim();
+        
+        // Validate username length
+        if (trimmedUsername.length < 3) {
+          return reply.code(400).send({ error: 'Username must be at least 3 characters' });
+        }
+        
+        if (trimmedUsername.length > 20) {
+          return reply.code(400).send({ error: 'Username must be at most 20 characters' });
+        }
+        
+        // Validate username format
+        if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
+          return reply.code(400).send({ error: 'Username can only contain letters, numbers, and underscores' });
+        }
+        
+        // Check if username already exists (excluding current user)
+        const existingUser = app.db
+          .prepare('SELECT id FROM users WHERE username = ? AND id != ?')
+          .get(trimmedUsername, decoded.id) as any;
+        
+        if (existingUser) {
+          return reply.code(409).send({ error: 'Username already taken' });
+        }
+        
+        // Update username
+        app.db.prepare('UPDATE users SET username = ? WHERE id = ?').run(trimmedUsername, decoded.id);
+        app.log.info(`Updated username for user ${decoded.id} to "${trimmedUsername}"`);
+      }
+      
+      // Handle display_name update
       if (display_name) {
         if (display_name.trim().length < 2) {
           return reply.code(400).send({ error: 'Display name must be at least 2 characters' });
