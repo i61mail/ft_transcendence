@@ -26,17 +26,14 @@ const OnlineGame = () =>
     {
         if (manager.gameSocket && !sentRef.current)
         {
-            
-            console.log("starting online game...");
-            const data = {gameType: "online", data: manager.user?.id};
-            manager.gameSocket.send(JSON.stringify(data));
             sentRef.current = true;
+            console.log("start");
             manager.gameSocket.onmessage = (msg) => 
             {
-                setStart(true);
+                console.log("bruhhhh");
+
                 if (canvasRef.current && manager.gameSocket)
                 {
-                    console.log("start");
                     startGame(canvasRef.current, manager.gameSocket, msg.data, handleFinished);
                 }
             }

@@ -1,4 +1,5 @@
 "use client";
+import { stat } from "fs";
 import * as intf from "./interfaces";
 import { useRouter } from "next/navigation";
 
@@ -8,16 +9,7 @@ class ScoreBoard
     rightPlayerScore: number = 0;
     round: number = 0;
 
-    get winner() : number
-    {
-        if (this.leftPlayerScore >= intf.SETTINGS.winningScore)
-            return intf.PlayerIndex.leftPlayer;
-        if (this.rightPlayerScore >= intf.SETTINGS.winningScore)
-            return intf.PlayerIndex.rightPlayer;
-        return 0;
-    }
-
-    draw (canvas: HTMLCanvasElement)
+    draw (canvas: HTMLCanvasElement, hasWon: boolean = false)
     {
         let context = canvas.getContext('2d');
         if (!context)
@@ -28,9 +20,9 @@ class ScoreBoard
         context.fillText("Player 1: " + this.leftPlayerScore, 20, 30); // it's hard coded so change this later
         context.fillText("Player 2: " + this.rightPlayerScore, canvas.width - 120, 30); // it's hard coded so change this later
         context.fillText("Round: " + this.round, canvas.width / 2 - 30, 30); // it's hard coded so change this later
-        if (this.winner)
+        if (hasWon)
         {
-            let winnerText = this.winner == (intf.PlayerIndex.leftPlayer) ? "Player 1 Wins!" : "Player 2 Wins!";
+            let winnerText = this.leftPlayerScore > this.rightPlayerScore ? "Player 1 Wins!" : "Player 2 Wins!";
             context.font = intf.SETTINGS.largeFont;
             context.fillText(winnerText, canvas.width / 2 - 80, canvas.height / 2); // it's hard coded so change this later
         }
@@ -172,7 +164,7 @@ class Court
     _scoreBoard: ScoreBoard;
     _ball: Ball;
 
-    constructor(canvas: HTMLCanvasElement, socket: WebSocket, info: string)
+    constructor(socket: WebSocket, info: string)
     {
         const { gm, playerIndex } = JSON.parse(info);
 
@@ -227,11 +219,12 @@ class PongGame
 {
 	private _canvas: HTMLCanvasElement;
 	private _court: Court;
+    private status: 'start' | 'ingame' | 'finished' = 'start';
 
     constructor(canvas: HTMLCanvasElement, info: string, socket: WebSocket)
     {
         this._canvas = canvas;
-        this._court = new Court(canvas, socket, info);
+        this._court = new Court(socket, info);
     }
 
     public listen(message: intf.messageInterface)
@@ -243,34 +236,47 @@ class PongGame
     private _draw()
     {
         let context = this._canvas.getContext('2d');
-        if (context) {
+        if (context && this.status != 'finished') {
             context.clearRect(0, 0, this._canvas.width, this._canvas.height);
             this._court.draw(this._canvas);
+            if (this.status == 'start')
+            {
+                console.log("type start");
+                context.fillStyle = intf.SETTINGS.scoreTextColor;
+                context.font = intf.SETTINGS.largeFont;
+                context.fillText("Game will start now...", this._canvas.width / 2 - 80, this._canvas.height / 2);
+                this.status = 'ingame';
+            }
         }
     }
 
+    async finish(onFinish: () => void)
+    {
+        this.status = 'finished';
+        this._court._scoreBoard.draw(this._canvas, true);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        onFinish();
+    }
 }
 
 export function startGame(
     canvas: HTMLCanvasElement,
     socket: WebSocket,
     data: string,
-    onFinish: (type: string) => void
+    onFinish: () => void
 )
 {
-    let pong: PongGame;
-
     canvas.width = intf.SETTINGS.canvasWidth;
     canvas.height = intf.SETTINGS.canvasHeight;
     canvas.style.backgroundColor = intf.SETTINGS.canvasColor;
-    pong = new PongGame(canvas, data, socket);
+    const pong: PongGame = new PongGame(canvas, data, socket);
 
     socket.onmessage = (msg) =>
     {
-        const data: any = JSON.parse(msg.data)
-        if (data.onlineMode != undefined)
-            onFinish(data.onlineMode);
+        // console.log("hummmmm", msg.data);
+        if (msg.data == "finished")
+            pong.finish(onFinish);
         else
-            pong.listen(data);
+            pong.listen(JSON.parse(msg.data));
     }
 }

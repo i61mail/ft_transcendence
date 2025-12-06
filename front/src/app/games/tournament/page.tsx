@@ -1,50 +1,62 @@
 'use client'
 
+import { PlayerIndex } from '@/lib/pong/interfaces';
 import useglobalStore from '@/store/globalStore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 
-export enum trnmtStatus
+interface playerInfo
+{
+    id: number;
+    socket: WebSocket;
+    username: string;
+}
+
+enum trnmtStatus
 {
     waiting,
     startingSemi,
     playingSemi,
     startingFinal,
     playingFinal,
-    finished
+    finished,
+	close
 }
 
-interface Match
+export interface Player
 {
-    player1: string;
-    player2: string;
-    winner: 'player1' | 'player2' | null;
+    id: playerInfo['id'];
+    username: playerInfo['username'];
+}
+
+export interface Match
+{
+    player1: Player | null;
+    player2: Player | null;
+    winner: Player | null;
 }
 
 export interface TournamentData
 {
+    host: Player | null;
     code: string;
-    isPlaying: number;
-    status: string;
-    semiFinals: Match[];
+    status: trnmtStatus;
+    semi: Match[];
     final: Match;
 }
 
-
-const initialTournament: TournamentData = {
-  code: "------",
-  isPlaying: 1,
-  status: "Searching for Tournament ...",
-  semiFinals: [
-    { player1: "-", player2: "-", winner: null },
-    { player1: "-", player2: "-", winner: null },
-  ],
-  final: { player1: "-", player2: "-", winner: null },
+const initialTournament: TournamentData =
+{
+	host: null,
+	code: "------",
+  	status: trnmtStatus.waiting,
+  	semi: [
+		{ player1: null, player2: null, winner: null },
+		{ player1: null, player2: null, winner: null },
+  	],
+  	final: { player1: null, player2: null, winner: null },
 };
 
-type Props = {
-  initialCode: string | null;
-};
 
 export default function PongTournament()
 {
@@ -54,34 +66,46 @@ export default function PongTournament()
 	const router = useRouter();
 	const params = useSearchParams();
 	const code: string | null = params.get('code');
+	const currId: number = manager.;
 
     useEffect(() =>
     {
         if (manager.gameSocket && !sentRef.current)
         {
-            console.log("starting tournament...");
 			let data: any;
             if (code)
-				data = { gameType: 'joinTournament', data: {code: code, id: manager.user?.id} }
+				data = { gameType: 'joinTournament', data: {code: code, id: currId} }
 			else
-				data = {gameType: "tournament", data: manager.user?.id};
+				data = {gameType: "tournament", data: currId};
 
             manager.gameSocket.send(JSON.stringify(data));
             sentRef.current = true;
             manager.gameSocket.onmessage = (msg) =>
             {
-				
-				// if (msg.data == "finished")
-				// 	return ;
-				const state: TournamentData = JSON.parse(msg.data.toString());
-				const isPlaying: number = state.isPlaying;
-				// if (state.code == undefined)
-				// 	return ;
-				if (isPlaying &&
-					(state.status == "Playing Semi-Finals" || state.status == "Playing Final Match"))
-				{
+				if (msg.data == "finished")
+					return ;
+				const state: any = JSON.parse(msg.data.toString());
+				if (state.code == undefined)
+					return ;
+				if ((state.status == trnmtStatus.playingSemi
 
+				)
+					
+					|| (state.status == trnmtStatus.playingFinal
+						&& (state.final.player1!.id == currId || state.final.player2!.id == currId))
+					)
+				{
 					router.push('/games/tournament/play');
+				}
+				else if (state.status == trnmtStatus.close)
+				{
+					// show a friendly blocking alert so the user sees it before redirect
+					window.alert(
+						"🏁 Tournament Closed\n\n" +
+						"The tournament has been closed by the host. You will be redirected to the Games page.\n\n" +
+						"Thanks for playing! 🎮"
+					);
+					router.push('/games');
 				}
 				else
 					setTournament(state);
@@ -89,11 +113,31 @@ export default function PongTournament()
         }
     }, [manager.gameSocket])
 
-	const getPlayerClass = (match: Match, playerKey: 'player1' | 'player2'): string =>
+	const statusString = (status: trnmtStatus): string =>
 	{
-		if (!match.winner) return "bg-white border-gray-200 text-gray-800";
+		switch (status) {
+			case trnmtStatus.waiting:
+				return "Waiting";
+			case trnmtStatus.startingSemi:
+				return "Starting Semi-Finals";
+			case trnmtStatus.playingSemi:
+				return "Semi-Finals - Playing";
+			case trnmtStatus.startingFinal:
+				return "Starting Final";
+			case trnmtStatus.playingFinal:
+				return "Final - Playing";
+			case trnmtStatus.finished:
+				return "Finished";
+			default:
+				return "Unknown";
+		}
+	}
 
-		if (match.winner === playerKey)
+	const getPlayerClass = (winner: Player | null, player: Player | null): string =>
+	{
+		if (!winner || !player) return "bg-white border-gray-200 text-gray-800";
+
+		if (player.id != -1 && winner.id == player.id)
 			return "bg-green-50 border-green-500 text-green-700 font-bold shadow-sm";
 
 		return "bg-red-50 border-red-300 text-red-400 opacity-60";
@@ -102,7 +146,19 @@ export default function PongTournament()
 	const getWinnerText = (match: Match): string =>
 	{
 		if (!match.winner) return "TBD";
-		return match[match.winner] || "Unknown";
+		return match.winner.username + "-" + match.winner.id;
+	};
+
+	const handleDeleteTournament = () =>
+	{
+		console.log("sent delete socket");
+		manager.gameSocket?.send(JSON.stringify({id: currId, action: "delete"}));
+	};
+
+	const handleLeaveTournament = () =>
+	{
+		manager.gameSocket?.send(JSON.stringify({id: currId, action: "leave"}));
+		router.push('/games');
 	};
 
 	return (
@@ -116,10 +172,19 @@ export default function PongTournament()
 								{tournament.code}
 							</p>
 						</div>
-						<p className="text-2xl font-bold text-gray-800 font-mono">{tournament.status}</p>
-						<button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition">
-							Invite Players
-						</button>
+						<p className="text-2xl font-bold text-gray-800 font-mono">{statusString(tournament.status)}</p>
+						{(() => {
+							const isHost = (tournament.host?.id === currId);
+							console.log(tournament.host?.id);
+							return (
+								<button
+									className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md transition"
+									onClick={isHost ? handleDeleteTournament : handleLeaveTournament}
+								>
+									{isHost ? 'Delete the tournament' : 'Leave the tournament'}
+								</button>
+							);
+						})()}
 					</div>
 				</div>
 
@@ -137,14 +202,14 @@ export default function PongTournament()
 							</div>
 
 							<div className="space-y-3">
-								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semiFinals?.[0] ? getPlayerClass(tournament.semiFinals[0], 'player1') : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semiFinals?.[0]?.player1 || '-'}
+								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[0] ? getPlayerClass(tournament.semi[0].winner, tournament.semi[0].player1) : 'bg-white border-gray-200 text-gray-800'}`}>
+									{tournament.semi?.[0]?.player1?.username + "-" + tournament.semi?.[0]?.player1?.id || '-'}
 								</div>
 
 								<div className="text-center text-sm text-gray-400 font-semibold">VS</div>
 
-								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semiFinals?.[0] ? getPlayerClass(tournament.semiFinals[0], 'player2') : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semiFinals?.[0]?.player2 || '-'}
+								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[0] ? getPlayerClass(tournament.semi[0].winner, tournament.semi[0].player2) : 'bg-white border-gray-200 text-gray-800'}`}>
+									{tournament.semi?.[0]?.player2?.username + "-" + tournament.semi?.[0]?.player2?.id || '-'}
 								</div>
 							</div>
 						</div>
@@ -155,14 +220,14 @@ export default function PongTournament()
 							</div>
 
 							<div className="space-y-3">
-								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semiFinals?.[1] ? getPlayerClass(tournament.semiFinals[1], 'player1') : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semiFinals?.[1]?.player1 || '-'}
+								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[1] ? getPlayerClass(tournament.semi[1].winner, tournament.semi[1].player1) : 'bg-white border-gray-200 text-gray-800'}`}>
+									{tournament.semi?.[1]?.player1?.username + "-" + tournament.semi?.[1]?.player1?.id || '-'}
 								</div>
 
 								<div className="text-center text-sm text-gray-400 font-semibold">VS</div>
 
-								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semiFinals?.[1] ? getPlayerClass(tournament.semiFinals[1], 'player2') : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semiFinals?.[1]?.player2 || '-'}
+								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[1] ? getPlayerClass(tournament.semi[1].winner, tournament.semi[1].player2) : 'bg-white border-gray-200 text-gray-800'}`}>
+									{tournament.semi?.[1]?.player2?.username + "-" + tournament.semi?.[1]?.player2?.id || '-'}
 								</div>
 							</div>
 						</div>
@@ -178,12 +243,12 @@ export default function PongTournament()
 							Grand Final
 						</div>
 						<div className="space-y-3">
-							<div className={`p-3 border-2 rounded text-center transition-all ${tournament.final ? getPlayerClass(tournament.final, 'player1') : 'bg-white border-gray-200 text-gray-800'}`}>
-								{tournament.final?.player1 || "TBD"}
+							<div className={`p-3 border-2 rounded text-center transition-all ${tournament.final ? getPlayerClass(tournament.final.winner, tournament.final.player1) : 'bg-white border-gray-200 text-gray-800'}`}>
+								{tournament.final?.player1?.username + '-' + tournament.final?.player1?.id || "TBD"}
 							</div>							<div className="text-center text-sm text-gray-400 font-semibold">VS</div>
 
-							<div className={`p-3 border-2 rounded text-center transition-all ${tournament.final ? getPlayerClass(tournament.final, 'player2') : 'bg-white border-gray-200 text-gray-800'}`}>
-								{tournament.final?.player2 || "TBD"}
+							<div className={`p-3 border-2 rounded text-center transition-all ${tournament.final ? getPlayerClass(tournament.final.winner, tournament.final.player2) : 'bg-white border-gray-200 text-gray-800'}`}>
+								{tournament.final?.player2?.username + '-' + tournament.final?.player2?.id || "TBD"}
 							</div>
 							</div>
 

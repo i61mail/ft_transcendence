@@ -213,37 +213,7 @@ const handleOnlineGame = async (socket: WebSocket, player: number, server: Fasti
         console.log("starting online game now...", queue.size())
         const p2: Player | undefined = queue.dequeue();
         if (p1 && p2)
-        {
-            p1.socket.send(JSON.stringify({gm: GameMode.online, playerIndex: 0}));
-            p2.socket.send(JSON.stringify({gm: GameMode.online, playerIndex: 1}));
             pongOnline(p1, p2, server);
-        }
-    }
-}
-
-const handleTournament = async (socket: WebSocket, player: any) =>
-{
-    const p: Player = {socket: socket, id: player, username: "John Doe"};
-
-    if (queue.size() < 3)
-    {
-        console.log("waiting for other players to join...");
-        queue.enqueue(p);
-    }
-    else
-    {
-        const p1: Player | undefined = queue.dequeue();
-        const p2: Player | undefined = queue.dequeue();
-        const p3: Player | undefined = queue.dequeue();
-        const p4: Player | undefined = p;
-
-        if (p1 && p2 && p3 && p4)
-        {
-            p1.socket.send(JSON.stringify({state: "true"}));
-            p2.socket.send(JSON.stringify({state: "true"}));
-            p3.socket.send(JSON.stringify({state: "true"}));
-            p4.socket.send(JSON.stringify({state: "true"}));
-        }
     }
 }
 

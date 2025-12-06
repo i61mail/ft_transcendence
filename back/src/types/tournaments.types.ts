@@ -1,3 +1,5 @@
+import { playerInfo } from './playerInfo.types';
+
 export enum trnmtStatus
 {
     waiting,
@@ -5,21 +7,44 @@ export enum trnmtStatus
     playingSemi,
     startingFinal,
     playingFinal,
-    finished
+    finished,
+    close
 }
 
-interface Match
+export interface Match
 {
-    player1: string;
-    player2: string;
-    winner: 'player1' | 'player2' | null;
+    player1: playerInfo | null;
+    player2: playerInfo | null;
+    winner: playerInfo | null;
 }
 
 export interface TournamentData
 {
+    host: playerInfo | null;
     code: string;
-    isPlaying: number;
-    status: string;
-    semiFinals: Match[];
+    status: trnmtStatus;
+    semi: Match[];
     final: Match;
+}
+
+export interface SanitizedPlayer
+{
+    id: playerInfo['id'];
+    username: playerInfo['username'];
+}
+
+export interface SanitizedMatch
+{
+    player1: SanitizedPlayer | null;
+    player2: SanitizedPlayer | null;
+    winner: SanitizedPlayer | null;
+}
+
+export interface SanitizedTournamentData
+{
+    host: SanitizedPlayer | null;
+    code: string;
+    status: trnmtStatus;
+    semi: SanitizedMatch[];
+    final: SanitizedMatch;
 }
