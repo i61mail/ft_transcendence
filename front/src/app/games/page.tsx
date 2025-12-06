@@ -32,9 +32,9 @@ const Games = () =>
     }
 
     return (
-        <>
+        <div className="min-h-screen w-full bg-gradient-to-br from-[#bcc3d4] via-[#a8b0c5] to-[#92A0BD]">
             <Header user={user} onUserUpdate={setUser} activeRoute="game" />
-            <div className="min-h-screen w-full flex flex-col items-center justify-center p-8 bg-gradient-to-br from-[#bcc3d4] via-[#a8b0c5] to-[#92A0BD]">
+            <div className="w-full flex flex-col items-center justify-center p-8 pt-20">
                 <div className="mb-12 text-center">
                     <h1 className="font-pixelify text-5xl font-bold text-[#2d5a8a] mb-2 drop-shadow-lg">
                         SELECT GAME MODE
@@ -81,7 +81,7 @@ const Games = () =>
                     </div>
                 </div>
             </div>
-        </>
+        </div>
     )
 }
 

@@ -57,6 +57,109 @@ export default async function profileRoutes(app: FastifyInstance) {
   });
 
   // ═══════════════════════════════════════════════════════════
+  // GET /profile/leaderboard - Get top players by win rate
+  // ═══════════════════════════════════════════════════════════
+  app.get('/leaderboard', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      console.log('Leaderboard endpoint hit');
+      
+      // Get all users with their match stats and creation time
+      const users = app.db
+        .prepare('SELECT id, username, display_name, avatar_url, created_at FROM users')
+        .all() as any[];
+
+      console.log('Found users:', users.length);
+
+      // Calculate stats for each user
+      const leaderboard = users.map((user) => {
+        console.log('Processing user:', user.username);
+        
+        // Get pong matches only
+        const pongMatches = app.db
+          .prepare(`
+            SELECT 
+              game_mode,
+              left_player_id,
+              right_player_id,
+              winner
+            FROM pong_matches
+            WHERE (left_player_id = ? OR right_player_id = ?)
+            AND game_mode IN ('online', 'tournament')
+          `)
+          .all(user.id, user.id) as any[];
+
+        console.log(`User ${user.username} pong matches:`, pongMatches.length);
+
+        let wins = 0;
+        let losses = 0;
+
+        // Process pong matches only
+        pongMatches.forEach((match) => {
+          const isLeftPlayer = match.left_player_id === user.id;
+          const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
+          
+          if (isWinner) {
+            wins++;
+          } else {
+            losses++;
+          }
+        });
+
+        const totalGames = wins + losses;
+        const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+
+        return {
+          id: user.id,
+          username: user.username,
+          display_name: user.display_name,
+          avatar_url: user.avatar_url,
+          wins,
+          losses,
+          totalGames,
+          winRate,
+          created_at: user.created_at
+        };
+      });
+
+      // Sort by:
+      // 1. Players with games: by win rate (desc), then by total games (desc)
+      // 2. Players without games: by account creation time (oldest first)
+      leaderboard.sort((a, b) => {
+        // Both have played games
+        if (a.totalGames > 0 && b.totalGames > 0) {
+          if (b.winRate !== a.winRate) {
+            return b.winRate - a.winRate;
+          }
+          return b.totalGames - a.totalGames;
+        }
+        
+        // Only a has played games
+        if (a.totalGames > 0) {
+          return -1;
+        }
+        
+        // Only b has played games
+        if (b.totalGames > 0) {
+          return 1;
+        }
+        
+        // Neither has played games, sort by creation time (oldest first)
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+
+      // Return top 10 players (including those with no games)
+      const topPlayers = leaderboard.slice(0, 10);
+
+      return reply.code(200).send({
+        leaderboard: topPlayers
+      });
+    } catch (err) {
+      app.log.error(err);
+      return reply.code(500).send({ error: 'Failed to fetch leaderboard' });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
   // GET /profile/:id - Get a user's profile by ID
   // ═══════════════════════════════════════════════════════════
   app.get('/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {

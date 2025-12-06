@@ -1,6 +1,7 @@
 'use client'
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import AvatarUpload from "@/components/AvatarUpload";
 import { updateProfile } from "@/lib/api";
 
@@ -112,58 +113,66 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
         <nav className="flex items-center gap-16">
           <button 
             onClick={() => router.push('/dashboard')} 
-            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 overflow-hidden ${
+            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border overflow-hidden backdrop-blur-md ${
               activeRoute === 'dashboard' 
-                ? 'bg-gradient-to-br from-[#d4e3ff] via-[#b8c2d9] to-[#a8b0c5] border-[#5A789E] text-[#1a237e] font-bold' 
-                : 'bg-gradient-to-br from-[#c5cfe0] via-[#b0b9cc] to-[#9ca6ba] border-[#8895aa] text-[#2d5a8a] hover:border-[#5A789E]'
+                ? 'bg-white/30 border-white/50 text-[#1a237e] font-bold shadow-lg' 
+                : 'bg-white/10 border-white/20 text-[#2d5a8a] hover:bg-white/20 hover:border-white/40'
             }`}
           >
             <span className="relative">HOME</span>
           </button>
           <button 
             onClick={() => router.push('/chats')}
-            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 overflow-hidden ${
+            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border overflow-hidden backdrop-blur-md ${
               activeRoute === 'chat' 
-                ? 'bg-gradient-to-br from-[#d4e3ff] via-[#b8c2d9] to-[#a8b0c5] border-[#5A789E] text-[#1a237e] font-bold' 
-                : 'bg-gradient-to-br from-[#c5cfe0] via-[#b0b9cc] to-[#9ca6ba] border-[#8895aa] text-[#2d5a8a] hover:border-[#5A789E]'
+                ? 'bg-white/30 border-white/50 text-[#1a237e] font-bold shadow-lg' 
+                : 'bg-white/10 border-white/20 text-[#2d5a8a] hover:bg-white/20 hover:border-white/40'
             }`}
           >
             <span className="relative">CHAT</span>
           </button>
           <button
              onClick={() => router.push('/games')}
-            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 overflow-hidden ${
+            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border overflow-hidden backdrop-blur-md ${
               activeRoute === 'game' 
-                ? 'bg-gradient-to-br from-[#d4e3ff] via-[#b8c2d9] to-[#a8b0c5] border-[#5A789E] text-[#1a237e] font-bold' 
-                : 'bg-gradient-to-br from-[#c5cfe0] via-[#b0b9cc] to-[#9ca6ba] border-[#8895aa] text-[#2d5a8a] hover:border-[#5A789E]'
+                ? 'bg-white/30 border-white/50 text-[#1a237e] font-bold shadow-lg' 
+                : 'bg-white/10 border-white/20 text-[#2d5a8a] hover:bg-white/20 hover:border-white/40'
             }`}
           >
             <span className="relative">GAME</span>
           </button>
         </nav>
 
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-400 ring-2 ring-[#5A789E]">
-              <img src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${API_URL}${user.avatar_url}`) : "/default-avatar.png"} alt="Avatar" className="w-full h-full object-cover" />
+        <div className="flex items-center gap-20">
+          <div className="flex items-center gap-7 backdrop-blur-md bg-white/10 rounded-2xl px-10 py-4 border border-white/30 shadow-lg hover:bg-white/15 transition-all duration-300">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full overflow-hidden backdrop-blur-md bg-white/20 ring-2 ring-white/50 shadow-lg">
+                <img src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${API_URL}${user.avatar_url}`) : "/default-avatar.png"} alt="Avatar" className="w-full h-full object-cover" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
             </div>
             <div className="text-left">
-              <p className="font-pixelify text-2xl font-semibold text-black">{user?.display_name || user?.username}</p>
-              <p className="text-lg text-gray-600">{user?.email}</p>
+              <p className="font-pixelify text-2xl font-bold text-[#2d5a8a] drop-shadow-sm">{user?.display_name || user?.username}</p>
+              <p className="text-base text-[#2d5a8a]/70 font-medium">{user?.email}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setShowSearchModal(true)}
-              className="relative w-10 h-10 bg-[#5A789E] rounded-full flex items-center justify-center hover:bg-[#4a6888] transition-colors"
+              className="relative w-12 h-12 backdrop-blur-md bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300 border border-white/30 shadow-lg hover:scale-110 group"
             >
-              <span className="text-xl">🔍</span>
+              <svg className="w-5 h-5 text-[#2d5a8a] group-hover:text-[#1a4d7a] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </button>
 
             <div className="relative z-50" onMouseEnter={() => setShowSettingsMenu(true)} onMouseLeave={() => setShowSettingsMenu(false)}>
-              <button className="w-10 h-10 bg-[#5A789E] rounded-full flex items-center justify-center hover:bg-[#4a6888] transition-colors border-2 border-[#8aabd6] shadow-sm">
-                <span className="text-xl">⚙️</span>
+              <button className="w-12 h-12 backdrop-blur-md bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300 border border-white/30 shadow-lg hover:scale-110 group">
+                <svg className="w-5 h-5 text-[#2d5a8a] group-hover:text-[#1a4d7a] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
               </button>
               {showSettingsMenu && (
                 <div className="absolute right-0 top-full pt-1 w-48">
@@ -194,8 +203,8 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
         </div>
       </header>
 
-      {showSearchModal && (
-        <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50">
+      {showSearchModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-[9999]">
           <div className="bg-[#a8b0c5] rounded-2xl p-6 max-w-md w-full mx-4 border-2 border-[#8aabd6] shadow-lg">
             <div className="flex justify-between items-center mb-4">
               <h2 className="font-pixelify text-2xl font-bold text-black">Search Users</h2>
@@ -283,7 +292,8 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showEditModal && user && (

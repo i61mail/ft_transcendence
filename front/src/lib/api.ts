@@ -227,3 +227,21 @@ export async function getUserMatchHistory(userId: number) {
 
   return result;
 }
+
+/**
+ * Get leaderboard (top players by win rate)
+ */
+export async function getLeaderboard() {
+  const response = await fetch(`${API_URL}/profile/leaderboard`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to get leaderboard');
+  }
+
+  return result;
+}
