@@ -66,18 +66,19 @@ export default function PongTournament()
 	const router = useRouter();
 	const params = useSearchParams();
 	const code: string | null = params.get('code');
-	const currId: number = manager.;
+	const currId: number = manager.user?.id!;
 
     useEffect(() =>
     {
         if (manager.gameSocket && !sentRef.current)
         {
-			let data: any;
+			let data: any = {id: currId, username: manager.user?.username , code: code};
             if (code)
-				data = { gameType: 'joinTournament', data: {code: code, id: currId} }
+				data.gameType = 'joinTournament';
 			else
-				data = {gameType: "tournament", data: currId};
+				data.gameType = "startTournament";
 
+			console.log("data:", data);
             manager.gameSocket.send(JSON.stringify(data));
             sentRef.current = true;
             manager.gameSocket.onmessage = (msg) =>
@@ -87,10 +88,8 @@ export default function PongTournament()
 				const state: any = JSON.parse(msg.data.toString());
 				if (state.code == undefined)
 					return ;
-				if ((state.status == trnmtStatus.playingSemi
-
-				)
-					
+				console.log("joined tournament:", state.code);
+				if (state.status == trnmtStatus.playingSemi
 					|| (state.status == trnmtStatus.playingFinal
 						&& (state.final.player1!.id == currId || state.final.player2!.id == currId))
 					)
@@ -99,7 +98,6 @@ export default function PongTournament()
 				}
 				else if (state.status == trnmtStatus.close)
 				{
-					// show a friendly blocking alert so the user sees it before redirect
 					window.alert(
 						"🏁 Tournament Closed\n\n" +
 						"The tournament has been closed by the host. You will be redirected to the Games page.\n\n" +
@@ -146,20 +144,14 @@ export default function PongTournament()
 	const getWinnerText = (match: Match): string =>
 	{
 		if (!match.winner) return "TBD";
-		return match.winner.username + "-" + match.winner.id;
+		return match.winner.username;
 	};
 
 	const handleDeleteTournament = () =>
 	{
-		console.log("sent delete socket");
 		manager.gameSocket?.send(JSON.stringify({id: currId, action: "delete"}));
 	};
 
-	const handleLeaveTournament = () =>
-	{
-		manager.gameSocket?.send(JSON.stringify({id: currId, action: "leave"}));
-		router.push('/games');
-	};
 
 	return (
 		<div className="bg-gray-50 min-h-screen py-8 px-4">
@@ -173,17 +165,25 @@ export default function PongTournament()
 							</p>
 						</div>
 						<p className="text-2xl font-bold text-gray-800 font-mono">{statusString(tournament.status)}</p>
-						{(() => {
-							const isHost = (tournament.host?.id === currId);
-							console.log(tournament.host?.id);
-							return (
-								<button
-									className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md transition"
-									onClick={isHost ? handleDeleteTournament : handleLeaveTournament}
-								>
-									{isHost ? 'Delete the tournament' : 'Leave the tournament'}
-								</button>
-							);
+						{(() =>
+						{
+							if (tournament.host?.id === currId)
+							{
+								return (
+									<button
+										className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md transition"
+										onClick={handleDeleteTournament}
+									>
+										Delete the tournament
+									</button>
+								);
+							}
+							else
+							{
+								return (
+									<div/>
+								);
+							}
 						})()}
 					</div>
 				</div>
@@ -203,13 +203,13 @@ export default function PongTournament()
 
 							<div className="space-y-3">
 								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[0] ? getPlayerClass(tournament.semi[0].winner, tournament.semi[0].player1) : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semi?.[0]?.player1?.username + "-" + tournament.semi?.[0]?.player1?.id || '-'}
+									{tournament.semi?.[0]?.player1?.username || '-'}
 								</div>
 
 								<div className="text-center text-sm text-gray-400 font-semibold">VS</div>
 
 								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[0] ? getPlayerClass(tournament.semi[0].winner, tournament.semi[0].player2) : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semi?.[0]?.player2?.username + "-" + tournament.semi?.[0]?.player2?.id || '-'}
+									{tournament.semi?.[0]?.player2?.username || '-'}
 								</div>
 							</div>
 						</div>
@@ -221,13 +221,13 @@ export default function PongTournament()
 
 							<div className="space-y-3">
 								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[1] ? getPlayerClass(tournament.semi[1].winner, tournament.semi[1].player1) : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semi?.[1]?.player1?.username + "-" + tournament.semi?.[1]?.player1?.id || '-'}
+									{tournament.semi?.[1]?.player1?.username || '-'}
 								</div>
 
 								<div className="text-center text-sm text-gray-400 font-semibold">VS</div>
 
 								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[1] ? getPlayerClass(tournament.semi[1].winner, tournament.semi[1].player2) : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semi?.[1]?.player2?.username + "-" + tournament.semi?.[1]?.player2?.id || '-'}
+									{tournament.semi?.[1]?.player2?.username || '-'}
 								</div>
 							</div>
 						</div>
@@ -244,11 +244,11 @@ export default function PongTournament()
 						</div>
 						<div className="space-y-3">
 							<div className={`p-3 border-2 rounded text-center transition-all ${tournament.final ? getPlayerClass(tournament.final.winner, tournament.final.player1) : 'bg-white border-gray-200 text-gray-800'}`}>
-								{tournament.final?.player1?.username + '-' + tournament.final?.player1?.id || "TBD"}
+								{tournament.final?.player1?.username || "TBD"}
 							</div>							<div className="text-center text-sm text-gray-400 font-semibold">VS</div>
 
 							<div className={`p-3 border-2 rounded text-center transition-all ${tournament.final ? getPlayerClass(tournament.final.winner, tournament.final.player2) : 'bg-white border-gray-200 text-gray-800'}`}>
-								{tournament.final?.player2?.username + '-' + tournament.final?.player2?.id || "TBD"}
+								{tournament.final?.player2?.username || "TBD"}
 							</div>
 							</div>
 

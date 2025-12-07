@@ -107,45 +107,26 @@ class Tournament
         }
     }
 
-    deletePlayerById(id: number)
-    {
-        if (this.tData.semi[0].player1
-            && this.tData.semi[0].player1.id == id)
-            this.tData.semi[0].player1 = null;
-        else if (this.tData.semi[0].player2
-            && this.tData.semi[0].player2.id == id)
-            this.tData.semi[0].player2 = null;
-        else if (this.tData.semi[1].player1
-            && this.tData.semi[1].player1.id == id)
-            this.tData.semi[1].player1 = null;
-        else if (this.tData.semi[1].player2
-            && this.tData.semi[1].player2.id == id)
-            this.tData.semi[1].player2 = null;
-    }
-
     playerListener(player: playerInfo)
     {
-        console.log("hello", player.id);
         player.socket.onmessage = (msg) =>
         {
             const data = JSON.parse(msg.data.toString());
 
             console.log("action:", data.action);
-            switch (data.action)
+            if (data.action == 'delete' && player.id == this.tData.host!.id)
             {
-                case undefined:
-                    return ;
-                case 'delete':
-                    this.tData.status = trnmtStatus.close;
-                    this.broadcastTournamentData();
-                    this.closeTournament();
-                    break ;
-                case 'leave':
-                    console.log("player", player.id, "left");
-                    this.deletePlayerById(player.id);
-                    playersInTournaments.delete(player.id);
-                    this.broadcastTournamentData();
+                this.tData.status = trnmtStatus.close;
+                this.broadcastTournamentData();
+                this.closeTournament();
             }
+            else if (data.gameType != undefined)
+            {
+                startTournament(player, Tournament.server!);
+                this.broadcastTournamentData();
+            }
+            else
+                this.broadcastTournamentData();
         };
     }
 
@@ -154,7 +135,7 @@ class Tournament
         let doesExist: boolean = false;
         this.forEachPlayer((currPlayer: playerInfo) =>
         {
-            if (currPlayer.id != -1 && player.id == currPlayer.id)
+            if (player.id == currPlayer.id)
             {
                 doesExist = true;
                 currPlayer.socket = player.socket;
@@ -163,6 +144,7 @@ class Tournament
         });
         if (doesExist)
         {
+            console.log("player", player.id, player.username, "does exist");
             this.broadcastTournamentData();
             return (true);
         }
@@ -185,6 +167,7 @@ class Tournament
 
     interval(winner: number, match: Match, intervalId: NodeJS.Timeout)
     {
+        console.log('winner:', winner, 'player1:', match.player1?.id, 'player2:', match.player2?.id);
         if (winner == 0)
             return ;
         if (winner == 1)
@@ -196,23 +179,15 @@ class Tournament
 
     startGame(match: Match)
     {
-        console.log(match.player1?.id, "vs", match.player2?.id);
-        if (match.player1 == null)
-            match.winner = match.player2;
-        else if (match.player2 == null)
-            match.winner = match.player1;
-        else
+        const game: PongGame = pongOnline(
+            match.player1!,
+            match.player2!,
+            Tournament.server!
+        );
+        const intervalId: NodeJS.Timeout = setInterval(()=>
         {
-            const game: PongGame = pongOnline(
-                match.player1!,
-                match.player2!,
-                Tournament.server!
-            );
-            const intervalId: NodeJS.Timeout = setInterval(()=>
-            {
-                this.interval(game.winner, this.tData.semi[0], intervalId);
-            }, 1000);
-        }
+            this.interval(game.winner, match, intervalId);
+        }, 1000);
     }
 
     startSemiGame()
@@ -225,6 +200,7 @@ class Tournament
 
         const intervalId: NodeJS.Timeout = setInterval(() =>
         {
+            console.log('semi finale:', this.tData.semi[0].winner != null, this.tData.semi[1].winner != null);
             if (this.tData.semi[0].winner != null
                 && this.tData.semi[1].winner != null
             )
@@ -232,12 +208,13 @@ class Tournament
                 this.tData.status = trnmtStatus.startingFinal;
                 this.tData.final.player1 = this.tData.semi[0].winner;
                 this.tData.final.player2 = this.tData.semi[1].winner;
+                this.broadcastTournamentData();
                 this.forEachPlayer((player: playerInfo) =>
                 {
                     startTournament(player, Tournament.server!);
                 });
-                setTimeout(() => {this.startFinaleGame()}, 6000);
                 clearInterval(intervalId);
+                setTimeout(() => {this.startFinaleGame()}, 6000);
             }
         }, 1000);
     }
@@ -247,8 +224,7 @@ class Tournament
         tournaments.delete(this.tData.code);
         this.forEachPlayer((player: playerInfo) =>
         {
-            if (player.id != -1)
-                playersInTournaments.delete(player.id);
+            playersInTournaments.delete(player.id);
         });
         
     }
@@ -268,6 +244,7 @@ class Tournament
                     startTournament(player, Tournament.server!);
                 });
                 this.broadcastTournamentData();
+                clearInterval(intervalId);
                 setTimeout(() => this.closeTournament(), 10000);
            }
         }, 1000);
@@ -323,9 +300,14 @@ function findPlayer(player: playerInfo): boolean
 {
     const code: string | null = playersInTournaments.get(player.id) ?? null;
 
-    if (code)
+    if (!player.socket)
     {
-        tournaments.get(code)!.addPlayer(player);
+        console.log("no socket is open");
+        return (true);
+    }
+    if (code && tournaments.has(code))
+    {
+        tournaments.get(code)?.addPlayer(player);
         return (true);
     }
     return (false);

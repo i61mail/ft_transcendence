@@ -4,6 +4,7 @@ import { Chat } from '../types/chat.types';
 import { pongLocal, pongOnline } from '../routes/pong';
 import { GameMode } from '../types/pong.types';
 import { joinTournament, startTournament } from '../routes/tournament';
+import { playerInfo } from '../types/playerInfo.types';
 
 const chatMessageHandler = (socket: WebSocket, request: FastifyRequest) => {
   const server = request.server;
@@ -194,9 +195,9 @@ const queue = new Queue;
 
 
 
-const handleOnlineGame = async (socket: WebSocket, player: number, server: FastifyInstance) => 
+const handleOnlineGame = async (socket: WebSocket, id: number, username: string ,server: FastifyInstance) => 
 {
-    const p1: Player = {socket: socket, id: player, username: "John Doe"};
+    const p1: Player = {socket: socket, id: id, username: username};
 
     socket.onclose = () =>
     {
@@ -205,7 +206,7 @@ const handleOnlineGame = async (socket: WebSocket, player: number, server: Fasti
 
     if (!queue.size())
     {
-        console.log("finding second player for", player, queue.size());
+        console.log("finding second player for", id, queue.size());
         queue.enqueue(p1);
     }
     else
@@ -224,7 +225,13 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
     const server = request.server;
     socket.onmessage = (msg) =>
     {
-        const {gameType, data} = JSON.parse(msg.data.toString());
+        const {gameType, id, username, code} = JSON.parse(msg.data.toString());
+        const player: playerInfo = 
+        {
+          id: id,
+          username: username,
+          socket: socket
+        };
         if (gameType === "init")
         {
             console.log("created new game socket...");
@@ -232,14 +239,14 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
         else if (gameType === "local")
         {
             socket.send(JSON.stringify({gm: GameMode.local, plyI: 0}))
-            pongLocal({id: data, socket: socket, username: "John Doe"}, server);
+            pongLocal(player, server);
         }
         else if (gameType === "online")
-            handleOnlineGame(socket, data, server);
-        else if (gameType === "tournament")
-            startTournament({id: data, socket: socket, username: "John Doe"}, server);
+            handleOnlineGame(socket, id, username, server);
+        else if (gameType === "startTournament")
+            startTournament(player, server);
         else if (gameType === "joinTournament")
-            joinTournament({id: data.id, socket: socket,username: "James bond"}, data.code);
+            joinTournament(player, code);
     }
 
     socket.onclose = () =>

@@ -28,7 +28,7 @@ const OnlineGame = () =>
         {
             
             console.log("starting online game...");
-            const data = {gameType: "online", data: manager.user?.id};
+            const data = {gameType: "online", id: manager.user?.id, username: manager.user?.username};
             manager.gameSocket.send(JSON.stringify(data));
             sentRef.current = true;
             manager.gameSocket.onmessage = (msg) => 

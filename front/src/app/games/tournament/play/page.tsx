@@ -15,6 +15,7 @@ const OnlineGame = () =>
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const router = useRouter(); 
 
+    
     const handleFinished = () =>
     {
         if (manager.gameSocket)
