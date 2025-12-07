@@ -1,7 +1,7 @@
 import { WebSocket } from 'ws';
 import fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import { Chat } from '../types/chat.types';
-import { pongLocal, pongOnline } from '../routes/pong';
+import { pongAI, pongLocal, pongOnline } from '../routes/pong';
 import { GameMode } from '../types/pong.types';
 import { joinTournament, startTournament } from '../routes/tournament';
 import { playerInfo } from '../types/playerInfo.types';
@@ -225,7 +225,7 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
     const server = request.server;
     socket.onmessage = (msg) =>
     {
-        const {gameType, id, username, code} = JSON.parse(msg.data.toString());
+        const {gameType, id, username, code, difficulty} = JSON.parse(msg.data.toString());
         const player: playerInfo = 
         {
           id: id,
@@ -247,6 +247,8 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
             startTournament(player, server);
         else if (gameType === "joinTournament")
             joinTournament(player, code);
+        else if (gameType === "ai")
+            pongAI(player, difficulty, server);
     }
 
     socket.onclose = () =>

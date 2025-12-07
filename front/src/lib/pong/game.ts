@@ -88,8 +88,8 @@ class Padle
         let that: Padle = this;
         if (this._gameMode == intf.GameMode.online && !isPlayable)
             return ;
-        document.addEventListener("keydown", function(e) {
-            
+        document.addEventListener("keydown", function(e)
+        {
             if (e.key == that.upKey && that._status != intf.keyStat.up)
             {
                 that._status = intf.keyStat.up;
@@ -104,7 +104,8 @@ class Padle
             }
         });
         
-        document.addEventListener("keyup", function(e) {
+        document.addEventListener("keyup", function(e)
+        {
             if (court.socket.readyState != WebSocket.OPEN)
                 return ;
             if ((e.key == that.upKey && that._status == intf.keyStat.up)
@@ -166,15 +167,13 @@ class Court
 
     constructor(socket: WebSocket, info: string)
     {
-        const { gm, playerIndex } = JSON.parse(info);
+        const { gm } = JSON.parse(info);
 
         this.socket = socket;
         this.gameMode = gm;
 
-        this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this,
-            (playerIndex == 0) ? true : false, this.gameMode);
-        this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this,
-            (playerIndex == 1) ? true : false, this.gameMode);
+        this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this, true, this.gameMode);
+        this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this, true, this.gameMode);
 
         this._scoreBoard = new ScoreBoard();
         this._ball = new Ball();
@@ -273,7 +272,6 @@ export function startGame(
 
     socket.onmessage = (msg) =>
     {
-        // console.log("hummmmm", msg.data);
         if (msg.data == "finished")
             pong.finish(onFinish);
         else
