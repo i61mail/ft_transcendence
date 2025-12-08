@@ -72,6 +72,10 @@ class TicTacToeGame
 		if (!this.ctx)
 			return ;
 		this.ctx.clearRect(0, 0, SETTINGS.canvaSize, SETTINGS.canvaSize);
+		
+		// Draw turn indicator at the top
+		this.drawTurnIndicator();
+		
 		this.ctx.lineWidth = SETTINGS.borderSize;
 		this.ctx.strokeStyle = SETTINGS.borderColor;
 		for (let i = 1; i <= 2; i++) {
@@ -117,6 +121,27 @@ class TicTacToeGame
 		this.ctx.beginPath();
 		this.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
 		this.ctx.stroke();
+	}
+
+
+	drawTurnIndicator()
+	{
+		// Draw turn indicator at the top of the canvas
+		this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+		this.ctx.fillRect(0, 0, intf.SETTINGS.canvaSize, 60);
+		
+		// Determine if it's the player's turn
+		const isMyTurn = this.currentPlayer === this.playableChar;
+		
+		// Set color based on whose turn it is
+		this.ctx.fillStyle = isMyTurn ? '#4CAF50' : '#FF9800';
+		this.ctx.font = 'bold 24px sans-serif';
+		this.ctx.textAlign = 'center';
+		this.ctx.textBaseline = 'middle';
+		
+		// Display turn message
+		const turnText = isMyTurn ? `YOUR TURN (${this.playableChar})` : `OPPONENT'S TURN (${this.currentPlayer})`;
+		this.ctx.fillText(turnText, intf.SETTINGS.canvaSize / 2, 30);
 	}
 
 
@@ -174,7 +199,6 @@ export function startGame(
     onFinish: () => void
 )
 {
-	let ttt: TicTacToeGame;
 	canvas.style.backgroundColor = SETTINGS.squareColor;
 	canvas.width = SETTINGS.canvaSize;
 	canvas.height = SETTINGS.canvaSize;
@@ -183,15 +207,12 @@ export function startGame(
 
 	if (symbol == null) return;
 
+	const ttt: TicTacToeGame =  new TicTacToeGame(socket, canvas, symbol);
+	ttt.draw();
 	socket.onmessage = (msg) =>
-    {
-		ttt =  new TicTacToeGame(socket, canvas, symbol);
-		ttt.draw();
-        socket.onmessage = (msg) =>
-        {
-			console.log("received:", msg.data);
-            if (ttt.listen(JSON.parse(msg.data)))
-				ttt.finish(onFinish);
-        }
-    }
+	{
+		console.log("received:", msg.data);
+		if (ttt.listen(JSON.parse(msg.data)))
+			ttt.finish(onFinish);
+	}
 }

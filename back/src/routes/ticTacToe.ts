@@ -21,7 +21,7 @@ class Player
 
 	socketListen()
 	{
-		this.socket.send(this.symbol);
+		// this.socket.send(this.symbol);
 
 		this.socket.onmessage = (msg) => {
 			console.log("received:", msg.data);
@@ -36,6 +36,7 @@ class Player
 		this.socket.send(JSON.stringify(gameMsg));
 	}
 }
+
 
 export class TicTacToeGame
 {
@@ -176,7 +177,6 @@ export class TicTacToeGame
 		}
 	}
 }
-
 
 export function tttGame(
 	player1 : playerInfo,
