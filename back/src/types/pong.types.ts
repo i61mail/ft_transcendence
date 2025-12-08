@@ -51,7 +51,7 @@ export const SETTINGS: settingsInterface =
     paddleWidth: 12,
     paddleHeight: 80,
     // scoreboard
-    winningScore: 1,
+    winningScore: 7,
     smallFont: "20px Arial",
     largeFont: "30px Arial",
     scoreTextColor: "#F0EAD6", // eggshell white
@@ -69,7 +69,14 @@ export enum GameMode {
     AI
 }
 
+export enum onlineMode {
+    queue,
+    invite,
+    tournament
+}
+
 export enum PlayerIndex {
+    none = 0,
     leftPlayer = 1,
     rightPlayer = 2
 };
@@ -97,8 +104,7 @@ export enum Difficulty // might need to be balanced later, also you can add as m
 {
     easy = 2,
     meduim = 1,
-    hard = 0.5,
-    impossible = 0 // might remove later
+    hard = 0
 }
 
 export interface PongDataBase

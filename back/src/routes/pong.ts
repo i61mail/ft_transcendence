@@ -1,11 +1,8 @@
 import * as types from "../types/pong.types";
 import { EventEmitter } from "events";
 import type { WebSocket } from "ws";
-import { FastifyInstance, FastifyRequest } from 'fastify';
+import { FastifyInstance } from 'fastify';
 import { playerInfo } from "../types/playerInfo.types";
-
-// const fastify = Fastify({ logger: true });
-// fastify.register(dbPlugin);
 
 const event: EventEmitter = new EventEmitter();
 
@@ -13,9 +10,12 @@ class ScoreBoard
 {
     leftPlayerScore: number = 0;
     rightPlayerScore: number = 0;
+    winnerByForfeit: types.PlayerIndex = types.PlayerIndex.none;
 
     get winner() : number
     {
+        if (this.winnerByForfeit != types.PlayerIndex.none)
+            return (this.winnerByForfeit);
         if (this.leftPlayerScore >= types.SETTINGS.winningScore)
             return types.PlayerIndex.leftPlayer;
         if (this.rightPlayerScore >= types.SETTINGS.winningScore)
@@ -217,6 +217,7 @@ abstract class Controller
         this._status = types.keyStat.none;
         this.socket = player.socket;
         this.id = player.id;
+        console.log('!!!!id:', this.id);
     }
 
     abstract controlling(): void;
@@ -253,7 +254,8 @@ class LocalController extends Controller // remove this later
 
     static listener(socket: WebSocket, leftPlayer: LocalController, rightPlayer: LocalController)
     {
-        socket.onmessage = (msg) => {
+        socket.onmessage = (msg) =>
+        {
             const data: string = msg.data.toString();
             if (data.length != 2)
                 return ;
@@ -261,7 +263,7 @@ class LocalController extends Controller // remove this later
                 leftPlayer._status = parseInt(data[1]!, 10); // i should problem check the message length before using it
             else
                 rightPlayer._status = parseInt(data[1]!, 10);
-        }
+        };
     }
 }
 
@@ -277,7 +279,11 @@ class onlineController extends Controller
         if (this.socket)
         {
             this.socket.onmessage = (msg) => {
-                this._status = parseInt(msg.data.toString(), 10);
+                const data = msg.data.toString();
+                console.log("player input:", msg.data);
+                
+                this._status = parseInt(data[0], 10);
+                console.log("player status:", this._status);
             }
         }
     }
@@ -352,8 +358,8 @@ class Court
     public  gameMode: types.GameMode;
     public  leftPlayerController: Controller;
     public  rightPlayerController: Controller;
-    public  _scoreBoard: ScoreBoard;
-    private _ball: Ball;
+    public  scoreBoard: ScoreBoard;
+    public  ball: Ball;
     private aiDifficulty: types.Difficulty;
     private server: FastifyInstance;
 
@@ -365,7 +371,7 @@ class Court
     )
     {
         this.server = server;
-        this._ball = new Ball(this);
+        this.ball = new Ball(this);
         this.gameMode = gameMode;
         this.aiDifficulty = difficulty;
         this.leftPadle = new Padle(types.PlayerIndex.leftPlayer, this);
@@ -387,7 +393,24 @@ class Court
             this.rightPlayerController = new AIController(this.rightPadle, this, difficulty, player1) as Controller;
         }
 
-        this._scoreBoard = new ScoreBoard()
+        this.scoreBoard = new ScoreBoard()
+    }
+
+    onCloseHandler(player1: playerInfo, player2: playerInfo)
+    {
+        player1.socket.onclose = () =>
+        {
+            this.scoreBoard.winnerByForfeit = types.PlayerIndex.rightPlayer;
+            this.endGame()
+        }
+        if (player1.id != player2.id)
+        {
+            player2.socket.onclose = () =>
+            {
+                this.scoreBoard.winnerByForfeit = types.PlayerIndex.rightPlayer;
+                this.endGame()
+            }
+        }
     }
 
     listenToPlayers()
@@ -398,15 +421,15 @@ class Court
     
     spawnBall()
     {
-        this._ball.velocity = {
+        this.ball.velocity = {
             x: Math.random() > 0.5 ? 1 : -1,
             y: Math.random() > 0.5 ? 1 : -1
         };
-        this._ball.posX = types.SETTINGS.canvasWidth / 2;
-        this._ball.posY = types.SETTINGS.canvasHeight / 2;
-        if (this.gameMode == types.GameMode.AI && this._ball.velocity.x == 1)
-            event.emit("aiPredection", this._ball.posX, this._ball.posY, this._ball.velocity);
-        this._ball.speed = Ball.minSpeed;
+        this.ball.posX = types.SETTINGS.canvasWidth / 2;
+        this.ball.posY = types.SETTINGS.canvasHeight / 2;
+        if (this.gameMode == types.GameMode.AI && this.ball.velocity.x == 1)
+            event.emit("aiPredection", this.ball.posX, this.ball.posY, this.ball.velocity);
+        this.ball.speed = Ball.minSpeed;
     }
 
     addToDatabase()
@@ -437,7 +460,7 @@ class Court
 
 
 
-        const winner: string = this._scoreBoard.winner == types.PlayerIndex.leftPlayer
+        const winner: string = this.scoreBoard.winner == types.PlayerIndex.leftPlayer
             ? 'left' : 'right';
         
         const leftId: number = this.leftPlayerController.id;
@@ -446,22 +469,13 @@ class Court
             : null ;
         try
         {
-            console.log("Pong match values:", {
-                gameMode,
-                leftId,
-                rightId,
-                winner,
-                leftScore: this._scoreBoard.leftPlayerScore,
-                rightScore: this._scoreBoard.rightPlayerScore,
-                difficulty
-            });
             insertMatchStmt.run(
                 gameMode,
                 leftId,
                 rightId,
                 winner,
-                this._scoreBoard.leftPlayerScore,
-                this._scoreBoard.rightPlayerScore,
+                this.scoreBoard.leftPlayerScore,
+                this.scoreBoard.rightPlayerScore,
                 difficulty
             );
         }
@@ -471,17 +485,24 @@ class Court
         }
     }
 
-    scorePoint(playerIndex: number)
+    endGame()
+    {
+        this._isMatchStarted = false;
+        this.addToDatabase();
+        this.leftPlayerController.socket.send("finished");
+        this.rightPlayerController.socket.send("finished");
+    }
+
+    async scorePoint(playerIndex: number)
     {
         if (playerIndex == types.PlayerIndex.leftPlayer)
-            this._scoreBoard.leftPlayerScore += 1;
+            this.scoreBoard.leftPlayerScore += 1;
         else if (playerIndex == types.PlayerIndex.rightPlayer)
-            this._scoreBoard.rightPlayerScore += 1;
+            this.scoreBoard.rightPlayerScore += 1;
 
-        if (this._scoreBoard.winner != 0)
+        if (this.scoreBoard.winner != 0)
         {
-            this._isMatchStarted = false;
-            this.addToDatabase();
+            this.endGame();
         }
         else
             this.spawnBall();
@@ -493,25 +514,22 @@ class Court
             return;
         this.leftPlayerController.update(deltaTime);
         this.rightPlayerController.update(deltaTime);
-        this._ball.update(deltaTime);
+        this.ball.update(deltaTime);
         let data: types.messageInterace =
         {
-            // this is a vector, so eithert change the name of it or make the user teleport to where it's position on the server instead
-
             leftPlayerPosY: this.leftPadle.posY,
             rightPlayerPosY: this.rightPadle.posY,
 
-            //might add the current position in case there was a big delay between the paddle position in the server and in the client 
+            leftPlayerScore: this.scoreBoard.leftPlayerScore,
+            rightPlayerScore: this.scoreBoard.rightPlayerScore,
 
-            leftPlayerScore: this._scoreBoard.leftPlayerScore,
-            rightPlayerScore: this._scoreBoard.rightPlayerScore,
-
-            ballPosX: this._ball.posX,
-            ballPosY: this._ball.posY
+            ballPosX: this.ball.posX,
+            ballPosY: this.ball.posY,
         }
         
         this.leftPlayerController.socket.send(JSON.stringify(data));
-        this.rightPlayerController.socket.send(JSON.stringify(data));
+        if (this.leftPlayerController.id != this.rightPlayerController.id)
+            this.rightPlayerController.socket.send(JSON.stringify(data));
     }
 
     get bounds()
@@ -535,12 +553,26 @@ export class PongGame
         server: FastifyInstance,
         player1 : playerInfo,
         player2 : playerInfo = player1,
-        difficulty: types.Difficulty = types.Difficulty.impossible
+        difficulty: types.Difficulty = types.Difficulty.hard
     )
     {
         this._court = new Court(gameMode, difficulty, player1, player2, server);
+        
         let that = this;
-        this._court.listenToPlayers();
+        let data: types.messageInterace =
+        {
+            leftPlayerPosY: this._court.leftPadle.posY,
+            rightPlayerPosY: this._court.rightPadle.posY,
+
+            leftPlayerScore: this._court.scoreBoard.leftPlayerScore,
+            rightPlayerScore: this._court.scoreBoard.rightPlayerScore,
+
+            ballPosX: this._court.ball.posX,
+            ballPosY: this._court.ball.posY,
+        }
+        
+        this._court.leftPlayerController.socket.send(JSON.stringify(data));
+        this._court.rightPlayerController.socket.send(JSON.stringify(data));
         this.run();
     }
 
@@ -549,11 +581,15 @@ export class PongGame
         this._court.update(deltaTime);
     }
 
-    public run()
+    private async run()
     {
+        
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
         let parent: PongGame = this;
         let previousUpdateTime = Date.now();
         this._court.spawnBall();
+        this._court.listenToPlayers();
         setInterval(function()
         {
             let updateTime = Date.now();
@@ -564,7 +600,7 @@ export class PongGame
     }
     get winner(): number
     {
-        return (this._court._scoreBoard.winner);
+        return (this._court.scoreBoard.winner);
     }
 }
 
@@ -572,12 +608,18 @@ export function pongOnline(
     player1 : playerInfo,
     player2 : playerInfo,
     server: FastifyInstance
-)
+) : PongGame
 {
-    player1.socket.send(JSON.stringify({gm: types.GameMode.local, plyI: 0}));
-    player2.socket.send(JSON.stringify({gm: types.GameMode.local, plyI: 1}));
+    const data: string =JSON.stringify(
+    {
+        gm: types.GameMode.online,
+        player1: player1.username,
+        player2: player2.username
+    });
+    player1.socket.send(data);
+    player2.socket.send(data);
 
-    let pong: PongGame = new PongGame(types.GameMode.online, server, player1, player2);
+    return new PongGame(types.GameMode.online, server, player1, player2);
 }
 
 export function pongLocal(
@@ -585,16 +627,39 @@ export function pongLocal(
     server: FastifyInstance
 )
 {
-    player.socket.send(JSON.stringify({gm: types.GameMode.local, plyI: 0}));
+    player.socket.send(JSON.stringify(
+        {
+            gm: types.GameMode.local,
+            player1: 'Player 1',
+            player2: 'Player 2'
+        }));
     let pong: PongGame = new PongGame(types.GameMode.local, server, player);
 }
 
 export function pongAI(
     player : playerInfo,
-    difficulty: types.Difficulty,
+    difficulty: string,
     server: FastifyInstance
 )
 {
-    player.socket.send(JSON.stringify({gm: types.GameMode.local, plyI: 0}));
-    let pong: PongGame = new PongGame(types.GameMode.AI, server, player, undefined, difficulty);
+
+    player.socket.send(JSON.stringify({gm: types.GameMode.AI, player1: player.username, player2: `${difficulty} bot`}));
+
+    let pongDif: types.Difficulty = types.Difficulty.easy;
+
+    switch (difficulty)
+    {
+        case 'easy':
+            pongDif = types.Difficulty.easy;
+            break;
+        case 'meduim':
+            pongDif = types.Difficulty.meduim;
+            break;
+        case 'hard':
+            pongDif = types.Difficulty.hard;
+            break;
+        default:
+            return;
+    }
+    let pong: PongGame = new PongGame(types.GameMode.AI, server, player, undefined, pongDif);
 }

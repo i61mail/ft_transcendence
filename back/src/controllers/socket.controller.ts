@@ -1,8 +1,11 @@
 import { WebSocket } from 'ws';
 import fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import { Chat } from '../types/chat.types';
-import { pongLocal, pongOnline } from '../routes/pong';
+import { pongAI, pongLocal, pongOnline } from '../routes/pong';
 import { GameMode } from '../types/pong.types';
+import { joinTournament, startTournament } from '../routes/tournament';
+import { playerInfo } from '../types/playerInfo.types';
+import { tttGame } from '../routes/ticTacToe';
 
 const chatMessageHandler = (socket: WebSocket, request: FastifyRequest) => {
   const server = request.server;
@@ -190,61 +193,54 @@ class Queue{
 }
 
 
+const tttQueue = new Queue;
 
-const queue = new Queue; 
-
-
-
-const handleOnlineGame = async (socket: WebSocket, player: number, server: FastifyInstance) => 
+const handletttGame = async (socket: WebSocket, id: number, username: string ,server: FastifyInstance) => 
 {
-    const p1: Player = {socket: socket, id: player, username: "John Doe"};
+    const p1: Player = {socket: socket, id: id, username: username};
 
     socket.onclose = () =>
     {
-        queue.remove(p1);
+        tttQueue.remove(p1);
     }
 
-    if (!queue.size())
+    if (!tttQueue.size())
     {
-        console.log("finding second player for", player, queue.size());
-        queue.enqueue(p1);
+        console.log("finding second player for", id, tttQueue.size());
+        tttQueue.enqueue(p1);
     }
     else
     {
-        console.log("starting online game now...", queue.size())
-        const p2: Player | undefined = queue.dequeue();
+        console.log("starting online game now...", tttQueue.size())
+        const p2: Player | undefined = tttQueue.dequeue();
         if (p1 && p2)
-        {
-            p1.socket.send(JSON.stringify({gm: GameMode.online, playerIndex: 0}));
-            p2.socket.send(JSON.stringify({gm: GameMode.online, playerIndex: 1}));
-            pongOnline(p1, p2, server);
-        }
+            tttGame(p1, p2, server);
     }
 }
 
-const handleTournament = async (socket: WebSocket, player: any) =>
-{
-    const p: Player = {socket: socket, id: player, username: "John Doe"};
 
-    if (queue.size() < 3)
+const pongQueue = new Queue;
+
+const handleOnlineGame = async (socket: WebSocket, id: number, username: string ,server: FastifyInstance) => 
+{
+    const p1: Player = {socket: socket, id: id, username: username};
+
+    socket.onclose = () =>
     {
-        console.log("waiting for other players to join...");
-        queue.enqueue(p);
+        pongQueue.remove(p1);
+    }
+
+    if (!pongQueue.size())
+    {
+        console.log("finding second player for", id, pongQueue.size());
+        pongQueue.enqueue(p1);
     }
     else
     {
-        const p1: Player | undefined = queue.dequeue();
-        const p2: Player | undefined = queue.dequeue();
-        const p3: Player | undefined = queue.dequeue();
-        const p4: Player | undefined = p;
-
-        if (p1 && p2 && p3 && p4)
-        {
-            p1.socket.send(JSON.stringify({state: "true"}));
-            p2.socket.send(JSON.stringify({state: "true"}));
-            p3.socket.send(JSON.stringify({state: "true"}));
-            p4.socket.send(JSON.stringify({state: "true"}));
-        }
+        console.log("starting online game now...", pongQueue.size())
+        const p2: Player | undefined = pongQueue.dequeue();
+        if (p1 && p2)
+            pongOnline(p1, p2, server);
     }
 }
 
@@ -255,7 +251,13 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
     const server = request.server;
     socket.onmessage = (msg) =>
     {
-        const {gameType, data} = JSON.parse(msg.data.toString());
+        const {gameType, id, username, code, difficulty} = JSON.parse(msg.data.toString());
+        const player: playerInfo = 
+        {
+          id: id,
+          username: username,
+          socket: socket
+        };
         if (gameType === "init")
         {
             console.log("created new game socket...");
@@ -263,12 +265,18 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
         else if (gameType === "local")
         {
             socket.send(JSON.stringify({gm: GameMode.local, plyI: 0}))
-            pongLocal({id: data, socket: socket, username: "John Doe"}, server);
+            pongLocal(player, server);
         }
         else if (gameType === "online")
-            handleOnlineGame(socket, data, server);
-        else if (gameType === "tournament")
-            handleTournament(socket, data);
+            handleOnlineGame(socket, id, username, server);
+        else if (gameType === "startTournament")
+            startTournament(player, server);
+        else if (gameType === "joinTournament")
+            joinTournament(player, code);
+        else if (gameType === "ai")
+            pongAI(player, difficulty, server);
+        else if (gameType === "tictactoe")
+            handletttGame(socket, id, username, server);
     }
 
     socket.onclose = () =>

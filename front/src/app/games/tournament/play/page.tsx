@@ -15,38 +15,35 @@ const OnlineGame = () =>
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const router = useRouter(); 
 
+    
     const handleFinished = () =>
     {
         if (manager.gameSocket)
         {
-            router.push('/games');
+            router.push('/games/tournament');
         }
     };
     useEffect(() =>
     {
-        if (!manager.gameSocket)
-            router.push("/games");
         if (manager.gameSocket && !sentRef.current)
         {
-            
-            console.log("starting online game...");
-            const data = {gameType: "online", id: manager.user?.id, username: manager.user?.username};
-            manager.gameSocket.send(JSON.stringify(data));
             sentRef.current = true;
+            console.log("start");
             manager.gameSocket.onmessage = (msg) => 
             {
-                setStart(true);
+                console.log("bruhhhh");
+
                 if (canvasRef.current && manager.gameSocket)
                 {
-                    console.log("start");
                     startGame(canvasRef.current, manager.gameSocket, msg.data, handleFinished);
                 }
             }
         }
-    }, [])
+    }, [manager.gameSocket])
 
     return (
         <>
+            {/* {!start && <div>Loading...</div>} */}
             {<canvas ref={canvasRef} width={800} height={600}>
             if you see this message, than the canvas did not load propraly
         </canvas>}

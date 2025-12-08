@@ -1,13 +1,13 @@
 "use client"
 
 import useglobalStore from "@/store/globalStore";
-import { startGame } from "@/lib/pong/game";
+import { startGame } from "@/lib/tic-tac-toe/game";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 
 
-const OnlineGame = () =>
+const TicTacToeGame = () =>
 {
     const manager = useglobalStore();
     const [start, setStart] = useState(false);
@@ -24,13 +24,11 @@ const OnlineGame = () =>
     };
     useEffect(() =>
     {
-        if (!manager.gameSocket)
-            router.push("/games");
         if (manager.gameSocket && !sentRef.current)
         {
             
             console.log("starting online game...");
-            const data = {gameType: "online", id: manager.user?.id, username: manager.user?.username};
+            const data = {gameType: "tictactoe", id: manager.user?.id, username: manager.user?.username};
             manager.gameSocket.send(JSON.stringify(data));
             sentRef.current = true;
             manager.gameSocket.onmessage = (msg) => 
@@ -38,15 +36,16 @@ const OnlineGame = () =>
                 setStart(true);
                 if (canvasRef.current && manager.gameSocket)
                 {
-                    console.log("start");
+                    console.log("start tic tac toe");
                     startGame(canvasRef.current, manager.gameSocket, msg.data, handleFinished);
                 }
             }
         }
-    }, [])
+    }, [manager.gameSocket])
 
     return (
         <>
+            {/* {!start && <div>Loading...</div>} */}
             {<canvas ref={canvasRef} width={800} height={600}>
             if you see this message, than the canvas did not load propraly
         </canvas>}
@@ -54,4 +53,4 @@ const OnlineGame = () =>
     )
 }
 
-export default OnlineGame;
+export default TicTacToeGame;

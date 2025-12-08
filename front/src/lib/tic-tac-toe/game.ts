@@ -40,18 +40,20 @@ class TicTacToeGame
 			|| this.board[row][collumn] != ''
 			|| this.currentPlayer != this.playableChar)
 			return;
-
+		
+		console.log("data sent:", {row, collumn});
 		this.socket.send(JSON.stringify({row, collumn}));
 
 	}
 	
-	listen(message: intf.gameMessage | intf.winnerMessage)
+	listen(message: intf.gameMessage | intf.winnerMessage) : boolean
 	{
 		if (message.type == intf.messageType.midGame)
 		{
 			this.board = message.board;
 			this.currentPlayer = message.currentPLayer;
 			this.draw();
+			return (false);
 		}
 		else
 		{
@@ -61,6 +63,7 @@ class TicTacToeGame
 			this.draw();
 			this.drawStatus();
 			this.highlightWinning();
+			return (true);
 		}
 	}
 
@@ -69,6 +72,10 @@ class TicTacToeGame
 		if (!this.ctx)
 			return ;
 		this.ctx.clearRect(0, 0, SETTINGS.canvaSize, SETTINGS.canvaSize);
+		
+		// Draw turn indicator at the top
+		this.drawTurnIndicator();
+		
 		this.ctx.lineWidth = SETTINGS.borderSize;
 		this.ctx.strokeStyle = SETTINGS.borderColor;
 		for (let i = 1; i <= 2; i++) {
@@ -117,6 +124,27 @@ class TicTacToeGame
 	}
 
 
+	drawTurnIndicator()
+	{
+		// Draw turn indicator at the top of the canvas
+		this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+		this.ctx.fillRect(0, 0, intf.SETTINGS.canvaSize, 60);
+		
+		// Determine if it's the player's turn
+		const isMyTurn = this.currentPlayer === this.playableChar;
+		
+		// Set color based on whose turn it is
+		this.ctx.fillStyle = isMyTurn ? '#4CAF50' : '#FF9800';
+		this.ctx.font = 'bold 24px sans-serif';
+		this.ctx.textAlign = 'center';
+		this.ctx.textBaseline = 'middle';
+		
+		// Display turn message
+		const turnText = isMyTurn ? `YOUR TURN (${this.playableChar})` : `OPPONENT'S TURN (${this.currentPlayer})`;
+		this.ctx.fillText(turnText, intf.SETTINGS.canvaSize / 2, 30);
+	}
+
+
 	drawStatus()
 	{
 		this.ctx.fillStyle = intf.SETTINGS.textColor;
@@ -125,7 +153,7 @@ class TicTacToeGame
 		this.ctx.font = '18px sans-serif';
 		this.ctx.textAlign = 'center';
 		this.ctx.textBaseline = 'middle';
-		const text = this.winner == 'Draw' ? 'Draw! Click any cell to restart' : `${this.winner} wins! Click any cell to restart`;
+		const text = this.winner == 'Draw' ? 'Draw!' : `${this.winner} wins!`;
 		this.ctx.fillText(text, intf.SETTINGS.canvaSize / 2, intf.SETTINGS.canvaSize - 25);
 	}
 
@@ -156,24 +184,35 @@ class TicTacToeGame
 		}
 	}
 
+	async finish(onFinish: () => void)
+    {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        onFinish();
+    }
 	
 }
 
-export function startGame(canvas: HTMLCanvasElement)
+export function startGame(
+	canvas: HTMLCanvasElement,
+	socket: WebSocket,
+	data: string,
+    onFinish: () => void
+)
 {
-	const socket = new WebSocket("ws://localhost:4000/tic-tac-toe");
-	let ttt: TicTacToeGame;
 	canvas.style.backgroundColor = SETTINGS.squareColor;
 	canvas.width = SETTINGS.canvaSize;
 	canvas.height = SETTINGS.canvaSize;
 
+	const symbol: intf.Symbol | null = JSON.parse(data).Symbol ?? null;
+
+	if (symbol == null) return;
+
+	const ttt: TicTacToeGame =  new TicTacToeGame(socket, canvas, symbol);
+	ttt.draw();
 	socket.onmessage = (msg) =>
-    {
-		ttt =  new TicTacToeGame(socket, canvas, msg.data);
-		ttt.draw();
-        socket.onmessage = (msg) =>
-        {
-            ttt.listen(JSON.parse(msg.data));
-        }
-    }
+	{
+		console.log("received:", msg.data);
+		if (ttt.listen(JSON.parse(msg.data)))
+			ttt.finish(onFinish);
+	}
 }

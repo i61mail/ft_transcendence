@@ -1,20 +1,22 @@
 'use client'
 
 import useglobalStore from "@/store/globalStore";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { startGame } from "@/lib/pong/game";
 
 let hh = 0;
 
-const LocalGame = () =>
+const AIGame = () =>
 {
 
     const manager = useglobalStore();
     const router = useRouter();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const conditionT = useRef<boolean>(false);
-
+    const params = useSearchParams();
+    const difficulty: string | null = params.get('diff');
+    
     const handleFinished = () =>
     {
         if (manager.gameSocket)
@@ -24,12 +26,20 @@ const LocalGame = () =>
     };
     useEffect(()=>
     {
+        if (difficulty != 'easy' && difficulty != 'meduim' && difficulty != 'hard')
+            router.push('/games');
         if (conditionT.current)
             return ;
         if (manager.gameSocket)
         {
             console.log("starting game...");
-            const data = {gameType: "local", id: manager.user?.id, username: manager.user?.username};
+            const data =
+            {
+                gameType: "ai",
+                id: manager.user?.id,
+                username: manager.user?.username,
+                difficulty: difficulty
+            };
             manager.gameSocket.send(JSON.stringify(data));
             conditionT.current = true;
             manager.gameSocket.onmessage = (msg) =>
@@ -51,4 +61,4 @@ const LocalGame = () =>
 );
 }
 
-export default LocalGame;
+export default AIGame;
