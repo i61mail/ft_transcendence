@@ -7,22 +7,68 @@ class ScoreBoard
 {
     leftPlayerScore: number = 0;
     rightPlayerScore: number = 0;
+    player1: string;
+    player2: string;
     round: number = 0;
+
+    constructor(leftPlayerName: string, rightPlayerName: string)
+    {
+        this.player1 = leftPlayerName;
+        this.player2 = rightPlayerName;
+    }
+
+    truncateToWidth(
+        context: CanvasRenderingContext2D,
+        name: string,
+        maxW: number
+    ): string
+    {
+        if (maxW <= 0) return '...';
+        if (context.measureText(name).width <= maxW) return name;
+        let lo = 0, hi = name.length;
+        while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        if (context.measureText(name.slice(0, mid) + '...').width <= maxW) lo = mid;
+        else hi = mid - 1;
+        }
+        let truncated = name.slice(0, lo);
+        while (truncated.length > 0 && context.measureText(truncated + '...').width > maxW) {
+        truncated = truncated.slice(0, -1);
+        }
+        return truncated + '...';
+    }
 
     draw (canvas: HTMLCanvasElement, hasWon: boolean = false)
     {
-        let context = canvas.getContext('2d');
+        let context: CanvasRenderingContext2D | null = canvas.getContext('2d');
         if (!context)
             return;
 
         context.font = intf.SETTINGS.smallFont;
         context.fillStyle = intf.SETTINGS.scoreTextColor;
-        context.fillText("Player 1: " + this.leftPlayerScore, 20, 30); // it's hard coded so change this later
-        context.fillText("Player 2: " + this.rightPlayerScore, canvas.width - 120, 30); // it's hard coded so change this later
+        const padding = 20;
+        const halfWidth = canvas.width / 2;
+        const maxNameArea = Math.max(0, halfWidth - padding * 2);
+
+        const leftScorePart = `: ${this.leftPlayerScore}`;
+        const leftScoreWidth = context.measureText(leftScorePart).width;
+        const allowedLeftNameWidth = Math.max(0, maxNameArea - leftScoreWidth);
+        const leftName = this.truncateToWidth(context ,this.player1, allowedLeftNameWidth);
+        context.textAlign = 'left';
+        context.fillText(`${leftName}${leftScorePart}`, padding, 30);
+
+        const rightScorePart = `: ${this.rightPlayerScore}`;
+        const rightScoreWidth = context.measureText(rightScorePart).width;
+        const allowedRightNameWidth = Math.max(0, maxNameArea - rightScoreWidth);
+        const rightName = this.truncateToWidth(context, this.player2, allowedRightNameWidth);
+        context.textAlign = 'right';
+        context.fillText(`${rightName}${rightScorePart}`, canvas.width - padding, 30);
+
+        context.textAlign = 'left';
         context.fillText("Round: " + this.round, canvas.width / 2 - 30, 30); // it's hard coded so change this later
         if (hasWon)
         {
-            let winnerText = this.leftPlayerScore > this.rightPlayerScore ? "Player 1 Wins!" : "Player 2 Wins!";
+            let winnerText = this.leftPlayerScore > this.rightPlayerScore ? `${this.player1} Wins!` : `${this.player1} Wins!`;
             context.font = intf.SETTINGS.largeFont;
             context.fillText(winnerText, canvas.width / 2 - 80, canvas.height / 2); // it's hard coded so change this later
         }
@@ -167,7 +213,7 @@ class Court
 
     constructor(socket: WebSocket, info: string)
     {
-        const { gm } = JSON.parse(info);
+        const { gm, player1, player2 } = JSON.parse(info);
 
         this.socket = socket;
         this.gameMode = gm;
@@ -175,7 +221,7 @@ class Court
         this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this, true, this.gameMode);
         this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this, true, this.gameMode);
 
-        this._scoreBoard = new ScoreBoard();
+        this._scoreBoard = new ScoreBoard(player1, player2);
         this._ball = new Ball();
 
     }

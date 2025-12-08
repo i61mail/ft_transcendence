@@ -83,10 +83,10 @@ const Games = () =>
 
                             <button
                                 aria-label="Pong vs AI Normal"
-                                onClick={() => router.push('/games/ai?diff=normal')}
+                                onClick={() => router.push('/games/ai?diff=meduim')}
                                 className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium"
                             >
-                                Pong — AI (Normal)
+                                Pong — AI (Meduim)
                             </button>
 
                             <button

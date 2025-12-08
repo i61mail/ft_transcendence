@@ -610,8 +610,14 @@ export function pongOnline(
     server: FastifyInstance
 ) : PongGame
 {
-    player1.socket.send(JSON.stringify({gm: types.GameMode.online, plyI: 0}));
-    player2.socket.send(JSON.stringify({gm: types.GameMode.online, plyI: 1}));
+    const data: string =JSON.stringify(
+    {
+        gm: types.GameMode.online,
+        player1: player1.username,
+        player2: player2.username
+    });
+    player1.socket.send(data);
+    player2.socket.send(data);
 
     return new PongGame(types.GameMode.online, server, player1, player2);
 }
@@ -621,7 +627,12 @@ export function pongLocal(
     server: FastifyInstance
 )
 {
-    player.socket.send(JSON.stringify({gm: types.GameMode.local, plyI: 0}));
+    player.socket.send(JSON.stringify(
+        {
+            gm: types.GameMode.local,
+            player1: 'Player 1',
+            player2: 'Player 2'
+        }));
     let pong: PongGame = new PongGame(types.GameMode.local, server, player);
 }
 
@@ -632,7 +643,7 @@ export function pongAI(
 )
 {
 
-    player.socket.send(JSON.stringify({gm: types.GameMode.AI, plyI: 0}));
+    player.socket.send(JSON.stringify({gm: types.GameMode.AI, player1: player.username, player2: `${difficulty} bot`}));
 
     let pongDif: types.Difficulty = types.Difficulty.easy;
 

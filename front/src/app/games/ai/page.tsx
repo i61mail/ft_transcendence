@@ -16,9 +16,6 @@ const AIGame = () =>
     const conditionT = useRef<boolean>(false);
     const params = useSearchParams();
     const difficulty: string | null = params.get('diff');
-
-    if (difficulty != 'easy' && difficulty != 'meduim' && difficulty != 'hard')
-        router.push('/games');
     
     const handleFinished = () =>
     {
@@ -29,6 +26,8 @@ const AIGame = () =>
     };
     useEffect(()=>
     {
+        if (difficulty != 'easy' && difficulty != 'meduim' && difficulty != 'hard')
+            router.push('/games');
         if (conditionT.current)
             return ;
         if (manager.gameSocket)
