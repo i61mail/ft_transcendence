@@ -7,7 +7,7 @@ import { startGame } from "@/lib/pong/game";
 
 let hh = 0;
 
-const LocalGame = () =>
+const AIGame = () =>
 {
 
     const manager = useglobalStore();
@@ -62,4 +62,4 @@ const LocalGame = () =>
 );
 }
 
-export default LocalGame;
+export default AIGame;

@@ -42,11 +42,6 @@ export enum messageType
 // 	cookies: 
 // }
 
-interface jhh
-{
-	type:
-}
-
 export interface gameMessage
 {
 	type: messageType.midGame;

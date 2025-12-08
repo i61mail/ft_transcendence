@@ -5,6 +5,7 @@ import { pongAI, pongLocal, pongOnline } from '../routes/pong';
 import { GameMode } from '../types/pong.types';
 import { joinTournament, startTournament } from '../routes/tournament';
 import { playerInfo } from '../types/playerInfo.types';
+import { tttGame } from '../routes/ticTacToe';
 
 const chatMessageHandler = (socket: WebSocket, request: FastifyRequest) => {
   const server = request.server;
@@ -189,11 +190,33 @@ class Queue{
 }
 
 
+const tttQueue = new Queue;
 
-const queue = new Queue; 
+const handletttGame = async (socket: WebSocket, id: number, username: string ,server: FastifyInstance) => 
+{
+    const p1: Player = {socket: socket, id: id, username: username};
+
+    socket.onclose = () =>
+    {
+        tttQueue.remove(p1);
+    }
+
+    if (!tttQueue.size())
+    {
+        console.log("finding second player for", id, tttQueue.size());
+        tttQueue.enqueue(p1);
+    }
+    else
+    {
+        console.log("starting online game now...", tttQueue.size())
+        const p2: Player | undefined = tttQueue.dequeue();
+        if (p1 && p2)
+            tttGame(p1, p2, server);
+    }
+}
 
 
-
+const pongQueue = new Queue;
 
 const handleOnlineGame = async (socket: WebSocket, id: number, username: string ,server: FastifyInstance) => 
 {
@@ -201,18 +224,18 @@ const handleOnlineGame = async (socket: WebSocket, id: number, username: string 
 
     socket.onclose = () =>
     {
-        queue.remove(p1);
+        pongQueue.remove(p1);
     }
 
-    if (!queue.size())
+    if (!pongQueue.size())
     {
-        console.log("finding second player for", id, queue.size());
-        queue.enqueue(p1);
+        console.log("finding second player for", id, pongQueue.size());
+        pongQueue.enqueue(p1);
     }
     else
     {
-        console.log("starting online game now...", queue.size())
-        const p2: Player | undefined = queue.dequeue();
+        console.log("starting online game now...", pongQueue.size())
+        const p2: Player | undefined = pongQueue.dequeue();
         if (p1 && p2)
             pongOnline(p1, p2, server);
     }
@@ -249,6 +272,8 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
             joinTournament(player, code);
         else if (gameType === "ai")
             pongAI(player, difficulty, server);
+        else if (gameType === "tictactoe")
+            handletttGame(socket, id, username, server);
     }
 
     socket.onclose = () =>
