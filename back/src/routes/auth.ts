@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from 'bcrypt';
 import { generateToken } from '../utils/jwt';
+const speakeasy = require('speakeasy');
 
 // Type definitions for request bodies
 interface RegisterBody {
@@ -201,7 +202,6 @@ export default async function authRoutes(app: FastifyInstance) {
           }
 
           // Verify 2FA token
-          const speakeasy = require('speakeasy');
           const verified = speakeasy.totp.verify({
             secret: user.twofa_secret,
             encoding: 'base32',

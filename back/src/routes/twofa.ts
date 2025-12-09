@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-const speakeasy = require('speakeasy');
-const QRCode = require('qrcode');
+import * as speakeasy from 'speakeasy';
+import * as QRCode from 'qrcode';
 
 export default async function twofaRoutes(app: FastifyInstance) {
   // Generate 2FA secret and QR code
@@ -29,6 +29,10 @@ export default async function twofaRoutes(app: FastifyInstance) {
         name: `Transcendence (${user.username})`,
         length: 32
       });
+
+      if (!secret.base32 || !secret.otpauth_url) {
+        return reply.code(500).send({ error: 'Failed to generate 2FA secret' });
+      }
 
       // Store temporary secret (will be confirmed later)
       app.db.prepare("UPDATE users SET twofa_secret = ? WHERE id = ?").run(
