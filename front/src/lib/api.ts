@@ -246,3 +246,20 @@ export async function getLeaderboard() {
 
   return result;
 }
+
+/**
+ * Get user's friends list
+ */
+export async function getFriends(userId: number) {
+  const response = await fetch(`${API_URL}/friendships/${userId}`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to get friends');
+  }
+
+  const result = await response.json();
+  return result; // Returns array directly
+}

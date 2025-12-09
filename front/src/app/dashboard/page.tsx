@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { API_URL, getMatchHistory, getLeaderboard } from "@/lib/api";
+import { getFriends } from "@/lib/api";
 
 interface MatchStats {
   wins: number;
@@ -376,6 +377,7 @@ export default function Dashboard() {
   const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -411,6 +413,16 @@ export default function Dashboard() {
         } catch (err) {
           console.log("Failed to load leaderboard:", err);
           setLeaderboard([]);
+        }
+
+        // Load friends
+        try {
+          const friendsData = await getFriends(data.user.id);
+          console.log("Friends data received:", friendsData);
+          setFriends(Array.isArray(friendsData) ? friendsData : []);
+        } catch (err) {
+          console.log("Failed to load friends:", err);
+          setFriends([]);
         }
 
         setLoading(false);
@@ -501,30 +513,22 @@ export default function Dashboard() {
                 </div>
                 
                 <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1">
-                  {user?.friends && user.friends.length > 0 ? (
-                    user.friends.map((friend: any) => (
+                  {friends && friends.length > 0 ? (
+                    friends.map((friend: any) => (
                       <div 
                         key={friend.id}
                         className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer group"
                       >
-                        <div className="relative">
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-600">
-                            <img 
-                              src={friend.avatar_url ? `${API_URL}${friend.avatar_url}` : `${API_URL}/uploads/default-avatar.png`}
-                              alt={friend.display_name || friend.username}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          {friend.online && (
-                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                          )}
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-600">
+                          <img 
+                            src={friend.avatar_url ? `${API_URL}${friend.avatar_url}` : `${API_URL}/uploads/default-avatar.png`}
+                            alt={friend.display_name || friend.username}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-pixelify font-bold text-[#2d5a8a] text-sm truncate group-hover:text-blue-600 transition-colors">
                             {friend.display_name || friend.username}
-                          </p>
-                          <p className="font-pixelify text-xs text-gray-500 truncate">
-                            {friend.online ? 'Online' : 'Offline'}
                           </p>
                         </div>
                       </div>
