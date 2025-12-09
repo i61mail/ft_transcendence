@@ -14,6 +14,7 @@ interface MatchStats {
 
 interface Match {
   id: number;
+  game_type?: string;
   game_mode: string;
   left_player_id: number;
   right_player_id: number | null;
@@ -124,66 +125,79 @@ const DonutChart = ({ wins, losses, totalGames }: { wins: number; losses: number
   );
 };
 
-// Game Mode Stats Component (Vertical Bar Chart)
+// Game Mode Stats Component (Line Chart showing win rate progression)
 const GameModeStats = ({ matches, userId }: { matches: Match[]; userId: number }) => {
-  // Start from October and go to September (12 months)
-  const months = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
   
-  // Calculate real monthly data from matches
-  const calculateMonthlyData = (isPong: boolean) => {
-    // Reorder to start from October (month index 9)
-    const monthOrder = [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8]; // Oct=9 to Sep=8
-    const monthlyStats = Array(12).fill(0).map(() => ({ wins: 0, total: 0 }));
+  // Calculate win rate progression for each match
+  const calculateWinRateProgression = (isPong: boolean) => {
+    // Filter matches by game mode and chronological order
+    const filteredMatches = matches
+      .filter(match => {
+        const isMatchPong = isPong 
+          ? !match.game_mode.toLowerCase().includes('tic')
+          : match.game_mode.toLowerCase().includes('tic');
+        return isMatchPong && match.winner !== 'draw';
+      })
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     
-    matches.forEach(match => {
-      const matchDate = new Date(match.created_at);
-      const monthIndex = matchDate.getMonth();
-      
-      // Filter by game mode
-      const isMatchPong = isPong 
-        ? !match.game_mode.toLowerCase().includes('tic')
-        : match.game_mode.toLowerCase().includes('tic');
-      
-      if (!isMatchPong) return;
-      
-      // Check if user won
+    // Calculate cumulative win rate after each match
+    const winRateProgression: number[] = [];
+    let wins = 0;
+    let total = 0;
+    
+    filteredMatches.forEach(match => {
+      total++;
       const isLeft = match.left_player_id === userId;
       const won = (isLeft && match.winner === 'left') || (!isLeft && match.winner === 'right');
+      if (won) wins++;
       
-      // Find position in our reordered array
-      const displayIndex = monthOrder.indexOf(monthIndex);
-      if (displayIndex !== -1) {
-        monthlyStats[displayIndex].total++;
-        if (won) monthlyStats[displayIndex].wins++;
-      }
+      const winRate = (wins / total) * 100;
+      winRateProgression.push(winRate);
     });
     
-    // Return total games per month for bar chart
-    return monthlyStats.map(stat => stat.total);
+    return winRateProgression;
   };
   
-  const pongData = calculateMonthlyData(true);
-  const ticTacToeData = calculateMonthlyData(false);
+  const pongData = calculateWinRateProgression(true);
+  const ticTacToeData = calculateWinRateProgression(false);
 
-  // Calculate points for SVG
+  // Calculate points for SVG line chart
   const svgWidth = 500;
   const svgHeight = 300;
   const padding = 50;
   const chartWidth = svgWidth - padding * 2;
   const chartHeight = svgHeight - padding * 2;
-  const maxValue = Math.max(...pongData, ...ticTacToeData, 10); // At least 10 for scale
   
-  const barWidth = chartWidth / (months.length * 2.5); // Space for both bars per month
+  // Determine max number of matches for X-axis (use actual data length)
+  const maxMatches = Math.max(pongData.length, ticTacToeData.length, 1);
+  
+  // Generate line path points (Y-axis is 0-100 for win rate percentage)
+  // Start from match 0 (beginning) with 0% win rate
+  const generateLinePath = (data: number[]) => {
+    if (data.length === 0) return '';
+    // Add starting point at (0, 0%)
+    const points = [`${padding},${svgHeight - padding}`];
+    data.forEach((winRate, index) => {
+      const matchNumber = index + 1; // Match 1, 2, 3...
+      const x = padding + ((matchNumber / maxMatches) * chartWidth);
+      const y = svgHeight - padding - ((winRate / 100) * chartHeight);
+      points.push(`${x},${y}`);
+    });
+    return points.join(' ');
+  };
+
+  const pongPoints = generateLinePath(pongData);
+  const tttPoints = generateLinePath(ticTacToeData);
 
   return (
     <div className="relative mt-6 w-full">
       <svg className="w-full" viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="xMidYMid meet" style={{ minHeight: '400px' }}>
-        {/* Grid Lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-          const y = svgHeight - padding - (ratio * chartHeight);
+        {/* Grid Lines - Win Rate Percentages */}
+        {[0, 25, 50, 75, 100].map((percentage) => {
+          const y = svgHeight - padding - ((percentage / 100) * chartHeight);
           return (
             <line
-              key={ratio}
+              key={percentage}
               x1={padding}
               y1={y}
               x2={svgWidth - padding}
@@ -215,84 +229,127 @@ const GameModeStats = ({ matches, userId }: { matches: Match[]; userId: number }
           strokeWidth="2"
         />
 
-        {/* Bars */}
-        {months.map((month, index) => {
-          const xPosition = padding + (index * (chartWidth / months.length)) + (chartWidth / months.length / 4);
-          
-          // Pong bar (blue)
-          const pongHeight = (pongData[index] / maxValue) * chartHeight;
-          const pongY = svgHeight - padding - pongHeight;
-          
-          // Tic-Tac-Toe bar (orange)
-          const tttHeight = (ticTacToeData[index] / maxValue) * chartHeight;
-          const tttY = svgHeight - padding - tttHeight;
-          
+        {/* Pong Line */}
+        {pongData.length > 0 && (
+          <polyline
+            points={pongPoints}
+            fill="none"
+            stroke="#3b82f6"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="drop-shadow-lg"
+          />
+        )}
+
+        {/* Tic-Tac-Toe Line */}
+        {ticTacToeData.length > 0 && (
+          <polyline
+            points={tttPoints}
+            fill="none"
+            stroke="#f97316"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="drop-shadow-lg"
+          />
+        )}
+
+        {/* Starting point at (0, 0%) - Pong */}
+        {pongData.length > 0 && (
+          <circle
+            cx={padding}
+            cy={svgHeight - padding}
+            r="5"
+            fill="#3b82f6"
+            stroke="white"
+            strokeWidth="2"
+          />
+        )}
+
+        {/* Starting point at (0, 0%) - Tic-Tac-Toe */}
+        {ticTacToeData.length > 0 && (
+          <circle
+            cx={padding}
+            cy={svgHeight - padding}
+            r="5"
+            fill="#f97316"
+            stroke="white"
+            strokeWidth="2"
+          />
+        )}
+
+        {/* Data points - Pong */}
+        {pongData.map((winRate, index) => {
+          const matchNumber = index + 1;
+          const x = padding + ((matchNumber / maxMatches) * chartWidth);
+          const y = svgHeight - padding - ((winRate / 100) * chartHeight);
           return (
-            <g key={month}>
-              {/* Pong Bar */}
-              <rect
-                x={xPosition}
-                y={pongY}
-                width={barWidth}
-                height={pongHeight}
-                fill="url(#pongGradient)"
-                className="hover:opacity-80 transition-opacity cursor-pointer"
-              />
-              
-              {/* Tic-Tac-Toe Bar */}
-              <rect
-                x={xPosition + barWidth + 2}
-                y={tttY}
-                width={barWidth}
-                height={tttHeight}
-                fill="url(#tttGradient)"
-                className="hover:opacity-80 transition-opacity cursor-pointer"
-              />
-            </g>
+            <circle
+              key={`pong-${index}`}
+              cx={x}
+              cy={y}
+              r="5"
+              fill="#3b82f6"
+              stroke="white"
+              strokeWidth="2"
+              className="hover:r-7 transition-all cursor-pointer"
+            />
           );
         })}
 
-        {/* Gradients */}
-        <defs>
-          <linearGradient id="pongGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#60a5fa" />
-            <stop offset="100%" stopColor="#3b82f6" />
-          </linearGradient>
-          <linearGradient id="tttGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#fb923c" />
-            <stop offset="100%" stopColor="#f97316" />
-          </linearGradient>
-        </defs>
-
-        {/* X-Axis Labels (Months) */}
-        {months.map((month, index) => {
-          const x = padding + (index * (chartWidth / months.length)) + (chartWidth / months.length / 2);
+        {/* Data points - Tic-Tac-Toe */}
+        {ticTacToeData.map((winRate, index) => {
+          const matchNumber = index + 1;
+          const x = padding + ((matchNumber / maxMatches) * chartWidth);
+          const y = svgHeight - padding - ((winRate / 100) * chartHeight);
           return (
-            <text
-              key={month}
-              x={x}
-              y={svgHeight - padding + 20}
-              textAnchor="middle"
-              className="text-[10px] font-pixelify fill-gray-600"
-            >
-              {month}
-            </text>
+            <circle
+              key={`ttt-${index}`}
+              cx={x}
+              cy={y}
+              r="5"
+              fill="#f97316"
+              stroke="white"
+              strokeWidth="2"
+              className="hover:r-7 transition-all cursor-pointer"
+            />
           );
         })}
 
-        {/* Y-Axis Labels */}
-        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-          const y = svgHeight - padding - (ratio * chartHeight);
-          const value = Math.round(maxValue * ratio);
+        {/* X-Axis Labels (Match Numbers) - Show spread out labels */}
+        {(() => {
+          const labelCount = Math.min(maxMatches + 1, 11); // 0 to maxMatches
+          const step = maxMatches / (labelCount - 1);
+          return Array.from({ length: labelCount }, (_, i) => {
+            const matchNum = i === 0 ? 0 : Math.round(i * step);
+            const x = padding + ((matchNum / (maxMatches || 1)) * chartWidth);
+            return (
+              <text
+                key={i}
+                x={x}
+                y={svgHeight - padding + 20}
+                textAnchor="middle"
+                className="text-[10px] font-pixelify fill-gray-600"
+              >
+                {matchNum}
+              </text>
+            );
+          });
+        })()}
+
+        {/* Y-Axis Labels (Win Rate Percentages) */}
+        {[0, 25, 50, 75, 100].map((percentage) => {
+          const y = svgHeight - padding - ((percentage / 100) * chartHeight);
           return (
             <text
-              key={ratio}
+              key={percentage}
               x={padding - 10}
               y={y + 3}
               textAnchor="end"
               className="text-[10px] font-pixelify fill-gray-600"
             >
-              {value}
+              {percentage}
             </text>
           );
         })}
@@ -374,6 +431,7 @@ export default function Dashboard() {
   }
 
   const getMatchResult = (match: Match) => {
+    if (match.winner === 'draw') return null; // Draw case
     const isLeftPlayer = match.left_player_id === user.id;
     const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
     return isWinner;
@@ -403,6 +461,9 @@ export default function Dashboard() {
   };
 
   const getScore = (match: Match) => {
+    if (match.game_mode === 'tictactoe' && match.winner === 'draw') {
+      return 'Draw';
+    }
     const isLeftPlayer = match.left_player_id === user.id;
     return isLeftPlayer 
       ? `${match.left_score} - ${match.right_score}`
@@ -488,7 +549,7 @@ export default function Dashboard() {
                       </div>
                       <div className="backdrop-blur-md bg-gradient-to-b from-gray-200/40 to-gray-300/40 rounded-2xl p-4 border-2 border-gray-400 h-32 flex flex-col justify-center">
                         <span className="text-3xl mb-2">🥈</span>
-                        <p className="font-pixelify font-bold text-[#2d5a8a] text-sm truncate">{leaderboard[1].display_name || leaderboard[1].username}</p>
+                        <p className="font-pixelify font-bold text-[#2d5a8a] text-sm">{leaderboard[1].display_name || leaderboard[1].username}</p>
                         <p className="font-pixelify text-2xl font-bold text-gray-600">{leaderboard[1].winRate}%</p>
                         <p className="font-pixelify text-xs text-gray-500">{leaderboard[1].wins} wins</p>
                       </div>
@@ -517,7 +578,7 @@ export default function Dashboard() {
                       </div>
                       <div className="backdrop-blur-md bg-gradient-to-b from-yellow-100/40 to-yellow-200/40 rounded-2xl p-4 border-2 border-yellow-500 h-40 flex flex-col justify-center">
                         <span className="text-4xl mb-2">🥇</span>
-                        <p className="font-pixelify font-bold text-[#2d5a8a] text-base truncate">{leaderboard[0].display_name || leaderboard[0].username}</p>
+                        <p className="font-pixelify font-bold text-[#2d5a8a] text-base">{leaderboard[0].display_name || leaderboard[0].username}</p>
                         <p className="font-pixelify text-3xl font-bold text-yellow-600">{leaderboard[0].winRate}%</p>
                         <p className="font-pixelify text-xs text-gray-500">{leaderboard[0].wins} wins</p>
                       </div>
@@ -543,7 +604,7 @@ export default function Dashboard() {
                       </div>
                       <div className="backdrop-blur-md bg-gradient-to-b from-orange-100/40 to-orange-200/40 rounded-2xl p-4 border-2 border-orange-400 h-32 flex flex-col justify-center">
                         <span className="text-3xl mb-2">🥉</span>
-                        <p className="font-pixelify font-bold text-[#2d5a8a] text-sm truncate">{leaderboard[2].display_name || leaderboard[2].username}</p>
+                        <p className="font-pixelify font-bold text-[#2d5a8a] text-sm">{leaderboard[2].display_name || leaderboard[2].username}</p>
                         <p className="font-pixelify text-2xl font-bold text-orange-600">{leaderboard[2].winRate}%</p>
                         <p className="font-pixelify text-xs text-gray-500">{leaderboard[2].wins} wins</p>
                       </div>
@@ -704,20 +765,27 @@ export default function Dashboard() {
                     const isWinner = getMatchResult(match);
                     const opponent = getOpponentInfo(match);
                     const score = getScore(match);
+                    const isDraw = match.winner === 'draw';
                     
                     return (
-                      <tr key={match.id} className="group hover:bg-white/10 transition-all duration-300 relative hover:scale-[1.01] hover:shadow-lg">
+                      <tr key={`${match.game_type || 'pong'}-${match.id}`} className="group hover:bg-white/10 transition-all duration-300 relative hover:scale-[1.01] hover:shadow-lg">
                         {/* Animated side indicator */}
                         <td className="py-4 pl-4 relative">
                           <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-r-full transition-all duration-300 ${
-                            isWinner ? 'bg-gradient-to-b from-green-400 to-green-600 group-hover:w-2' : 'bg-gradient-to-b from-red-400 to-red-600 group-hover:w-2'
+                            isDraw 
+                              ? 'bg-gradient-to-b from-yellow-400 to-yellow-600 group-hover:w-2'
+                              : isWinner 
+                              ? 'bg-gradient-to-b from-green-400 to-green-600 group-hover:w-2' 
+                              : 'bg-gradient-to-b from-red-400 to-red-600 group-hover:w-2'
                           }`}></div>
                           <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-md transition-all duration-300 group-hover:scale-110 ${
-                            isWinner 
+                            isDraw
+                              ? 'bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 border-2 border-yellow-300'
+                              : isWinner 
                               ? 'bg-gradient-to-r from-green-100 to-green-50 text-green-800 border-2 border-green-300' 
                               : 'bg-gradient-to-r from-red-100 to-red-50 text-red-800 border-2 border-red-300'
                           }`}>
-                            {isWinner ? '✓ WIN' : '✗ LOSS'}
+                            {isDraw ? '— DRAW' : isWinner ? '✓ WIN' : '✗ LOSS'}
                           </span>
                         </td>
                         <td className="py-4">

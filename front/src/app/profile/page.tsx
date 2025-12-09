@@ -23,6 +23,7 @@ interface MatchStats {
 
 interface Match {
   id: number;
+  game_type?: string;
   game_mode: string;
   left_player_id: number;
   right_player_id: number | null;
@@ -307,7 +308,8 @@ export default function ProfilePage() {
                   <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     {matches.slice(0, 10).map((match) => {
                       const isLeftPlayer = match.left_player_id === profile?.id;
-                      const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
+                      const isDraw = match.winner === 'draw';
+                      const isWinner = !isDraw && ((isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right'));
                       const opponentName = isLeftPlayer 
                         ? (match.right_player_display_name || match.right_player_username || 'AI')
                         : (match.left_player_display_name || match.left_player_username);
@@ -316,18 +318,20 @@ export default function ProfilePage() {
 
                       return (
                         <div 
-                          key={match.id}
+                          key={`${match.game_type || 'pong'}-${match.id}`}
                           className={`flex items-center justify-between p-4 rounded-xl border-2 backdrop-blur-md transition-all duration-300 hover:scale-[1.02] ${
-                            isWinner 
+                            isDraw
+                              ? 'bg-yellow-500/20 border-yellow-400/50 hover:bg-yellow-500/30'
+                              : isWinner 
                               ? 'bg-green-500/20 border-green-400/50 hover:bg-green-500/30' 
                               : 'bg-red-500/20 border-red-400/50 hover:bg-red-500/30'
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${isWinner ? 'bg-green-500' : 'bg-red-500'} shadow-lg`}></div>
+                            <div className={`w-2 h-2 rounded-full ${isDraw ? 'bg-yellow-500' : isWinner ? 'bg-green-500' : 'bg-red-500'} shadow-lg`}></div>
                             <div>
                               <p className="font-pixelify font-semibold text-[#2d5a8a] text-base">
-                                {isWinner ? '🏆 Victory' : '💔 Defeat'} vs {opponentName}
+                                {isDraw ? '🤝 Draw' : isWinner ? '🏆 Victory' : '💔 Defeat'} vs {opponentName}
                               </p>
                               <p className="font-pixelify text-xs text-[#2d5a8a]/60">
                                 {new Date(match.created_at).toLocaleDateString()} • {match.game_mode}
@@ -336,7 +340,7 @@ export default function ProfilePage() {
                           </div>
                           <div className="text-right">
                             <p className="font-pixelify text-2xl font-bold text-[#2d5a8a]">
-                              {userScore} - {opponentScore}
+                              {match.game_mode === 'tictactoe' && isDraw ? 'Draw' : `${userScore} - ${opponentScore}`}
                             </p>
                           </div>
                         </div>
