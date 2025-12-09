@@ -263,10 +263,7 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
             console.log("created new game socket...");
         }
         else if (gameType === "local")
-        {
-            socket.send(JSON.stringify({gm: GameMode.local, plyI: 0}))
             pongLocal(player, server);
-        }
         else if (gameType === "online")
             handleOnlineGame(socket, id, username, server);
         else if (gameType === "startTournament")

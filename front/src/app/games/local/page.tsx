@@ -34,7 +34,7 @@ const LocalGame = () =>
             conditionT.current = true;
             manager.gameSocket.onmessage = (msg) =>
             {
-                if (canvasRef.current)
+                if (canvasRef.current && manager.gameSocket)
                     startGame(canvasRef.current, manager.gameSocket!, msg.data.toString(), handleFinished);
             }
         }else
@@ -42,13 +42,10 @@ const LocalGame = () =>
     }, [manager.socket])
 
     return (
-    <>
         <canvas ref={canvasRef} width={800} height={600}>
             if you see this message, than the canvas did not load propraly
         </canvas>
-
-    </>
-);
+    );
 }
 
 export default LocalGame;

@@ -164,8 +164,6 @@ class Padle
         });
     }
 
-    static get speed() { return intf.SETTINGS.paddleSpeed; } // pixels per second // maybe useless remove later
-
     get upKey(): string
     {
         return this._gameMode == intf.GameMode.local && this.playerIndex == intf.PlayerIndex.rightPlayer
@@ -214,7 +212,7 @@ class Court
     constructor(socket: WebSocket, info: string)
     {
         const { gm, player1, player2 } = JSON.parse(info);
-
+        console.log('info:', info);
         this.socket = socket;
         this.gameMode = gm;
 
