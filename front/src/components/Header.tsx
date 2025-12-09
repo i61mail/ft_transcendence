@@ -29,6 +29,12 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
   const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>("");
+  
+  // 2FA states
+  const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  const [qrCode, setQrCode] = useState<string>("");
+  const [twoFAToken, setTwoFAToken] = useState<string>("");
+  const [twoFAMessage, setTwoFAMessage] = useState<string>("");
 
   const handleLogout = async () => {
     try {
@@ -188,7 +194,7 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                       My Profile
                     </button>
                     <button
-                      onClick={() => { 
+                      onClick={async () => { 
                         setShowEditModal(true); 
                         setNewDisplayName(user?.display_name || user?.username || ""); 
                         setNewUsername(user?.username || "");
@@ -196,6 +202,20 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                         setNewPassword("");
                         setConfirmPassword("");
                         setSaveError("");
+                        setQrCode("");
+                        setTwoFAToken("");
+                        setTwoFAMessage("");
+                        
+                        // Check 2FA status
+                        try {
+                          const response = await fetch(`${API_URL}/auth/2fa/status`, { credentials: 'include' });
+                          if (response.ok) {
+                            const data = await response.json();
+                            setTwoFAEnabled(data.enabled);
+                          }
+                        } catch (err) {
+                          console.error('Failed to load 2FA status:', err);
+                        }
                       }}
                       className="block w-full text-left px-4 py-3 font-pixelify text-sm text-black hover:bg-[#8aabd6] hover:text-white transition-colors"
                     >
@@ -368,16 +388,126 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                 </div>
               </div>
 
-              <div className="bg-[#bcc3d4] rounded-xl p-4 border border-[#8aabd6]">
-                <label className="block font-pixelify text-sm mb-2 text-black">Profile Picture</label>
-                <AvatarUpload
-                  currentAvatar={user.avatar_url}
-                  onUploadSuccess={(avatarUrl) => {
-                    const updated = { ...user, avatar_url: avatarUrl };
-                    if (onUserUpdate) onUserUpdate(updated);
-                    localStorage.setItem("user", JSON.stringify(updated));
-                  }}
-                />
+              <div className="flex flex-col gap-4">
+                <div className="bg-[#bcc3d4] rounded-xl p-4 border border-[#8aabd6]">
+                  <label className="block font-pixelify text-sm mb-2 text-black">Profile Picture</label>
+                  <AvatarUpload
+                    currentAvatar={user.avatar_url}
+                    onUploadSuccess={(avatarUrl) => {
+                      const updated = { ...user, avatar_url: avatarUrl };
+                      if (onUserUpdate) onUserUpdate(updated);
+                      localStorage.setItem("user", JSON.stringify(updated));
+                    }}
+                  />
+                </div>
+
+                <div className="bg-[#bcc3d4] rounded-xl p-4 border border-[#8aabd6]">
+                  <label className="block font-pixelify text-sm mb-2 text-black">Two-Factor Authentication</label>
+                <div className="text-xs text-gray-700 mb-3">Use Google Authenticator app</div>
+                
+                {!twoFAEnabled ? (
+                  <div className="space-y-3">
+                    {!qrCode ? (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`${API_URL}/auth/2fa/enable`, {
+                              method: 'POST',
+                              credentials: 'include'
+                            });
+                            if (response.ok) {
+                              const data = await response.json();
+                              setQrCode(data.qrCode);
+                              setTwoFAMessage("Scan QR code with Google Authenticator");
+                            }
+                          } catch (err) {
+                            setTwoFAMessage("Failed to generate QR code");
+                          }
+                        }}
+                        className="w-full px-4 py-2 bg-[#5A789E] text-white rounded-lg hover:bg-[#4a6888] font-pixelify text-sm"
+                      >
+                        Enable 2FA
+                      </button>
+                    ) : (
+                      <div className="space-y-3">
+                        <img src={qrCode} alt="QR Code" className="w-full rounded-lg" />
+                        <input
+                          type="text"
+                          value={twoFAToken}
+                          onChange={(e) => setTwoFAToken(e.target.value)}
+                          placeholder="Enter 6-digit code"
+                          maxLength={6}
+                          className="w-full px-3 py-2 border border-[#8aabd6] rounded-lg text-center text-lg tracking-widest"
+                        />
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`${API_URL}/auth/2fa/verify`, {
+                                method: 'POST',
+                                credentials: 'include',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ token: twoFAToken })
+                              });
+                              if (response.ok) {
+                                setTwoFAEnabled(true);
+                                setQrCode("");
+                                setTwoFAToken("");
+                                setTwoFAMessage("2FA enabled successfully!");
+                              } else {
+                                setTwoFAMessage("Invalid code. Try again.");
+                              }
+                            } catch (err) {
+                              setTwoFAMessage("Verification failed");
+                            }
+                          }}
+                          className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-pixelify text-sm"
+                        >
+                          Verify & Enable
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="text-sm text-green-700 font-semibold">✓ 2FA is enabled</div>
+                    <input
+                      type="text"
+                      value={twoFAToken}
+                      onChange={(e) => setTwoFAToken(e.target.value)}
+                      placeholder="Enter 6-digit code to disable"
+                      maxLength={6}
+                      className="w-full px-3 py-2 border border-[#8aabd6] rounded-lg text-center text-lg tracking-widest"
+                    />
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(`${API_URL}/auth/2fa/disable`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token: twoFAToken })
+                          });
+                          if (response.ok) {
+                            setTwoFAEnabled(false);
+                            setTwoFAToken("");
+                            setTwoFAMessage("2FA disabled successfully!");
+                          } else {
+                            setTwoFAMessage("Invalid code. Try again.");
+                          }
+                        } catch (err) {
+                          setTwoFAMessage("Failed to disable 2FA");
+                        }
+                      }}
+                      className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-pixelify text-sm"
+                    >
+                      Disable 2FA
+                    </button>
+                  </div>
+                )}
+                {twoFAMessage && (
+                  <div className="text-xs mt-2 text-center text-gray-700">{twoFAMessage}</div>
+                )}
+                </div>
               </div>
             </div>
 

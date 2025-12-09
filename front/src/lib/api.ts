@@ -10,6 +10,7 @@ interface RegisterData {
 interface LoginData {
   email: string;
   password: string;
+  twofa_token?: string;
 }
 
 interface AuthResponse {
@@ -52,7 +53,7 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
 /**
  * Login existing user
  */
-export async function login(data: LoginData): Promise<AuthResponse> {
+export async function login(data: LoginData): Promise<AuthResponse | { requires2FA: boolean; message: string }> {
   const response = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
     headers: {
