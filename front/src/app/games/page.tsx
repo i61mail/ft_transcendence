@@ -12,6 +12,7 @@ const Games = () => {
     
     // State for UI flow
     const [selectedGame, setSelectedGame] = useState<'pong' | 'tictactoe' | null>(null);
+    const [showDifficultySelection, setShowDifficultySelection] = useState(false);
 
     useEffect(() => {
         if (gameSocketRef.current !== null) {
@@ -186,6 +187,123 @@ const Games = () => {
                                 </button>
                             </div>
                         </div>
+                    ) : showDifficultySelection ? (
+                        // AI Difficulty Selection View (Pong Only)
+                        <div className="flex flex-col items-center w-full">
+                            <button 
+                                onClick={() => setShowDifficultySelection(false)}
+                                className="self-start mb-8 flex items-center gap-2 font-pixelify text-[#2d5a8a] hover:text-[#4a7bb8] transition-colors group backdrop-blur-xl bg-white/20 px-6 py-3 rounded-full border border-white/30"
+                            >
+                                <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                                Back to Modes
+                            </button>
+
+                            <div className="text-center mb-16">
+                                <h2 className="font-pixelify text-6xl font-bold text-[#2d5a8a] mb-4">
+                                    Select Difficulty
+                                </h2>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 w-full max-w-5xl">
+                                {/* Easy Difficulty */}
+                                <button
+                                    onClick={() => router.push('/games/ai?diff=easy')}
+                                    className="group relative backdrop-blur-xl bg-white/30 rounded-3xl p-12 shadow-2xl border-2 border-white/40 hover:border-green-500 transition-all duration-500 hover:scale-105 text-center overflow-hidden"
+                                >
+                                    {/* Animated Background Particles */}
+                                    <div className="absolute inset-0 opacity-20 pointer-events-none">
+                                        <div className="absolute top-4 left-4 w-3 h-3 bg-green-400 rounded-full animate-float-particle-1"></div>
+                                        <div className="absolute top-12 right-8 w-2 h-2 bg-green-500 rounded-full animate-float-particle-2"></div>
+                                        <div className="absolute bottom-8 left-12 w-2 h-2 bg-green-300 rounded-full animate-float-particle-3"></div>
+                                        <div className="absolute bottom-4 right-4 w-3 h-3 bg-green-600 rounded-full animate-float-particle-4"></div>
+                                    </div>
+
+                                    {/* Orbiting Border Effect */}
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                                        <div className="absolute top-0 left-0 w-full h-full">
+                                            <div className="absolute top-4 left-4 w-4 h-4 bg-green-400 rounded-full animate-orbit-tl"></div>
+                                            <div className="absolute top-4 right-4 w-4 h-4 bg-green-500 rounded-full animate-orbit-tr"></div>
+                                            <div className="absolute bottom-4 left-4 w-4 h-4 bg-green-300 rounded-full animate-orbit-bl"></div>
+                                            <div className="absolute bottom-4 right-4 w-4 h-4 bg-green-600 rounded-full animate-orbit-br"></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="relative z-10">
+                                        <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-6 shadow-2xl group-hover:rotate-12 group-hover:scale-110 transition-all duration-500">
+                                            <span className="text-5xl">👶</span>
+                                        </div>
+                                        <h3 className="font-pixelify text-3xl font-bold text-[#2d5a8a] mb-3">Easy</h3>
+                                        <p className="font-pixelify text-sm text-[#2d5a8a]/70">Perfect for beginners</p>
+                                    </div>
+                                </button>
+
+                                {/* Medium Difficulty */}
+                                <button
+                                    onClick={() => router.push('/games/ai?diff=meduim')}
+                                    className="group relative backdrop-blur-xl bg-white/30 rounded-3xl p-12 shadow-2xl border-2 border-white/40 hover:border-yellow-500 transition-all duration-500 hover:scale-105 text-center overflow-hidden"
+                                >
+                                    {/* Animated Background Particles */}
+                                    <div className="absolute inset-0 opacity-20 pointer-events-none">
+                                        <div className="absolute top-4 left-4 w-3 h-3 bg-yellow-400 rounded-full animate-float-particle-1"></div>
+                                        <div className="absolute top-12 right-8 w-2 h-2 bg-yellow-500 rounded-full animate-float-particle-2"></div>
+                                        <div className="absolute bottom-8 left-12 w-2 h-2 bg-yellow-300 rounded-full animate-float-particle-3"></div>
+                                        <div className="absolute bottom-4 right-4 w-3 h-3 bg-yellow-600 rounded-full animate-float-particle-4"></div>
+                                    </div>
+
+                                    {/* Orbiting Border Effect */}
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                                        <div className="absolute top-0 left-0 w-full h-full">
+                                            <div className="absolute top-4 left-4 w-4 h-4 bg-yellow-400 rounded-full animate-orbit-tl"></div>
+                                            <div className="absolute top-4 right-4 w-4 h-4 bg-yellow-500 rounded-full animate-orbit-tr"></div>
+                                            <div className="absolute bottom-4 left-4 w-4 h-4 bg-yellow-300 rounded-full animate-orbit-bl"></div>
+                                            <div className="absolute bottom-4 right-4 w-4 h-4 bg-yellow-600 rounded-full animate-orbit-br"></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="relative z-10">
+                                        <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center mb-6 shadow-2xl group-hover:rotate-12 group-hover:scale-110 transition-all duration-500">
+                                            <span className="text-5xl">⚔️</span>
+                                        </div>
+                                        <h3 className="font-pixelify text-3xl font-bold text-[#2d5a8a] mb-3">Medium</h3>
+                                        <p className="font-pixelify text-sm text-[#2d5a8a]/70">Balanced challenge</p>
+                                    </div>
+                                </button>
+
+                                {/* Hard Difficulty */}
+                                <button
+                                    onClick={() => router.push('/games/ai?diff=hard')}
+                                    className="group relative backdrop-blur-xl bg-white/30 rounded-3xl p-12 shadow-2xl border-2 border-white/40 hover:border-red-500 transition-all duration-500 hover:scale-105 text-center overflow-hidden"
+                                >
+                                    {/* Animated Background Particles */}
+                                    <div className="absolute inset-0 opacity-20 pointer-events-none">
+                                        <div className="absolute top-4 left-4 w-3 h-3 bg-red-400 rounded-full animate-float-particle-1"></div>
+                                        <div className="absolute top-12 right-8 w-2 h-2 bg-red-500 rounded-full animate-float-particle-2"></div>
+                                        <div className="absolute bottom-8 left-12 w-2 h-2 bg-red-300 rounded-full animate-float-particle-3"></div>
+                                        <div className="absolute bottom-4 right-4 w-3 h-3 bg-red-600 rounded-full animate-float-particle-4"></div>
+                                    </div>
+
+                                    {/* Orbiting Border Effect */}
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                                        <div className="absolute top-0 left-0 w-full h-full">
+                                            <div className="absolute top-4 left-4 w-4 h-4 bg-red-400 rounded-full animate-orbit-tl"></div>
+                                            <div className="absolute top-4 right-4 w-4 h-4 bg-red-500 rounded-full animate-orbit-tr"></div>
+                                            <div className="absolute bottom-4 left-4 w-4 h-4 bg-red-300 rounded-full animate-orbit-bl"></div>
+                                            <div className="absolute bottom-4 right-4 w-4 h-4 bg-red-600 rounded-full animate-orbit-br"></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="relative z-10">
+                                        <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-red-400 to-red-700 flex items-center justify-center mb-6 shadow-2xl group-hover:rotate-12 group-hover:scale-110 transition-all duration-500">
+                                            <span className="text-5xl">💀</span>
+                                        </div>
+                                        <h3 className="font-pixelify text-3xl font-bold text-[#2d5a8a] mb-3">Hard</h3>
+                                        <p className="font-pixelify text-sm text-[#2d5a8a]/70">Extreme challenge</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
                     ) : (
                         // Mode Selection View
                         <div className="flex flex-col items-center w-full">
@@ -278,7 +396,7 @@ const Games = () => {
                                 <button
                                     onClick={() => {
                                         if (selectedGame === 'pong') {
-                                            router.push('/games/ai?diff=meduim');
+                                            setShowDifficultySelection(true);
                                         } else {
                                             router.push('/games/tictactoe?mode=ai');
                                         }
