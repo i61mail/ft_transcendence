@@ -497,20 +497,19 @@ export default function Dashboard() {
 
       <main className="p-6 relative z-0">
         <div className="max-w-[2000px] mx-auto">
-        <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-6">
+        <div className="flex flex-col xl:flex-row gap-6 items-end">
           
           {/* Friends Panel - LEFT SIDE */}
-          <div className="hidden xl:block">
-            <div className="top-24 z-0">
-              <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 shadow-2xl border border-white/20 flex flex-col" style={{ minHeight: 'calc(105vh - 120px)' }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <h2 className="font-pixelify text-xl font-bold text-[#2d5a8a]">Friends</h2>
+          <div className="hidden xl:block xl:w-[280px] flex-shrink-0">
+            <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 shadow-2xl border border-white/20 flex flex-col" style={{ minHeight: 'calc(105vh - 120px)' }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
                 </div>
+                <h2 className="font-pixelify text-xl font-bold text-[#2d5a8a]">Friends</h2>
+              </div>
                 
                 <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1">
                   {friends && friends.length > 0 ? (
@@ -546,10 +545,9 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-            </div>
           </div>
 
-          <div>
+          <div className="flex-1">
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Donut Chart - Win/Loss Ratio */}
@@ -815,7 +813,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="relative z-10 max-h-[300px] overflow-y-auto custom-scrollbar">
-              <div className="overflow-x-auto">
+              <div>
                 <table className="w-full">
                   <thead className="sticky top-0 bg-white/10 backdrop-blur-md z-10">
                     <tr className="border-b-2 border-white/20 text-left">
