@@ -45,3 +45,75 @@ body {
 .animate-bounce-vertical {
   animation: bounce-vertical 5s ease-in-out infinite;
 }
+
+/* High Contrast Mode */
+.high-contrast {
+  --background: #ffffff;
+  --foreground: #000000;
+}
+
+.high-contrast body {
+  background: #ffffff;
+  color: #000000;
+}
+
+.high-contrast * {
+  border-color: #000000 !important;
+}
+
+.high-contrast button,
+.high-contrast a,
+.high-contrast input,
+.high-contrast textarea {
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast .bg-white\/10,
+.high-contrast .bg-white\/20 {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+.high-contrast .backdrop-blur-md {
+  backdrop-filter: none !important;
+}
+
+.high-contrast .text-white {
+  color: #000000 !important;
+}
+
+.high-contrast .bg-\[\#2d5a8a\],
+.high-contrast .bg-\[\#1a4d7a\],
+.high-contrast .hover\:bg-\[\#2d5a8a\]:hover {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast .text-\[\#2d5a8a\] {
+  color: #000000 !important;
+}
+
+/* Text Size Adjustments */
+[data-text-size="normal"] {
+  font-size: 100%;
+}
+
+[data-text-size="large"] {
+  font-size: 125%;
+}
+
+[data-text-size="large"] input,
+[data-text-size="large"] button,
+[data-text-size="large"] textarea {
+  font-size: 1.25rem !important;
+}
+
+[data-text-size="xlarge"] {
+  font-size: 150%;
+}
+
+[data-text-size="xlarge"] input,
+[data-text-size="xlarge"] button,
+[data-text-size="xlarge"] textarea {
+  font-size: 1.5rem !important;
+}

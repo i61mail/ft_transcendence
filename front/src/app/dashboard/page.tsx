@@ -35,7 +35,7 @@ interface Match {
 const DonutChart = ({ wins, losses, totalGames }: { wins: number; losses: number; totalGames: number }) => {
   if (totalGames === 0) {
     return (
-      <div className="relative w-64 h-64 mx-auto">
+      <div className="relative w-72 h-72 mx-auto">
         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
           <circle
             cx="50"
@@ -62,7 +62,7 @@ const DonutChart = ({ wins, losses, totalGames }: { wins: number; losses: number
   const lossOffset = circumference - (lossPercentage / 100) * circumference;
 
   return (
-    <div className="relative w-64 h-64 mx-auto">
+    <div className="relative w-72 h-72 mx-auto">
       <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
         {/* Background circle */}
         <circle
@@ -163,7 +163,7 @@ const GameModeStats = ({ matches, userId }: { matches: Match[]; userId: number }
 
   // Calculate points for SVG line chart
   const svgWidth = 500;
-  const svgHeight = 300;
+  const svgHeight = 320;
   const padding = 50;
   const chartWidth = svgWidth - padding * 2;
   const chartHeight = svgHeight - padding * 2;
@@ -483,7 +483,69 @@ export default function Dashboard() {
         <Header user={user} onUserUpdate={setUser} activeRoute="dashboard" />
       </div>
 
-      <main className="p-6 relative z-10">
+      <main className="p-6 relative z-0">
+        <div className="max-w-[2000px] mx-auto">
+        <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-6">
+          
+          {/* Friends Panel - LEFT SIDE */}
+          <div className="hidden xl:block">
+            <div className="top-24 z-0">
+              <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 shadow-2xl border border-white/20 flex flex-col" style={{ minHeight: 'calc(105vh - 120px)' }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <h2 className="font-pixelify text-xl font-bold text-[#2d5a8a]">Friends</h2>
+                </div>
+                
+                <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1">
+                  {user?.friends && user.friends.length > 0 ? (
+                    user.friends.map((friend: any) => (
+                      <div 
+                        key={friend.id}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer group"
+                      >
+                        <div className="relative">
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-600">
+                            <img 
+                              src={friend.avatar_url ? `${API_URL}${friend.avatar_url}` : `${API_URL}/uploads/default-avatar.png`}
+                              alt={friend.display_name || friend.username}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          {friend.online && (
+                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-pixelify font-bold text-[#2d5a8a] text-sm truncate group-hover:text-blue-600 transition-colors">
+                            {friend.display_name || friend.username}
+                          </p>
+                          <p className="font-pixelify text-xs text-gray-500 truncate">
+                            {friend.online ? 'Online' : 'Offline'}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center opacity-50">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                      </div>
+                      <p className="font-pixelify text-sm text-[#2d5a8a]/60 mb-1">No friends yet</p>
+                      <p className="font-pixelify text-xs text-[#2d5a8a]/40">Start adding friends!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Donut Chart - Win/Loss Ratio */}
@@ -690,7 +752,7 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Matches Table */}
-        <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-8 shadow-2xl border border-white/20 hover:bg-white/15 transition-all duration-500 relative overflow-hidden">
+        <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 shadow-2xl border border-white/20 hover:bg-white/15 transition-all duration-500 relative overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-5 pointer-events-none">
             <svg className="w-full h-full" width="100%" height="100%">
@@ -921,6 +983,10 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+        </div>
+        </div>
+
+        </div>
         </div>
       </main>
 
