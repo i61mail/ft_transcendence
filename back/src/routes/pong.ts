@@ -624,17 +624,15 @@ export function pongOnline(
 
 export function pongLocal(
     player : playerInfo,
-    server : FastifyInstance
+    server: FastifyInstance
 )
 {
-    const data: string =JSON.stringify(
-    {
-        gm: types.GameMode.online,
-        player1: 'player 1',
-        player2: 'player 2'
-    });
-    player.socket.send(data);
-
+    player.socket.send(JSON.stringify(
+        {
+            gm: types.GameMode.local,
+            player1: 'Player 1',
+            player2: 'Player 2'
+        }));
     let pong: PongGame = new PongGame(types.GameMode.local, server, player);
 }
 
