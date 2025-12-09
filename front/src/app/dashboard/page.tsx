@@ -14,6 +14,7 @@ interface MatchStats {
 
 interface Match {
   id: number;
+  game_type?: string;
   game_mode: string;
   left_player_id: number;
   right_player_id: number | null;
@@ -145,6 +146,9 @@ const GameModeStats = ({ matches, userId }: { matches: Match[]; userId: number }
         : match.game_mode.toLowerCase().includes('tic');
       
       if (!isMatchPong) return;
+      
+      // Skip draws for stats
+      if (match.winner === 'draw') return;
       
       // Check if user won
       const isLeft = match.left_player_id === userId;
@@ -374,6 +378,7 @@ export default function Dashboard() {
   }
 
   const getMatchResult = (match: Match) => {
+    if (match.winner === 'draw') return null; // Draw case
     const isLeftPlayer = match.left_player_id === user.id;
     const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
     return isWinner;
@@ -403,6 +408,9 @@ export default function Dashboard() {
   };
 
   const getScore = (match: Match) => {
+    if (match.game_mode === 'tictactoe' && match.winner === 'draw') {
+      return 'Draw';
+    }
     const isLeftPlayer = match.left_player_id === user.id;
     return isLeftPlayer 
       ? `${match.left_score} - ${match.right_score}`
@@ -488,7 +496,7 @@ export default function Dashboard() {
                       </div>
                       <div className="backdrop-blur-md bg-gradient-to-b from-gray-200/40 to-gray-300/40 rounded-2xl p-4 border-2 border-gray-400 h-32 flex flex-col justify-center">
                         <span className="text-3xl mb-2">🥈</span>
-                        <p className="font-pixelify font-bold text-[#2d5a8a] text-sm truncate">{leaderboard[1].display_name || leaderboard[1].username}</p>
+                        <p className="font-pixelify font-bold text-[#2d5a8a] text-sm">{leaderboard[1].display_name || leaderboard[1].username}</p>
                         <p className="font-pixelify text-2xl font-bold text-gray-600">{leaderboard[1].winRate}%</p>
                         <p className="font-pixelify text-xs text-gray-500">{leaderboard[1].wins} wins</p>
                       </div>
@@ -517,7 +525,7 @@ export default function Dashboard() {
                       </div>
                       <div className="backdrop-blur-md bg-gradient-to-b from-yellow-100/40 to-yellow-200/40 rounded-2xl p-4 border-2 border-yellow-500 h-40 flex flex-col justify-center">
                         <span className="text-4xl mb-2">🥇</span>
-                        <p className="font-pixelify font-bold text-[#2d5a8a] text-base truncate">{leaderboard[0].display_name || leaderboard[0].username}</p>
+                        <p className="font-pixelify font-bold text-[#2d5a8a] text-base">{leaderboard[0].display_name || leaderboard[0].username}</p>
                         <p className="font-pixelify text-3xl font-bold text-yellow-600">{leaderboard[0].winRate}%</p>
                         <p className="font-pixelify text-xs text-gray-500">{leaderboard[0].wins} wins</p>
                       </div>
@@ -543,7 +551,7 @@ export default function Dashboard() {
                       </div>
                       <div className="backdrop-blur-md bg-gradient-to-b from-orange-100/40 to-orange-200/40 rounded-2xl p-4 border-2 border-orange-400 h-32 flex flex-col justify-center">
                         <span className="text-3xl mb-2">🥉</span>
-                        <p className="font-pixelify font-bold text-[#2d5a8a] text-sm truncate">{leaderboard[2].display_name || leaderboard[2].username}</p>
+                        <p className="font-pixelify font-bold text-[#2d5a8a] text-sm">{leaderboard[2].display_name || leaderboard[2].username}</p>
                         <p className="font-pixelify text-2xl font-bold text-orange-600">{leaderboard[2].winRate}%</p>
                         <p className="font-pixelify text-xs text-gray-500">{leaderboard[2].wins} wins</p>
                       </div>
@@ -704,20 +712,27 @@ export default function Dashboard() {
                     const isWinner = getMatchResult(match);
                     const opponent = getOpponentInfo(match);
                     const score = getScore(match);
+                    const isDraw = match.winner === 'draw';
                     
                     return (
-                      <tr key={match.id} className="group hover:bg-white/10 transition-all duration-300 relative hover:scale-[1.01] hover:shadow-lg">
+                      <tr key={`${match.game_type || 'pong'}-${match.id}`} className="group hover:bg-white/10 transition-all duration-300 relative hover:scale-[1.01] hover:shadow-lg">
                         {/* Animated side indicator */}
                         <td className="py-4 pl-4 relative">
                           <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-r-full transition-all duration-300 ${
-                            isWinner ? 'bg-gradient-to-b from-green-400 to-green-600 group-hover:w-2' : 'bg-gradient-to-b from-red-400 to-red-600 group-hover:w-2'
+                            isDraw 
+                              ? 'bg-gradient-to-b from-yellow-400 to-yellow-600 group-hover:w-2'
+                              : isWinner 
+                              ? 'bg-gradient-to-b from-green-400 to-green-600 group-hover:w-2' 
+                              : 'bg-gradient-to-b from-red-400 to-red-600 group-hover:w-2'
                           }`}></div>
                           <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-md transition-all duration-300 group-hover:scale-110 ${
-                            isWinner 
+                            isDraw
+                              ? 'bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 border-2 border-yellow-300'
+                              : isWinner 
                               ? 'bg-gradient-to-r from-green-100 to-green-50 text-green-800 border-2 border-green-300' 
                               : 'bg-gradient-to-r from-red-100 to-red-50 text-red-800 border-2 border-red-300'
                           }`}>
-                            {isWinner ? '✓ WIN' : '✗ LOSS'}
+                            {isDraw ? '— DRAW' : isWinner ? '✓ WIN' : '✗ LOSS'}
                           </span>
                         </td>
                         <td className="py-4">

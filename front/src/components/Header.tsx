@@ -24,6 +24,9 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
   const [searchMessage, setSearchMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [newDisplayName, setNewDisplayName] = useState<string>("");
   const [newUsername, setNewUsername] = useState<string>("");
+  const [newEmail, setNewEmail] = useState<string>("");
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>("");
 
@@ -189,6 +192,9 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                         setShowEditModal(true); 
                         setNewDisplayName(user?.display_name || user?.username || ""); 
                         setNewUsername(user?.username || "");
+                        setNewEmail(user?.email || "");
+                        setNewPassword("");
+                        setConfirmPassword("");
                         setSaveError("");
                       }}
                       className="block w-full text-left px-4 py-3 font-pixelify text-sm text-black hover:bg-[#8aabd6] hover:text-white transition-colors"
@@ -328,11 +334,37 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                 </div>
                 <div className="bg-[#bcc3d4] rounded-xl p-4 border border-[#8aabd6]">
                   <label className="block font-pixelify text-sm mb-2 text-black">Email</label>
-                  <input type="email" value={user.email} readOnly className="w-full h-10 bg-gray-200 rounded-lg border border-solid border-[#8aabd6] px-4 font-inter text-sm text-black cursor-not-allowed" />
+                  <input 
+                    type="email" 
+                    value={newEmail} 
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Enter email"
+                    className="w-full h-10 bg-white rounded-lg border border-solid border-[#8aabd6] px-4 font-inter text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#5A789E] placeholder-gray-500" 
+                  />
                 </div>
                 <div className="bg-[#bcc3d4] rounded-xl p-4 border border-[#8aabd6]">
                   <label className="block font-pixelify text-sm mb-2 text-black">Display name</label>
                   <input type="text" value={newDisplayName} onChange={(e) => setNewDisplayName(e.target.value)} minLength={2} maxLength={50} placeholder="Enter display name (optional)" className="w-full h-10 bg-white rounded-lg border border-solid border-[#8aabd6] px-4 font-inter text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#5A789E] placeholder-gray-500" />
+                </div>
+                <div className="bg-[#bcc3d4] rounded-xl p-4 border border-[#8aabd6]">
+                  <label className="block font-pixelify text-sm mb-2 text-black">New Password</label>
+                  <input 
+                    type="password" 
+                    value={newPassword} 
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="w-full h-10 bg-white rounded-lg border border-solid border-[#8aabd6] px-4 font-inter text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#5A789E] placeholder-gray-500" 
+                  />
+                </div>
+                <div className="bg-[#bcc3d4] rounded-xl p-4 border border-[#8aabd6]">
+                  <label className="block font-pixelify text-sm mb-2 text-black">Confirm Password</label>
+                  <input 
+                    type="password" 
+                    value={confirmPassword} 
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    className="w-full h-10 bg-white rounded-lg border border-solid border-[#8aabd6] px-4 font-inter text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#5A789E] placeholder-gray-500" 
+                  />
                 </div>
               </div>
 
@@ -360,8 +392,32 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                   setSaving(true);
                   setSaveError("");
                   try {
+                    // Validate password confirmation
+                    if (newPassword || confirmPassword) {
+                      if (newPassword !== confirmPassword) {
+                        setSaveError("Passwords do not match");
+                        setSaving(false);
+                        return;
+                      }
+                      if (newPassword.length < 6) {
+                        setSaveError("Password must be at least 6 characters");
+                        setSaving(false);
+                        return;
+                      }
+                    }
+
+                    // Validate email format
+                    if (newEmail && newEmail !== user.email) {
+                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                      if (!emailRegex.test(newEmail)) {
+                        setSaveError("Please enter a valid email address");
+                        setSaving(false);
+                        return;
+                      }
+                    }
+
                     // Prepare update data
-                    const updateData: { display_name?: string; username?: string } = {};
+                    const updateData: { display_name?: string; username?: string; email?: string; password?: string } = {};
                     
                     // Only include fields that have changed
                     if (newDisplayName !== (user.display_name || user.username || "")) {
@@ -369,6 +425,12 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                     }
                     if (newUsername !== user.username) {
                       updateData.username = newUsername;
+                    }
+                    if (newEmail && newEmail !== user.email) {
+                      updateData.email = newEmail;
+                    }
+                    if (newPassword) {
+                      updateData.password = newPassword;
                     }
                     
                     // Only make request if something changed
