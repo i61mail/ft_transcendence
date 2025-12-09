@@ -46,6 +46,9 @@ class ScoreBoard
 
         context.font = intf.SETTINGS.smallFont;
         context.fillStyle = intf.SETTINGS.scoreTextColor;
+        context.shadowBlur = 10;
+        context.shadowColor = 'rgba(59, 130, 246, 0.5)';
+        
         const padding = 20;
         const halfWidth = canvas.width / 2;
         const maxNameArea = Math.max(0, halfWidth - padding * 2);
@@ -64,13 +67,20 @@ class ScoreBoard
         context.textAlign = 'right';
         context.fillText(`${rightName}${rightScorePart}`, canvas.width - padding, 30);
 
-        context.textAlign = 'left';
-        context.fillText("Round: " + this.round, canvas.width / 2 - 30, 30); // it's hard coded so change this later
+        context.textAlign = 'center';
+        context.fillText("Round: " + this.round, canvas.width / 2, 30);
+        
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
+        
         if (hasWon)
         {
-            let winnerText = this.leftPlayerScore > this.rightPlayerScore ? `${this.player1} Wins!` : `${this.player1} Wins!`;
+            let winnerText = this.leftPlayerScore > this.rightPlayerScore ? `${this.player1} Wins!` : `${this.player2} Wins!`;
             context.font = intf.SETTINGS.largeFont;
-            context.fillText(winnerText, canvas.width / 2 - 80, canvas.height / 2); // it's hard coded so change this later
+            context.shadowBlur = 20;
+            context.shadowColor = 'rgba(168, 85, 247, 0.8)';
+            context.fillStyle = '#a855f7';
+            context.fillText(winnerText, canvas.width / 2, canvas.height / 2);
         }
     }
 
@@ -98,10 +108,25 @@ class Ball
         let context = canvas.getContext('2d');
         if (!context)
             return;
+        
+        // Draw glowing shadow
+        context.shadowBlur = 30;
+        context.shadowColor = intf.SETTINGS.ballColor;
+        
         context.fillStyle = intf.SETTINGS.ballColor;
         context.beginPath();
         context.arc(this.posX, this.posY, intf.SETTINGS.ballRadius, 0, Math.PI * 2, false);
         context.fill();
+        
+        // Draw bright core
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
+        context.fillStyle = '#ffffff';
+        context.globalAlpha = 0.8;
+        context.beginPath();
+        context.arc(this.posX, this.posY, intf.SETTINGS.ballRadius * 0.6, 0, Math.PI * 2, false);
+        context.fill();
+        context.globalAlpha = 1;
     }
     
     update(nextPosX: number, nextPosY: number)
@@ -195,7 +220,27 @@ class Padle
         if (!context)
             return;
 
+        // Draw glowing shadow
+        context.shadowBlur = 20;
+        context.shadowColor = this.renderColor;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 0;
+        
         context.fillStyle = this.renderColor;
+        context.fillRect(this.posX, this.posY, intf.SETTINGS.paddleWidth, intf.SETTINGS.paddleHeight);
+        
+        // Draw bright edge highlight
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
+        context.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        context.fillRect(this.posX, this.posY, 2, intf.SETTINGS.paddleHeight);
+        
+        // Draw gradient overlay for depth
+        const gradient = context.createLinearGradient(this.posX, this.posY, this.posX + intf.SETTINGS.paddleWidth, this.posY);
+        gradient.addColorStop(0, `${this.renderColor}cc`);
+        gradient.addColorStop(0.5, `${this.renderColor}88`);
+        gradient.addColorStop(1, `${this.renderColor}cc`);
+        context.fillStyle = gradient;
         context.fillRect(this.posX, this.posY, intf.SETTINGS.paddleWidth, intf.SETTINGS.paddleHeight);
     }
 }
@@ -248,9 +293,26 @@ class Court
         if (!context)
             return;
 
+        // Draw center line
+        context.strokeStyle = 'rgba(59, 130, 246, 0.2)';
+        context.setLineDash([10, 10]);
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(intf.SETTINGS.canvasWidth / 2, intf.SETTINGS.courtMarginY + intf.SETTINGS.wallSize);
+        context.lineTo(intf.SETTINGS.canvasWidth / 2, intf.SETTINGS.canvasHeight - intf.SETTINGS.courtMarginY - intf.SETTINGS.wallSize);
+        context.stroke();
+        context.setLineDash([]);
+        
+        // Draw walls with glow effect
+        context.shadowBlur = 15;
+        context.shadowColor = 'rgba(59, 130, 246, 0.6)';
         context.fillStyle = intf.SETTINGS.wallColor;
         context.fillRect(0, intf.SETTINGS.courtMarginY, intf.SETTINGS.canvasWidth, intf.SETTINGS.wallSize);
         context.fillRect(0, intf.SETTINGS.canvasHeight - intf.SETTINGS.wallSize - intf.SETTINGS.courtMarginY, intf.SETTINGS.canvasWidth, intf.SETTINGS.wallSize);
+        
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
+        
         this.leftPadle.draw(canvas);
         this.rightPadle.draw(canvas);
         this._ball.draw(canvas);
@@ -287,7 +349,10 @@ class PongGame
                 console.log("type start");
                 context.fillStyle = intf.SETTINGS.scoreTextColor;
                 context.font = intf.SETTINGS.largeFont;
-                context.fillText("Game will start now...", this._canvas.width / 2 - 80, this._canvas.height / 2);
+                context.shadowBlur = 15;
+                context.shadowColor = 'rgba(59, 130, 246, 0.6)';
+                context.textAlign = 'center';
+                context.fillText("Game will start now...", this._canvas.width / 2, this._canvas.height / 2);
                 this.status = 'ingame';
             }
         }

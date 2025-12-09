@@ -33,11 +33,11 @@ interface settingsInterface {
 export const SETTINGS: settingsInterface =
 {
     // canvas
-    canvasColor: "#004c00ff",
+    canvasColor: "#0f172a",
     canvasWidth: 800,
     canvasHeight: 600,
 	// court
-    wallColor: "#b8b8b8ff",
+    wallColor: "rgba(59, 130, 246, 0.3)",
     wallSize: 30,
     courtMarginX: 12, // might remove later if not used
     courtMarginY: 10,
@@ -46,19 +46,19 @@ export const SETTINGS: settingsInterface =
     targetFps: 60,
     // paddle
     paddleSpeed: 200, // pixels per second
-    playerOneColor: "#0000FF",
-    playerTwoColor: "#FF0000",
+    playerOneColor: "#3b82f6",
+    playerTwoColor: "#a855f7",
     paddleWidth: 12,
     paddleHeight: 80,
     // scoreboard
     winningScore: 7,
     smallFont: "20px Arial",
     largeFont: "30px Arial",
-    scoreTextColor: "#F0EAD6", // eggshell white
+    scoreTextColor: "#e0e7ff", // light blue
     // ball
     ballMinSpeed: 200,
     ballMaxSpeed: 300,
-    ballColor: "#F0EAD6", // eggshell white
+    ballColor: "#06b6d4",
     ballAcceleration: 10,
     ballRadius: 8
 };

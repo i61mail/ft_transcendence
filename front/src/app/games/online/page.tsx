@@ -4,6 +4,7 @@ import useglobalStore from "@/store/globalStore";
 import { startGame } from "@/lib/pong/game";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import GameCanvas from "@/components/GameCanvas";
 
 
 
@@ -47,9 +48,7 @@ const OnlineGame = () =>
 
     return (
         <>
-            {<canvas ref={canvasRef} width={800} height={600}>
-            if you see this message, than the canvas did not load propraly
-        </canvas>}
+            <GameCanvas canvasRef={canvasRef} width={800} height={600} />
         </>
     )
 }
