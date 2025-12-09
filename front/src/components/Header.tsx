@@ -36,6 +36,42 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
   const [twoFAToken, setTwoFAToken] = useState<string>("");
   const [twoFAMessage, setTwoFAMessage] = useState<string>("");
 
+  // Accessibility states
+  const [highContrast, setHighContrast] = useState(false);
+  const [textSize, setTextSize] = useState<'normal' | 'large' | 'xlarge'>('normal');
+
+  // Load accessibility settings from localStorage
+  React.useEffect(() => {
+    const savedContrast = localStorage.getItem('highContrast') === 'true';
+    const savedTextSize = (localStorage.getItem('textSize') as 'normal' | 'large' | 'xlarge') || 'normal';
+    setHighContrast(savedContrast);
+    setTextSize(savedTextSize);
+    
+    // Apply settings to document
+    if (savedContrast) {
+      document.documentElement.classList.add('high-contrast');
+    }
+    document.documentElement.setAttribute('data-text-size', savedTextSize);
+  }, []);
+
+  const toggleHighContrast = () => {
+    const newValue = !highContrast;
+    setHighContrast(newValue);
+    localStorage.setItem('highContrast', String(newValue));
+    
+    if (newValue) {
+      document.documentElement.classList.add('high-contrast');
+    } else {
+      document.documentElement.classList.remove('high-contrast');
+    }
+  };
+
+  const changeTextSize = (size: 'normal' | 'large' | 'xlarge') => {
+    setTextSize(size);
+    localStorage.setItem('textSize', size);
+    document.documentElement.setAttribute('data-text-size', size);
+  };
+
   const handleLogout = async () => {
     try {
       await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
@@ -221,6 +257,62 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                     >
                       Edit Information
                     </button>
+                    
+                    {/* Accessibility Settings */}
+                    <div className="border-t-2 border-[#8aabd6] my-1"></div>
+                    <div className="px-4 py-2">
+                      <div className="font-pixelify text-xs text-black/60 uppercase mb-2">Accessibility</div>
+                      
+                      {/* High Contrast Toggle */}
+                      <button
+                        onClick={toggleHighContrast}
+                        className="flex items-center justify-between w-full py-2 font-pixelify text-sm text-black hover:text-[#2d5a8a] transition-colors"
+                      >
+                        <span>High Contrast</span>
+                        <div className={`w-10 h-5 rounded-full transition-colors ${highContrast ? 'bg-[#2d5a8a]' : 'bg-gray-400'}`}>
+                          <div className={`w-4 h-4 bg-white rounded-full mt-0.5 transition-transform ${highContrast ? 'ml-5' : 'ml-0.5'}`}></div>
+                        </div>
+                      </button>
+                      
+                      {/* Text Size Selector */}
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-pixelify text-sm text-black">Text Size</span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                if (textSize === 'large') changeTextSize('normal');
+                                else if (textSize === 'xlarge') changeTextSize('large');
+                              }}
+                              disabled={textSize === 'normal'}
+                              className={`w-7 h-7 rounded-full font-pixelify text-lg transition-colors ${
+                                textSize === 'normal'
+                                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                  : 'bg-[#2d5a8a] text-white hover:bg-[#1a4d7a]'
+                              }`}
+                            >
+                              −
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (textSize === 'normal') changeTextSize('large');
+                                else if (textSize === 'large') changeTextSize('xlarge');
+                              }}
+                              disabled={textSize === 'xlarge'}
+                              className={`w-7 h-7 rounded-full font-pixelify text-lg transition-colors ${
+                                textSize === 'xlarge'
+                                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                  : 'bg-[#2d5a8a] text-white hover:bg-[#1a4d7a]'
+                              }`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="border-t-2 border-[#8aabd6] my-1"></div>
+                    
                     <button
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-3 font-pixelify text-sm text-black hover:bg-[#8aabd6] hover:text-white transition-colors"

@@ -239,7 +239,9 @@ const Games = () => {
                                     </div>
                                 </button>
 
-                                {/* Local Mode */}
+                                {selectedGame === 'pong' && (
+                                    <>
+                                {/* Local Mode - Pong Only */}
                                 <button
                                     onClick={() => router.push(selectedGame === 'pong' ? '/games/local' : '/games/tictactoe')}
                                     className="group relative backdrop-blur-xl bg-white/30 rounded-3xl p-12 shadow-2xl border-2 border-white/40 hover:border-green-500 transition-all duration-500 hover:scale-105 text-center overflow-hidden"
@@ -272,7 +274,7 @@ const Games = () => {
                                     </div>
                                 </button>
 
-                                {/* AI Mode */}
+                                {/* AI Mode - Pong Only */}
                                 <button
                                     onClick={() => {
                                         if (selectedGame === 'pong') {
@@ -310,6 +312,59 @@ const Games = () => {
                                         <h3 className="font-pixelify text-3xl font-bold text-[#2d5a8a] mb-3">Play vs AI</h3>
                                     </div>
                                 </button>
+                                    </>
+                                )}
+
+                                {/* Tic-Tac-Toe Animated Background */}
+                                {selectedGame === 'tictactoe' && (
+                                    <div className="lg:col-span-2 relative backdrop-blur-xl bg-white/20 rounded-3xl p-12 shadow-2xl border-2 border-white/40 overflow-hidden">
+                                        {/* Animated Tic-Tac-Toe Game Simulation */}
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
+                                            <div className="grid grid-cols-3 gap-4">
+                                                {[
+                                                    { content: 'X', color: 'text-blue-500', delay: '0s' },
+                                                    { content: 'O', color: 'text-pink-500', delay: '0.5s' },
+                                                    { content: 'X', color: 'text-blue-500', delay: '1s' },
+                                                    { content: '', color: '', delay: '' },
+                                                    { content: 'O', color: 'text-pink-500', delay: '1.5s' },
+                                                    { content: 'X', color: 'text-blue-500', delay: '2s' },
+                                                    { content: 'O', color: 'text-pink-500', delay: '2.5s' },
+                                                    { content: '', color: '', delay: '' },
+                                                    { content: 'X', color: 'text-blue-500', delay: '3s' }
+                                                ].map((cell, i) => (
+                                                    <div key={i} className="w-24 h-24 bg-white/10 rounded-2xl border-2 border-white/30 flex items-center justify-center">
+                                                        <span 
+                                                            className={`font-pixelify text-5xl font-bold ${cell.color} ${cell.content ? 'animate-pop-in' : ''}`}
+                                                            style={{ animationDelay: cell.delay, animationIterationCount: 'infinite', animationDuration: '4s' }}
+                                                        >
+                                                            {cell.content}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="relative z-10 text-center">
+                                            <h3 className="font-pixelify text-4xl font-bold text-[#2d5a8a] mb-6">Classic Strategy Game</h3>
+                                            <p className="font-pixelify text-xl text-[#2d5a8a]/80 mb-4">Test your tactical skills in real-time matches</p>
+                                            <div className="flex justify-center gap-6 mt-8">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-pixelify text-6xl font-bold text-blue-500">X</span>
+                                                    <span className="font-pixelify text-lg text-[#2d5a8a]">vs</span>
+                                                    <span className="font-pixelify text-6xl font-bold text-pink-500">O</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Floating particles */}
+                                        <div className="absolute inset-0 pointer-events-none">
+                                            <div className="absolute top-8 left-8 w-4 h-4 bg-blue-400 rounded-full animate-float-particle-1 opacity-40"></div>
+                                            <div className="absolute top-16 right-12 w-3 h-3 bg-pink-400 rounded-full animate-float-particle-2 opacity-40"></div>
+                                            <div className="absolute bottom-12 left-16 w-3 h-3 bg-purple-400 rounded-full animate-float-particle-3 opacity-40"></div>
+                                            <div className="absolute bottom-8 right-8 w-4 h-4 bg-blue-300 rounded-full animate-float-particle-4 opacity-40"></div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Tournament Section (Pong Only) */}
