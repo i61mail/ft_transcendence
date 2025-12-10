@@ -14,6 +14,7 @@ const OnlineGame = () =>
     const [start, setStart] = useState(false);
     const sentRef = useRef<boolean>(false);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const initialDataRef = useRef<string | null>(null);
     const router = useRouter(); 
 
     
@@ -28,12 +29,9 @@ const OnlineGame = () =>
     {
         if (manager.gameSocket && !sentRef.current)
         {
-            sentRef.current = true;
-            console.log("start");
+            sentRef.current = true
             manager.gameSocket.onmessage = (msg) => 
             {
-                console.log("bruhhhh");
-
                 if (canvasRef.current && manager.gameSocket)
                 {
                     startGame(canvasRef.current, manager.gameSocket, msg.data, handleFinished);
@@ -44,7 +42,6 @@ const OnlineGame = () =>
 
     return (
         <>
-            {/* {!start && <div>Loading...</div>} */}
             <GameCanvas canvasRef={canvasRef} width={800} height={600} />
         </>
     )

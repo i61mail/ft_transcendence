@@ -334,9 +334,15 @@ export function joinTournament(player: playerInfo, code: string) // maybe return
         return ;
     playersInTournaments.set(player.id, code);
     if (!tournaments.has(code))
+    {
+        player.socket.send("invalid code");
         console.log("tournament doesnt exist");
+    }
     else if (!tournaments.get(code)?.addPlayer(player))
+    {
+        player.socket.send("tournament started");
         console.log("tournament already started");
+    }
     else
-        console.log("tournament joined succefuly");
+        console.log("tournament joined successfully");
 }

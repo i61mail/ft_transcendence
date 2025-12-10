@@ -31,14 +31,11 @@ const OnlineGame = () =>
         if (manager.gameSocket && !sentRef.current)
         {
             
-            console.log("starting online game...");
             const data = {gameType: "online", id: manager.user?.id, username: manager.user?.username};
             manager.gameSocket.send(JSON.stringify(data));
             sentRef.current = true;
             manager.gameSocket.onmessage = (msg) => 
             {
-                console.log("hummmm", canvasRef.current != null);
-                // Only capture the first message
                 if (initialDataRef.current === null) {
                     initialDataRef.current = msg.data;
                     setStart(true);

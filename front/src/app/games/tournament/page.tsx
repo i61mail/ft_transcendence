@@ -99,9 +99,23 @@ export default function PongTournament()
             {
 				if (msg.data == "finished")
 					return ;
+				if (msg.data == "invalid code") {
+					window.alert("Invalid tournament code. Redirecting to Games page.");
+					router.push('/games');
+					return;
+				}
+				if (msg.data == "tournament started") {
+					window.alert("Tournament has already started. Redirecting to Games page.");
+					router.push('/games');
+					return;
+				}
+				
 				const state: any = JSON.parse(msg.data.toString());
-				if (state.code == undefined)
-					return ;
+				if (state.error || state.code == undefined) {
+					window.alert("Invalid tournament code. Redirecting to Games page.");
+					router.push('/games');
+					return;
+				}
 				console.log("joined tournament:", state.code);
 				if (state.status == trnmtStatus.playingSemi
 					|| (state.status == trnmtStatus.playingFinal
