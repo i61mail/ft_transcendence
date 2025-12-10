@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import Header from "@/components/Header";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
 const Games = () => {
     const manager = useglobalStore();
     const gameSocketRef = useRef<WebSocket | null>(null);
@@ -12,8 +14,33 @@ const Games = () => {
     
     // State for UI flow
     const [selectedGame, setSelectedGame] = useState<'pong' | 'tictactoe' | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    // Authentication check
+    useEffect(() => {
+        const verifyAuth = async () => {
+            try {
+                const response = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+                if (!response.ok) throw new Error("Not authenticated");
+                const data = await response.json();
+                
+                // Update user in global store if needed
+                if (!manager.user) {
+                    manager.updateUser(data.user);
+                }
+                
+                setLoading(false);
+            } catch (e) {
+                localStorage.removeItem("user");
+                router.push("/");
+            }
+        };
+        verifyAuth();
+    }, [router, manager]);
 
     useEffect(() => {
+        if (loading) return; // Don't initialize socket until authenticated
+        
         if (gameSocketRef.current !== null) {
             return;
         }
@@ -41,7 +68,7 @@ const Games = () => {
             console.log("GAME: ", data);
         }
 
-    }, [manager.gameSocket]);
+    }, [manager.gameSocket, loading]);
 
     const handleGameSelect = (game: 'pong' | 'tictactoe') => {
         setSelectedGame(game);
@@ -75,6 +102,15 @@ const Games = () => {
             if (input) input.value = val;
         }
     };
+
+    // Show loading screen while checking authentication
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5]">
+                <p className="text-xl font-pixelify text-[#2d5a8a]">Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5] relative">
