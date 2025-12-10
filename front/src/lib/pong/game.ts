@@ -1,36 +1,86 @@
+"use client";
+import { stat } from "fs";
 import * as intf from "./interfaces";
+import { useRouter } from "next/navigation";
 
 class ScoreBoard
 {
     leftPlayerScore: number = 0;
     rightPlayerScore: number = 0;
+    player1: string;
+    player2: string;
     round: number = 0;
 
-    get winner() : number
+    constructor(leftPlayerName: string, rightPlayerName: string)
     {
-        if (this.leftPlayerScore >= intf.SETTINGS.winningScore)
-            return intf.PlayerIndex.leftPlayer;
-        if (this.rightPlayerScore >= intf.SETTINGS.winningScore)
-            return intf.PlayerIndex.rightPlayer;
-        return 0;
+        this.player1 = leftPlayerName;
+        this.player2 = rightPlayerName;
     }
 
-    draw (canvas: HTMLCanvasElement)
+    truncateToWidth(
+        context: CanvasRenderingContext2D,
+        name: string,
+        maxW: number
+    ): string
     {
-        let context = canvas.getContext('2d');
+        if (maxW <= 0) return '...';
+        if (context.measureText(name).width <= maxW) return name;
+        let lo = 0, hi = name.length;
+        while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        if (context.measureText(name.slice(0, mid) + '...').width <= maxW) lo = mid;
+        else hi = mid - 1;
+        }
+        let truncated = name.slice(0, lo);
+        while (truncated.length > 0 && context.measureText(truncated + '...').width > maxW) {
+        truncated = truncated.slice(0, -1);
+        }
+        return truncated + '...';
+    }
+
+    draw (canvas: HTMLCanvasElement, hasWon: boolean = false)
+    {
+        let context: CanvasRenderingContext2D | null = canvas.getContext('2d');
         if (!context)
             return;
 
         context.font = intf.SETTINGS.smallFont;
         context.fillStyle = intf.SETTINGS.scoreTextColor;
-        context.fillText("Player 1: " + this.leftPlayerScore, 20, 30); // it's hard coded so change this later
-        context.fillText("Player 2: " + this.rightPlayerScore, canvas.width - 120, 30); // it's hard coded so change this later
-        context.fillText("Round: " + this.round, canvas.width / 2 - 30, 30); // it's hard coded so change this later
-        if (this.winner)
+        context.shadowBlur = 10;
+        context.shadowColor = 'rgba(59, 130, 246, 0.5)';
+        
+        const padding = 20;
+        const halfWidth = canvas.width / 2;
+        const maxNameArea = Math.max(0, halfWidth - padding * 2);
+
+        const leftScorePart = `: ${this.leftPlayerScore}`;
+        const leftScoreWidth = context.measureText(leftScorePart).width;
+        const allowedLeftNameWidth = Math.max(0, maxNameArea - leftScoreWidth);
+        const leftName = this.truncateToWidth(context ,this.player1, allowedLeftNameWidth);
+        context.textAlign = 'left';
+        context.fillText(`${leftName}${leftScorePart}`, padding, 30);
+
+        const rightScorePart = `: ${this.rightPlayerScore}`;
+        const rightScoreWidth = context.measureText(rightScorePart).width;
+        const allowedRightNameWidth = Math.max(0, maxNameArea - rightScoreWidth);
+        const rightName = this.truncateToWidth(context, this.player2, allowedRightNameWidth);
+        context.textAlign = 'right';
+        context.fillText(`${rightName}${rightScorePart}`, canvas.width - padding, 30);
+
+        context.textAlign = 'center';
+        context.fillText("Round: " + this.round, canvas.width / 2, 30);
+        
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
+        
+        if (hasWon)
         {
-            let winnerText = this.winner == (intf.PlayerIndex.leftPlayer) ? "Player 1 Wins!" : "Player 2 Wins!";
+            let winnerText = this.leftPlayerScore > this.rightPlayerScore ? `${this.player1} Wins!` : `${this.player2} Wins!`;
             context.font = intf.SETTINGS.largeFont;
-            context.fillText(winnerText, canvas.width / 2 - 80, canvas.height / 2); // it's hard coded so change this later
+            context.shadowBlur = 20;
+            context.shadowColor = 'rgba(168, 85, 247, 0.8)';
+            context.fillStyle = '#a855f7';
+            context.fillText(winnerText, canvas.width / 2, canvas.height / 2);
         }
     }
 
@@ -58,10 +108,25 @@ class Ball
         let context = canvas.getContext('2d');
         if (!context)
             return;
+        
+        // Draw glowing shadow
+        context.shadowBlur = 30;
+        context.shadowColor = intf.SETTINGS.ballColor;
+        
         context.fillStyle = intf.SETTINGS.ballColor;
         context.beginPath();
         context.arc(this.posX, this.posY, intf.SETTINGS.ballRadius, 0, Math.PI * 2, false);
         context.fill();
+        
+        // Draw bright core
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
+        context.fillStyle = '#ffffff';
+        context.globalAlpha = 0.8;
+        context.beginPath();
+        context.arc(this.posX, this.posY, intf.SETTINGS.ballRadius * 0.6, 0, Math.PI * 2, false);
+        context.fill();
+        context.globalAlpha = 1;
     }
     
     update(nextPosX: number, nextPosY: number)
@@ -94,8 +159,8 @@ class Padle
         let that: Padle = this;
         if (this._gameMode == intf.GameMode.online && !isPlayable)
             return ;
-        document.addEventListener("keydown", function(e) {
-            
+        document.addEventListener("keydown", function(e)
+        {
             if (e.key == that.upKey && that._status != intf.keyStat.up)
             {
                 that._status = intf.keyStat.up;
@@ -110,7 +175,8 @@ class Padle
             }
         });
         
-        document.addEventListener("keyup", function(e) {
+        document.addEventListener("keyup", function(e)
+        {
             if (court.socket.readyState != WebSocket.OPEN)
                 return ;
             if ((e.key == that.upKey && that._status == intf.keyStat.up)
@@ -122,8 +188,6 @@ class Padle
             }
         });
     }
-
-    static get speed() { return intf.SETTINGS.paddleSpeed; } // pixels per second // maybe useless remove later
 
     get upKey(): string
     {
@@ -156,7 +220,27 @@ class Padle
         if (!context)
             return;
 
+        // Draw glowing shadow
+        context.shadowBlur = 20;
+        context.shadowColor = this.renderColor;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 0;
+        
         context.fillStyle = this.renderColor;
+        context.fillRect(this.posX, this.posY, intf.SETTINGS.paddleWidth, intf.SETTINGS.paddleHeight);
+        
+        // Draw bright edge highlight
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
+        context.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        context.fillRect(this.posX, this.posY, 2, intf.SETTINGS.paddleHeight);
+        
+        // Draw gradient overlay for depth
+        const gradient = context.createLinearGradient(this.posX, this.posY, this.posX + intf.SETTINGS.paddleWidth, this.posY);
+        gradient.addColorStop(0, `${this.renderColor}cc`);
+        gradient.addColorStop(0.5, `${this.renderColor}88`);
+        gradient.addColorStop(1, `${this.renderColor}cc`);
+        context.fillStyle = gradient;
         context.fillRect(this.posX, this.posY, intf.SETTINGS.paddleWidth, intf.SETTINGS.paddleHeight);
     }
 }
@@ -170,19 +254,17 @@ class Court
     _scoreBoard: ScoreBoard;
     _ball: Ball;
 
-    constructor(canvas: HTMLCanvasElement, socket: WebSocket, info: string)
+    constructor(socket: WebSocket, info: string)
     {
-        const { gm, playerIndex } = JSON.parse(info);
-
+        const { gm, player1, player2 } = JSON.parse(info);
+        console.log('info:', info);
         this.socket = socket;
         this.gameMode = gm;
 
-        this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this,
-            (playerIndex == 0) ? true : false, this.gameMode);
-        this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this,
-            (playerIndex == 1) ? true : false, this.gameMode);
+        this.leftPadle = new Padle(intf.PlayerIndex.leftPlayer, this, true, this.gameMode);
+        this.rightPadle = new Padle(intf.PlayerIndex.rightPlayer, this, true, this.gameMode);
 
-        this._scoreBoard = new ScoreBoard();
+        this._scoreBoard = new ScoreBoard(player1, player2);
         this._ball = new Ball();
 
     }
@@ -211,9 +293,26 @@ class Court
         if (!context)
             return;
 
+        // Draw center line
+        context.strokeStyle = 'rgba(59, 130, 246, 0.2)';
+        context.setLineDash([10, 10]);
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(intf.SETTINGS.canvasWidth / 2, intf.SETTINGS.courtMarginY + intf.SETTINGS.wallSize);
+        context.lineTo(intf.SETTINGS.canvasWidth / 2, intf.SETTINGS.canvasHeight - intf.SETTINGS.courtMarginY - intf.SETTINGS.wallSize);
+        context.stroke();
+        context.setLineDash([]);
+        
+        // Draw walls with glow effect
+        context.shadowBlur = 15;
+        context.shadowColor = 'rgba(59, 130, 246, 0.6)';
         context.fillStyle = intf.SETTINGS.wallColor;
         context.fillRect(0, intf.SETTINGS.courtMarginY, intf.SETTINGS.canvasWidth, intf.SETTINGS.wallSize);
         context.fillRect(0, intf.SETTINGS.canvasHeight - intf.SETTINGS.wallSize - intf.SETTINGS.courtMarginY, intf.SETTINGS.canvasWidth, intf.SETTINGS.wallSize);
+        
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
+        
         this.leftPadle.draw(canvas);
         this.rightPadle.draw(canvas);
         this._ball.draw(canvas);
@@ -225,11 +324,12 @@ class PongGame
 {
 	private _canvas: HTMLCanvasElement;
 	private _court: Court;
+    private status: 'start' | 'ingame' | 'finished' = 'start';
 
     constructor(canvas: HTMLCanvasElement, info: string, socket: WebSocket)
     {
         this._canvas = canvas;
-        this._court = new Court(canvas, socket, info);
+        this._court = new Court(socket, info);
     }
 
     public listen(message: intf.messageInterface)
@@ -241,26 +341,49 @@ class PongGame
     private _draw()
     {
         let context = this._canvas.getContext('2d');
-        if (context) {
+        if (context && this.status != 'finished') {
             context.clearRect(0, 0, this._canvas.width, this._canvas.height);
             this._court.draw(this._canvas);
+            if (this.status == 'start')
+            {
+                console.log("type start");
+                context.fillStyle = intf.SETTINGS.scoreTextColor;
+                context.font = intf.SETTINGS.largeFont;
+                context.shadowBlur = 15;
+                context.shadowColor = 'rgba(59, 130, 246, 0.6)';
+                context.textAlign = 'center';
+                context.fillText("Game will start now...", this._canvas.width / 2, this._canvas.height / 2);
+                this.status = 'ingame';
+            }
         }
     }
 
+    async finish(onFinish: () => void)
+    {
+        this.status = 'finished';
+        this._court._scoreBoard.draw(this._canvas, true);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        onFinish();
+    }
 }
 
-export function startGame(canvas: HTMLCanvasElement, socket: WebSocket, data: string)
+export function startGame(
+    canvas: HTMLCanvasElement,
+    socket: WebSocket,
+    data: string,
+    onFinish: () => void
+)
 {
-    let pong: PongGame;
-
     canvas.width = intf.SETTINGS.canvasWidth;
     canvas.height = intf.SETTINGS.canvasHeight;
     canvas.style.backgroundColor = intf.SETTINGS.canvasColor;
-    pong = new PongGame(canvas, data, socket);
+    const pong: PongGame = new PongGame(canvas, data, socket);
 
     socket.onmessage = (msg) =>
     {
-        console.log("on message working!")
-        pong.listen(JSON.parse(msg.data));
+        if (msg.data == "finished")
+            pong.finish(onFinish);
+        else
+            pong.listen(JSON.parse(msg.data));
     }
 }

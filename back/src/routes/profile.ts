@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
+import bcrypt from 'bcrypt';
 
 const pump = promisify(pipeline);
 
@@ -53,6 +54,139 @@ export default async function profileRoutes(app: FastifyInstance) {
       return reply.code(500).send({
         error: 'Failed to fetch profile',
       });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // GET /profile/leaderboard - Get top players by win rate
+  // ═══════════════════════════════════════════════════════════
+  app.get('/leaderboard', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      console.log('Leaderboard endpoint hit');
+      
+      // Get all users with their match stats and creation time
+      const users = app.db
+        .prepare('SELECT id, username, display_name, avatar_url, created_at FROM users')
+        .all() as any[];
+
+      console.log('Found users:', users.length);
+
+      // Calculate stats for each user
+      const leaderboard = users.map((user) => {
+        console.log('Processing user:', user.username);
+        
+        // Get pong matches (online and tournament only)
+        const pongMatches = app.db
+          .prepare(`
+            SELECT 
+              game_mode,
+              left_player_id,
+              right_player_id,
+              winner
+            FROM pong_matches
+            WHERE (left_player_id = ? OR right_player_id = ?)
+            AND game_mode IN ('online', 'tournament')
+          `)
+          .all(user.id, user.id) as any[];
+
+        // Get tic-tac-toe matches
+        const tttMatches = app.db
+          .prepare(`
+            SELECT 
+              x_player_id as left_player_id,
+              o_player_id as right_player_id,
+              CASE 
+                WHEN winner = 'x' THEN 'left'
+                WHEN winner = 'o' THEN 'right'
+                ELSE 'draw'
+              END as winner
+            FROM tic_tac_toe_matches
+            WHERE x_player_id = ? OR o_player_id = ?
+          `)
+          .all(user.id, user.id) as any[];
+
+        console.log(`User ${user.username} - pong matches: ${pongMatches.length}, tictactoe matches: ${tttMatches.length}`);
+
+        let wins = 0;
+        let losses = 0;
+
+        // Process pong matches
+        pongMatches.forEach((match) => {
+          const isLeftPlayer = match.left_player_id === user.id;
+          const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
+          
+          if (isWinner) {
+            wins++;
+          } else {
+            losses++;
+          }
+        });
+
+        // Process tic-tac-toe matches (excluding draws)
+        tttMatches.forEach((match) => {
+          if (match.winner === 'draw') return; // Skip draws
+          
+          const isLeftPlayer = match.left_player_id === user.id;
+          const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
+          
+          if (isWinner) {
+            wins++;
+          } else {
+            losses++;
+          }
+        });
+
+        const totalGames = wins + losses;
+        const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+
+        return {
+          id: user.id,
+          username: user.username,
+          display_name: user.display_name,
+          avatar_url: user.avatar_url,
+          wins,
+          losses,
+          totalGames,
+          winRate,
+          created_at: user.created_at
+        };
+      });
+
+      // Sort by:
+      // 1. Players with games: by win rate (desc), then by total games (desc)
+      // 2. Players without games: by account creation time (oldest first)
+      leaderboard.sort((a, b) => {
+        // Both have played games
+        if (a.totalGames > 0 && b.totalGames > 0) {
+          if (b.winRate !== a.winRate) {
+            return b.winRate - a.winRate;
+          }
+          return b.totalGames - a.totalGames;
+        }
+        
+        // Only a has played games
+        if (a.totalGames > 0) {
+          return -1;
+        }
+        
+        // Only b has played games
+        if (b.totalGames > 0) {
+          return 1;
+        }
+        
+        // Neither has played games, sort by creation time (oldest first)
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+
+      // Return top 10 players (including those with no games)
+      const topPlayers = leaderboard.slice(0, 10);
+
+      return reply.code(200).send({
+        leaderboard: topPlayers
+      });
+    } catch (err) {
+      app.log.error(err);
+      return reply.code(500).send({ error: 'Failed to fetch leaderboard' });
     }
   });
 
@@ -187,11 +321,14 @@ export default async function profileRoutes(app: FastifyInstance) {
         type: 'object',
         properties: {
           display_name: { type: 'string', minLength: 2 },
+          username: { type: 'string', minLength: 3, maxLength: 20, pattern: '^[a-zA-Z0-9_]+$' },
+          email: { type: 'string', format: 'email' },
+          password: { type: 'string', minLength: 6 },
         },
         additionalProperties: false,
       }
     }
-  }, async (request: FastifyRequest<{ Body: { display_name?: string } }>, reply: FastifyReply) => {
+  }, async (request: FastifyRequest<{ Body: { display_name?: string; username?: string; email?: string; password?: string } }>, reply: FastifyReply) => {
     try {
       const authHeader = request.headers.authorization;
       const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
@@ -204,13 +341,85 @@ export default async function profileRoutes(app: FastifyInstance) {
 
       const decoded = app.jwt.verify(token) as { id: number; email: string };
 
-      const { display_name } = request.body || {};
+      const { display_name, username, email, password } = request.body || {};
+      
+      // Handle username update
+      if (username) {
+        const trimmedUsername = username.trim();
+        
+        // Validate username length
+        if (trimmedUsername.length < 3) {
+          return reply.code(400).send({ error: 'Username must be at least 3 characters' });
+        }
+        
+        if (trimmedUsername.length > 20) {
+          return reply.code(400).send({ error: 'Username must be at most 20 characters' });
+        }
+        
+        // Validate username format
+        if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
+          return reply.code(400).send({ error: 'Username can only contain letters, numbers, and underscores' });
+        }
+        
+        // Check if username already exists (excluding current user)
+        const existingUser = app.db
+          .prepare('SELECT id FROM users WHERE username = ? AND id != ?')
+          .get(trimmedUsername, decoded.id) as any;
+        
+        if (existingUser) {
+          return reply.code(409).send({ error: 'Username already taken' });
+        }
+        
+        // Update username
+        app.db.prepare('UPDATE users SET username = ? WHERE id = ?').run(trimmedUsername, decoded.id);
+        app.log.info(`Updated username for user ${decoded.id} to "${trimmedUsername}"`);
+      }
+      
+      // Handle display_name update
       if (display_name) {
         if (display_name.trim().length < 2) {
           return reply.code(400).send({ error: 'Display name must be at least 2 characters' });
         }
         app.db.prepare('UPDATE users SET display_name = ? WHERE id = ?').run(display_name.trim(), decoded.id);
         app.log.info(`Updated display_name for user ${decoded.id} to "${display_name.trim()}"`);
+      }
+
+      // Handle email update
+      if (email) {
+        const trimmedEmail = email.trim().toLowerCase();
+        
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmedEmail)) {
+          return reply.code(400).send({ error: 'Invalid email format' });
+        }
+        
+        // Check if email already exists (excluding current user)
+        const existingUser = app.db
+          .prepare('SELECT id FROM users WHERE email = ? AND id != ?')
+          .get(trimmedEmail, decoded.id) as any;
+        
+        if (existingUser) {
+          return reply.code(409).send({ error: 'Email already in use' });
+        }
+        
+        // Update email
+        app.db.prepare('UPDATE users SET email = ? WHERE id = ?').run(trimmedEmail, decoded.id);
+        app.log.info(`Updated email for user ${decoded.id} to "${trimmedEmail}"`);
+      }
+
+      // Handle password update
+      if (password) {
+        if (password.length < 6) {
+          return reply.code(400).send({ error: 'Password must be at least 6 characters' });
+        }
+        
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Update password
+        app.db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, decoded.id);
+        app.log.info(`Updated password for user ${decoded.id}`);
       }
 
       const updated = app.db
@@ -284,10 +493,11 @@ export default async function profileRoutes(app: FastifyInstance) {
       const decoded = app.jwt.verify(token) as { id: number; email: string };
 
       // Get pong matches where user is either left or right player
-      const matches = app.db
+      const pongMatches = app.db
         .prepare(`
           SELECT 
             pm.id,
+            'pong' as game_type,
             pm.game_mode,
             pm.left_player_id,
             pm.right_player_id,
@@ -306,16 +516,60 @@ export default async function profileRoutes(app: FastifyInstance) {
           LEFT JOIN users u1 ON pm.left_player_id = u1.id
           LEFT JOIN users u2 ON pm.right_player_id = u2.id
           WHERE pm.left_player_id = ? OR pm.right_player_id = ?
-          ORDER BY pm.created_at DESC
-          LIMIT 50
         `)
-        .all(decoded.id, decoded.id);
+        .all(decoded.id, decoded.id) as any[];
 
-      // Calculate stats
+      // Get tic-tac-toe matches where user is either X or O player
+      const tttMatches = app.db
+        .prepare(`
+          SELECT 
+            tm.id,
+            'tictactoe' as game_type,
+            'tictactoe' as game_mode,
+            tm.x_player_id as left_player_id,
+            tm.o_player_id as right_player_id,
+            CASE 
+              WHEN tm.winner = 'draw' THEN 'draw'
+              WHEN tm.winner = 'x' THEN 'left'
+              WHEN tm.winner = 'o' THEN 'right'
+            END as winner,
+            CASE 
+              WHEN tm.winner = 'x' THEN 1
+              WHEN tm.winner = 'draw' THEN 0
+              ELSE 0
+            END as left_score,
+            CASE 
+              WHEN tm.winner = 'o' THEN 1
+              WHEN tm.winner = 'draw' THEN 0
+              ELSE 0
+            END as right_score,
+            NULL as ai_difficulty,
+            tm.created_at,
+            u1.username as left_player_username,
+            u1.display_name as left_player_display_name,
+            u1.avatar_url as left_player_avatar,
+            u2.username as right_player_username,
+            u2.display_name as right_player_display_name,
+            u2.avatar_url as right_player_avatar
+          FROM tic_tac_toe_matches tm
+          LEFT JOIN users u1 ON tm.x_player_id = u1.id
+          LEFT JOIN users u2 ON tm.o_player_id = u2.id
+          WHERE tm.x_player_id = ? OR tm.o_player_id = ?
+        `)
+        .all(decoded.id, decoded.id) as any[];
+
+      // Combine and sort all matches by date
+      const allMatches = [...pongMatches, ...tttMatches].sort((a, b) => {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }).slice(0, 50); // Limit to 50 most recent matches
+
+      // Calculate stats (excluding draws)
       let wins = 0;
       let losses = 0;
 
-      matches.forEach((match: any) => {
+      allMatches.forEach((match: any) => {
+        if (match.winner === 'draw') return; // Skip draws for win/loss stats
+        
         const isLeftPlayer = match.left_player_id === decoded.id;
         const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
         
@@ -333,7 +587,7 @@ export default async function profileRoutes(app: FastifyInstance) {
           totalGames,
           winRate
         },
-        matches
+        matches: allMatches
       });
     } catch (err) {
       app.log.error(err);
@@ -372,10 +626,11 @@ export default async function profileRoutes(app: FastifyInstance) {
       }
 
       // Get pong matches where user is either left or right player
-      const matches = app.db
+      const pongMatches = app.db
         .prepare(`
           SELECT 
             pm.id,
+            'pong' as game_type,
             pm.game_mode,
             pm.left_player_id,
             pm.right_player_id,
@@ -394,16 +649,60 @@ export default async function profileRoutes(app: FastifyInstance) {
           LEFT JOIN users u1 ON pm.left_player_id = u1.id
           LEFT JOIN users u2 ON pm.right_player_id = u2.id
           WHERE pm.left_player_id = ? OR pm.right_player_id = ?
-          ORDER BY pm.created_at DESC
-          LIMIT 50
         `)
-        .all(userId, userId);
+        .all(userId, userId) as any[];
 
-      // Calculate stats
+      // Get tic-tac-toe matches where user is either X or O player
+      const tttMatches = app.db
+        .prepare(`
+          SELECT 
+            tm.id,
+            'tictactoe' as game_type,
+            'tictactoe' as game_mode,
+            tm.x_player_id as left_player_id,
+            tm.o_player_id as right_player_id,
+            CASE 
+              WHEN tm.winner = 'draw' THEN 'draw'
+              WHEN tm.winner = 'x' THEN 'left'
+              WHEN tm.winner = 'o' THEN 'right'
+            END as winner,
+            CASE 
+              WHEN tm.winner = 'x' THEN 1
+              WHEN tm.winner = 'draw' THEN 0
+              ELSE 0
+            END as left_score,
+            CASE 
+              WHEN tm.winner = 'o' THEN 1
+              WHEN tm.winner = 'draw' THEN 0
+              ELSE 0
+            END as right_score,
+            NULL as ai_difficulty,
+            tm.created_at,
+            u1.username as left_player_username,
+            u1.display_name as left_player_display_name,
+            u1.avatar_url as left_player_avatar,
+            u2.username as right_player_username,
+            u2.display_name as right_player_display_name,
+            u2.avatar_url as right_player_avatar
+          FROM tic_tac_toe_matches tm
+          LEFT JOIN users u1 ON tm.x_player_id = u1.id
+          LEFT JOIN users u2 ON tm.o_player_id = u2.id
+          WHERE tm.x_player_id = ? OR tm.o_player_id = ?
+        `)
+        .all(userId, userId) as any[];
+
+      // Combine and sort all matches by date
+      const allMatches = [...pongMatches, ...tttMatches].sort((a, b) => {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }).slice(0, 50); // Limit to 50 most recent matches
+
+      // Calculate stats (excluding draws)
       let wins = 0;
       let losses = 0;
 
-      matches.forEach((match: any) => {
+      allMatches.forEach((match: any) => {
+        if (match.winner === 'draw') return; // Skip draws for win/loss stats
+        
         const isLeftPlayer = match.left_player_id === userId;
         const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
         
@@ -421,7 +720,7 @@ export default async function profileRoutes(app: FastifyInstance) {
           totalGames,
           winRate
         },
-        matches
+        matches: allMatches
       });
     } catch (err) {
       app.log.error(err);

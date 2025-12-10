@@ -7,6 +7,8 @@ import Message from './Message'
 import { MessageProps } from '@/types/chat.types'
 import MessageForm from './MessageForm'
 import useGlobalStore from '@/store/globalStore'
+import { useRouter } from 'next/navigation'
+import { tree } from 'next/dist/build/templates/app-page'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -22,6 +24,8 @@ const MainChat = () => {
   const user = useGlobalStore(state => state.user);
   const [isBlocked, setIsBlocked] = useState(false);
   const [showBlockMenu, setShowBlockMenu] = useState(false);
+  const [invite, setInvite] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     async function getMessages() {
@@ -71,6 +75,15 @@ const MainChat = () => {
     checkBlockStatus();
   }, [pointedUser?.friend_id, user?.id]);
 
+
+  useEffect(()=>
+  {
+    if (manager.invite && manager.invite.sender !== manager.user?.id)
+    {
+      setInvite(true);
+    }
+  }, [manager.invite])
+
   const handleBlockToggle = async () => {
     if (!pointedUser?.friend_id || !user?.id) return;
 
@@ -109,6 +122,34 @@ const MainChat = () => {
     }
   };
 
+  const sendInvite = () =>
+  {
+    const data = {type: "invite", content: {sender: manager.user?.id, receiver: pointedUser?.friend_id, username: manager.user?.username}};
+    if (manager.socket && manager.socket.readyState === WebSocket.OPEN)
+    {
+      manager.socket.send(JSON.stringify(data));
+    }
+  }
+
+  const handleCloseInvite = () =>
+  {
+    const data = {type: "refuseInvite", content: {id: manager.user?.id, code: manager.invite?.code}};
+    if (manager.socket && manager.socket.readyState === WebSocket.OPEN)
+    {
+      manager.socket.send(JSON.stringify(data));
+    }
+    setInvite(false);
+  }
+
+  const handleJoinGame = () =>
+  {
+    if (manager.invite)
+    {
+      setInvite(false);
+      router.push(`/games/invite?code=${encodeURIComponent(manager.invite?.code)}`);
+    }
+  }
+
   return (
     <div className='relative flex-3 flex flex-col rounded-t-[30] bg-[#B0BBCF]'>
       <div className='flex-1 flex justify-between items-center gap-4 bg-[#92A0BD] rounded-tl-[30] px-14'>
@@ -122,13 +163,19 @@ const MainChat = () => {
           </div>
           <h1 className='text-[24px]'>{pointedUser?.display_name || pointedUser?.username}</h1>
         </div>        <div className="relative" onMouseLeave={() => setShowBlockMenu(false)}>
-          <button
-            onClick={() => setShowBlockMenu(!showBlockMenu)}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-[#5A789E] hover:bg-[#4a6888] transition-colors"
-            title="Options"
-          >
-            <span className="text-white text-lg">⋮</span>
-          </button>
+            <div className='flex justify-center items-center gap-7'>
+              {!isBlocked && <button className="w-20 h-14 bg-[#5A789E] hover:bg-[#4a6888] transition-colors" onClick={sendInvite}>
+                Invite to game
+              </button>}
+            <button
+              onClick={() => setShowBlockMenu(!showBlockMenu)}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-[#5A789E] hover:bg-[#4a6888] transition-colors"
+              title="Options"
+            >
+              <span className="text-white text-lg">⋮</span>
+            </button>
+
+            </div>
           
           {showBlockMenu && (
             <div className="absolute right-0 top-full pt-2 w-48 z-20">
@@ -148,6 +195,34 @@ const MainChat = () => {
           )}
         </div>
       </div>
+
+
+      {invite && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-gray-800 text-white p-6 rounded-lg max-w-sm w-full mx-4 shadow-2xl border border-gray-700">
+            <p className="text-lg mb-6">
+              <strong className="font-bold text-emerald-400">{manager.invite?.username}</strong> invited you to join a game.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleJoinGame}
+                className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-md transition-colors duration-200"
+              >
+                Join game
+              </button>
+              <button
+                onClick={handleCloseInvite}
+                className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors duration-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+
       <div className='flex-15 flex flex-col-reverse py-5 gap-8 wrap-anywhere overflow-scroll'>
         {
           isBlocked ? (

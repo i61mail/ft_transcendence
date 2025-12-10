@@ -34,7 +34,6 @@ export default function chatsLayout({children}: {children: React.ReactNode})
       checkAuth();
     }, []);
 
-
     return (
     manager.user && <>
             <div className="min-h-screen bg-[#bcc3d4] flex flex-col">

@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from 'bcrypt';
 import { generateToken } from '../utils/jwt';
+const speakeasy = require('speakeasy');
 
 // Type definitions for request bodies
 interface RegisterBody {
@@ -12,6 +13,7 @@ interface RegisterBody {
 interface LoginBody {
   email: string;
   password: string;
+  twofa_token?: string;
 }
 
 export default async function authRoutes(app: FastifyInstance) {
@@ -136,7 +138,8 @@ export default async function authRoutes(app: FastifyInstance) {
           required: ['email', 'password'],
           properties: {
             email: { type: 'string', format: 'email', maxLength: 254 },
-            password: { type: 'string', minLength: 8, maxLength: 72 }
+            password: { type: 'string', minLength: 8, maxLength: 72 },
+            twofa_token: { type: 'string', maxLength: 6 }
           },
           additionalProperties: false
         }
@@ -146,7 +149,9 @@ export default async function authRoutes(app: FastifyInstance) {
       request: FastifyRequest<{ Body: LoginBody }>,
       reply: FastifyReply
     ) => {
-      const { email, password } = request.body;
+      const { email, password, twofa_token } = request.body;
+
+      console.log('Login request body:', { email, password: '***', twofa_token, hasToken: !!twofa_token });
 
       try {
         // Find user by email
@@ -160,6 +165,8 @@ export default async function authRoutes(app: FastifyInstance) {
             avatar_url: string | null;
             display_name: string | null;
             auth_provider?: string | null;
+            twofa_enabled?: number;
+            twofa_secret?: string | null;
           } | undefined;
 
         if (!user) {
@@ -182,6 +189,31 @@ export default async function authRoutes(app: FastifyInstance) {
           return reply.code(401).send({
             error: 'Invalid email or password',
           });
+        }
+
+        // Check if 2FA is enabled
+        if (user.twofa_enabled && user.twofa_secret) {
+          if (!twofa_token) {
+            // User needs to provide 2FA code
+            return reply.code(200).send({
+              requires2FA: true,
+              message: 'Please provide 2FA code'
+            });
+          }
+
+          // Verify 2FA token
+          const verified = speakeasy.totp.verify({
+            secret: user.twofa_secret,
+            encoding: 'base32',
+            token: twofa_token,
+            window: 2
+          });
+
+          if (!verified) {
+            return reply.code(401).send({
+              error: 'Invalid 2FA code'
+            });
+          }
         }
 
         // Generate JWT token

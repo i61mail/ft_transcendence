@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
   google_id TEXT UNIQUE DEFAULT NULL,
   auth_provider TEXT DEFAULT 'local',
   display_name TEXT DEFAULT NULL,
+  twofa_secret TEXT DEFAULT NULL,
+  twofa_enabled INTEGER DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

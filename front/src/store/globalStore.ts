@@ -9,6 +9,13 @@ interface Status
     status: boolean
 }
 
+interface Invite
+{
+    sender: number,
+    username: string,
+    code: string
+}
+
 
 interface GLobalState {
     socket: WebSocket | null,
@@ -23,6 +30,8 @@ interface GLobalState {
     status: Status | null,
     onlineUsers: Set<number>,
     chatIsReady: boolean,
+    invite: Invite | null,
+    setInvite: (v: Invite | null) => void,
     setChatIsReady: (s: boolean) => void,
     updateGameSocket: (s: WebSocket | null) => void,
     updateUser: (user: User | null) => void,
@@ -36,7 +45,7 @@ interface GLobalState {
     addMessage: (message: MessageProps) => void,
     updateLatestMessage: (message: MessageProps | null) => void,
     addOnlineUser: (id: number) => void,
-    removeOnlineUser: (id: number) => void
+    removeOnlineUser: (id: number) => void,
 }
 
 
@@ -55,6 +64,11 @@ const useglobalStore = create<GLobalState>((set,get) => (
     status: null,
     chatIsReady: false,
     onlineUsers: new Set<number>(),
+    invite: null,
+    setInvite: (v: Invite | null) =>
+    {
+        set({invite: v});
+    },
     setChatIsReady: (s: boolean) =>
     {
         set({chatIsReady: s});

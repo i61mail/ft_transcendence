@@ -1,172 +1,287 @@
-import { PongGame } from 'pong/gameLogic';
-import { playerInfo, trnmtStatus, TournamentData } from './interfaces';
-import { GameMode } from 'pong/interfaces';
+import { trnmtStatus, TournamentData, Match, SanitizedTournamentData, SanitizedMatch } from '../types/tournaments.types';
+import { GameMode } from '../types/pong.types';
+import { PongGame, pongOnline } from './pong';
+import { playerInfo } from '../types/playerInfo.types';
+import { WebSocket } from 'ws';
+import { FastifyInstance } from 'fastify';
+import { Socket } from 'dgram';
+
+const tournaments: Map<string, Tournament> = new Map<string, Tournament>();
 
 class Tournament
 {
-    players: Map<number, playerInfo> = new Map<number, playerInfo>();
-    game1!: PongGame;
-    game2!: PongGame;
-    finaleGame!: PongGame;
-    status: trnmtStatus = trnmtStatus.waiting;
-    tournamentData: TournamentData =
+    static server: FastifyInstance | null;
+    tData: TournamentData =
     {
-        status: this.statusString,
-        semiFinals: [
+        host: null,
+        code: "",
+        status: trnmtStatus.waiting,
+        semi: [
         {
-            player1: "-",
-            player2: "-",
+            player1: null,
+            player2: null,
             winner: null
         },
         {
-            player1: "-",
-            player2: "-",
+            player1: null,
+            player2: null,
             winner: null
         }
         ],
         final: {
-            player1: "-",
-            player2: "-",
+            player1: null,
+            player2: null,
             winner: null
         }
     };
-    
-    addPlayer(player: playerInfo): boolean
+
+    constructor(code: string)
     {
-        if (this.status != trnmtStatus.waiting)
-            return (false);
-        let rand: number = Math.floor(Math.random() * 4);
-        for (; this.players.has(rand); rand = (rand + 1) % 4);
-        this.players.set(rand, player);
-        this.playerName = rand;
-        this.broadcastTournamentData();
-        if (this.players.size == 4)
-        {
-            this.status = trnmtStatus.startingSemi;
-            setTimeout(() => this.startSemiGame(), 3000);
-        }
-        return (true);
+        this.tData.code = code;
     }
-    
-    set playerName(pos: number)
+
+    set host(player: playerInfo)
+    {
+        this.tData.host = player;
+    }
+
+    forEachPlayer(func: (player: playerInfo) => void)
+    {
+        if (this.tData.semi[0].player1)
+            func(this.tData.semi[0].player1);
+        if (this.tData.semi[0].player2)
+            func(this.tData.semi[0].player2);
+        if (this.tData.semi[1].player1)
+            func(this.tData.semi[1].player1);
+        if (this.tData.semi[1].player2)
+            func(this.tData.semi[1].player2);
+        if (this.tData.final.player1)
+            func(this.tData.final.player1);
+        if (this.tData.final.player2)
+            func(this.tData.final.player2);
+    }
+
+    playersHas(pos: number) : boolean
     {
         switch (pos)
         {
             case 0:
-                this.tournamentData.semiFinals[0].player1 = "get first player username";
+                return this.tData.semi[0].player1 != null;
+            case 1:
+                return this.tData.semi[0].player2 != null;
+            case 2:
+                return this.tData.semi[1].player1 != null;
+            case 3:
+                return this.tData.semi[1].player2 != null;
+        }
+        return (false);
+    }
+    
+    isPlayersFull() : boolean
+    {
+        for (let i = 0; i < 4; i++)
+            if (!this.playersHas(i)) return (false);
+        return (true);
+    }
+
+    set newPlayer(player: playerInfo)
+    {
+        let rand: number = Math.floor(Math.random() * 4);
+    
+        for (; this.playersHas(rand); rand = (rand + 1) % 4);
+    
+        switch (rand)
+        {
+            case 0:
+                this.tData.semi[0].player1 = player;
                 break;
             case 1:
-                this.tournamentData.semiFinals[0].player2 = "get second player username";
+                this.tData.semi[0].player2 = player;
                 break;
             case 2:
-                this.tournamentData.semiFinals[1].player1 = "get third player username";
+                this.tData.semi[1].player1 = player;
                 break;
             case 3:
-                this.tournamentData.semiFinals[1].player2 = "get forth player username";
+                this.tData.semi[1].player2 = player;
                 break;
         }
     }
 
-    get statusString(): string
+    playerListener(player: playerInfo)
     {
-        switch (this.status)
+        player.socket.onmessage = (msg) =>
         {
-            case trnmtStatus.waiting:
-                return ("Waiting for Players");
-            case trnmtStatus.startingSemi:
-                return ("Starting Semi-Finals");
-            case trnmtStatus.playingSemi:
-                return ("Playing Semi-Finals");
-            case trnmtStatus.startingFinal:
-                return ("Starting Final Match");
-            case trnmtStatus.playingFinal:
-                return ("Playing Final Match");
-            case trnmtStatus.finished:
-                return ("Congratulations " + this.players.get(6).username + " !!")
-            default:
-                return ("Unknown Status");
-        }
+            const data = JSON.parse(msg.data.toString());
+
+            console.log("action:", data.action);
+            if (data.action == 'delete' && player.id == this.tData.host!.id)
+            {
+                this.tData.status = trnmtStatus.close;
+                this.broadcastTournamentData();
+                this.closeTournament();
+            }
+            else if (data.gameType != undefined)
+            {
+                startTournament(player, Tournament.server!);
+                this.broadcastTournamentData();
+            }
+            else
+                this.broadcastTournamentData();
+        };
     }
 
-    semiInterval(winner: number, player1: playerInfo, player2: playerInfo, intervalId: NodeJS.Timeout, pos: number)
+    addPlayer(player: playerInfo): boolean
     {
+        let doesExist: boolean = false;
+        this.forEachPlayer((currPlayer: playerInfo) =>
+        {
+            if (player.id == currPlayer.id)
+            {
+                doesExist = true;
+                currPlayer.socket = player.socket;
+                this.playerListener(currPlayer);
+            }
+        });
+        if (doesExist)
+        {
+            console.log("player", player.id, player.username, "does exist");
+            this.broadcastTournamentData();
+            return (true);
+        }
+        if (this.tData.status != trnmtStatus.waiting)
+            return (false);
+        
+        this.newPlayer = player;
+        this.playerListener(player);
+        if (this.isPlayersFull())
+        {
+            this.tData.status = trnmtStatus.startingSemi;
+            setTimeout(() => 
+            {
+                this.startSemiGame();
+            }, 3000);
+        }
+        this.broadcastTournamentData();
+        return (true);
+    }
+
+    interval(winner: number, match: Match, intervalId: NodeJS.Timeout)
+    {
+        console.log('winner:', winner, 'player1:', match.player1?.id, 'player2:', match.player2?.id);
         if (winner == 0)
             return ;
         if (winner == 1)
-        {
-            this.players.set(pos, player1);
-            this.tournamentData.semiFinals[pos - 4].winner = 'player1';
-        }
+            match.winner = match.player1;
         else
-        {
-            this.players.set(pos, player2);
-            this.tournamentData.semiFinals[pos - 4].winner = 'player2';
-        }
+            match.winner = match.player2;
         clearInterval(intervalId);
+    }
+
+    startGame(match: Match)
+    {
+        const game: PongGame = pongOnline(
+            match.player1!,
+            match.player2!,
+            Tournament.server!
+        );
+        const intervalId: NodeJS.Timeout = setInterval(()=>
+        {
+            this.interval(game.winner, match, intervalId);
+        }, 1000);
     }
 
     startSemiGame()
     {
-        this.status = trnmtStatus.playingSemi;
-        this.game1 = new PongGame(GameMode.online, this.players.get(0)!, this.players.get(1)!);
-        this.game2 = new PongGame(GameMode.online, this.players.get(2)!, this.players.get(3)!);
-        const intervalId1: NodeJS.Timeout = setInterval(()=>
+        this.tData.status = trnmtStatus.playingSemi;
+        this.broadcastTournamentData();
+        
+        this.startGame(this.tData.semi[0]);
+        this.startGame(this.tData.semi[1]);
+
+        const intervalId: NodeJS.Timeout = setInterval(() =>
         {
-            this.semiInterval(this.game1.winner, this.players.get(0)!, this.players.get(1)!, intervalId1, 4);
-        }, 1000);
-        const intervalId2: NodeJS.Timeout = setInterval(()=>
-        {
-            this.semiInterval(this.game2.winner, this.players.get(2)!, this.players.get(3)!, intervalId2, 5);
-        }, 1000);
-        const intervalId3: NodeJS.Timeout = setInterval(() =>
-        {
-            if (this.players.size == 6)
+            console.log('semi finale:', this.tData.semi[0].winner != null, this.tData.semi[1].winner != null);
+            if (this.tData.semi[0].winner != null
+                && this.tData.semi[1].winner != null
+            )
             {
-                setTimeout(() => this.startFinaleGame(), 3000);
-                clearInterval(intervalId3);
+                this.tData.status = trnmtStatus.startingFinal;
+                this.tData.final.player1 = this.tData.semi[0].winner;
+                this.tData.final.player2 = this.tData.semi[1].winner;
+                this.broadcastTournamentData();
+                this.forEachPlayer((player: playerInfo) =>
+                {
+                    startTournament(player, Tournament.server!);
+                });
+                clearInterval(intervalId);
+                setTimeout(() => {this.startFinaleGame()}, 6000);
             }
         }, 1000);
     }
 
+    closeTournament()
+    {
+        tournaments.delete(this.tData.code);
+        this.forEachPlayer((player: playerInfo) =>
+        {
+            playersInTournaments.delete(player.id);
+        });
+        
+    }
+
     startFinaleGame()
     {
-        this.finaleGame = new PongGame(GameMode.online, this.players.get(4)!, this.players.get(5)!);
+        this.tData.status = trnmtStatus.playingFinal;
+        this.broadcastTournamentData();
+        this.startGame(this.tData.final);
         const intervalId: NodeJS.Timeout = setInterval(()=>
         {
-            if (this.finaleGame.winner == 0)
-                return ;
-            if (this.finaleGame.winner == 1)
+            if (this.tData.final.winner != null)
             {
-                this.players.set(6, this.players.get(4)!);
-                this.tournamentData.final.winner = 'player1';
-            }
-            else
-            {
-                this.players.set(6, this.players.get(5)!);
-                this.tournamentData.final.winner = 'player2';
-            }
-            this.broadcastTournamentData();
-
-            clearInterval(intervalId);
+                this.tData.status = trnmtStatus.finished;
+                this.forEachPlayer((player: playerInfo) =>
+                {
+                    startTournament(player, Tournament.server!);
+                });
+                this.broadcastTournamentData();
+                clearInterval(intervalId);
+                setTimeout(() => this.closeTournament(), 10000);
+           }
         }, 1000);
     }
 
     broadcastTournamentData()
     {
-        const data: string = JSON.stringify(this.tournamentData);
+        // Create a sanitized version without socket properties to avoid circular references
+        const sanitizePlayer = (p?: playerInfo | null) =>
+            p ? { id: p.id, username: p.username } : null;
 
-        this.players.forEach((player: playerInfo) =>
+        const sanitizeMatch = (m: Match): SanitizedMatch => ({
+            player1: sanitizePlayer(m.player1),
+            player2: sanitizePlayer(m.player2),
+            winner: sanitizePlayer(m.winner),
+        });
+
+        const sanitizedData: SanitizedTournamentData = {
+            host: sanitizePlayer(this.tData.host),
+            code: this.tData.code,
+            status: this.tData.status,
+            semi: this.tData.semi.map(sanitizeMatch),
+            final: sanitizeMatch(this.tData.final),
+        };
+
+        const data: string = JSON.stringify(sanitizedData);
+
+        this.forEachPlayer((player: playerInfo) =>
         {
             player.socket.send(data);
         });
     }
 }
 
-const tournaments: Map<string, Tournament> = new Map<string, Tournament>();
-
-function generateCode(): string
+export function generateCode(): string
 {
-    const characters: string = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    const characters: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const length: number = 6;
     let code: string = '';
     
@@ -174,22 +289,50 @@ function generateCode(): string
     {
         code += characters[Math.floor(Math.random() * characters.length)];
     }
-    console.log(code);
     if (tournaments.has(code))
         return (generateCode())
     return (code);
 }
 
-export function startTournament(host: playerInfo)
+const playersInTournaments: Map<number, string> = new Map<number, string>();
+
+function findPlayer(player: playerInfo): boolean
 {
+    const code: string | null = playersInTournaments.get(player.id) ?? null;
+
+    if (!player.socket)
+    {
+        console.log("no socket is open");
+        return (true);
+    }
+    if (code && tournaments.has(code))
+    {
+        tournaments.get(code)?.addPlayer(player);
+        return (true);
+    }
+    return (false);
+}
+
+export function startTournament(host: playerInfo, server: FastifyInstance)
+{
+    if (findPlayer(host))
+        return ;
     const code: string = generateCode();
 
-    tournaments.set(code, new Tournament());
+    playersInTournaments.set(host.id, code);
+    if (Tournament.server == null)
+        Tournament.server = server;
+    tournaments.set(code, new Tournament(code));
+    tournaments.get(code)!.host = host;
     joinTournament(host, code);
+    
 }
 
 export function joinTournament(player: playerInfo, code: string) // maybe return true or false to show that is not possible to join
 {
+    if (findPlayer(player))
+        return ;
+    playersInTournaments.set(player.id, code);
     if (!tournaments.has(code))
         console.log("tournament doesnt exist");
     else if (!tournaments.get(code)?.addPlayer(player))

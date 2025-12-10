@@ -1,4 +1,7 @@
+import { playerInfo } from "../types/playerInfo.types";
 import * as types from "../types/ticTacToe.types";
+import type { WebSocket } from "ws";
+import { FastifyInstance } from 'fastify';
 
 class Player
 {
@@ -7,7 +10,7 @@ class Player
 	public	symbol: types.Symbol;
 	public 	playerId : number;
 
-	constructor(symbol: types.Symbol, ttt: TicTacToeGame, playerInfo : types.playerInfo)
+	constructor(symbol: types.Symbol, ttt: TicTacToeGame, playerInfo : playerInfo)
 	{
 		this.ttt = ttt;
 		this.symbol = symbol;
@@ -18,11 +21,12 @@ class Player
 
 	socketListen()
 	{
-		this.socket.send(this.symbol);
+		// this.socket.send(this.symbol);
 
 		this.socket.onmessage = (msg) => {
+			console.log("received:", msg.data);
 			if (this.ttt.currentPlayer == this.symbol)
-				this.ttt.send(msg.data);
+				this.ttt.send(msg.data.toString());
 		}
 	}
 
@@ -33,6 +37,7 @@ class Player
 	}
 }
 
+
 export class TicTacToeGame
 {
 	public  currentPlayer: types.Symbol = 'X';
@@ -40,13 +45,14 @@ export class TicTacToeGame
 	private winningCells: [number, number][] = [];
 	private player1: Player;
 	private player2: Player;
+	private server: FastifyInstance;
 	private board: types.Symbol[][] = [
 		['', '', ''],
 		['', '', ''],
 		['', '', ''],
 	];
 
-	constructor(player1: types.playerInfo, player2: types.playerInfo)
+	constructor(player1: playerInfo, player2: playerInfo, server: FastifyInstance)
 	{
 		const randomizer : boolean = ((Date.now() * Math.random()) % 1) < 0.5;
 		let symbol1 : types.Symbol = randomizer ? 'X' : 'O';
@@ -54,6 +60,7 @@ export class TicTacToeGame
 
 		this.player1 = new Player(symbol1, this, player1);
 		this.player2 = new Player(symbol2, this, player2);
+		this.server = server;
 	}
 
 	send(message: string)
@@ -79,8 +86,8 @@ export class TicTacToeGame
 			};
 			this.player1.send(gameMsg);
 			this.player2.send(gameMsg);
-			// if (hasWinner)
-			// 	this.addToDatabase();
+			if (hasWinner)
+				this.addToDatabase();
 		}
 	}
 
@@ -147,36 +154,38 @@ export class TicTacToeGame
 		return (false);
 	}
 	
-	// addToDatabase()
-	// {
-	// 	const insertMatchStmt = fastify.db.prepare(`
-	// 		INSERT INTO pong_matches (
-	// 			x_player_id, 
-	// 			o_player_id, 
-	// 			winner,
-	// 		) VALUES (
-	// 			@x_player_id, 
-	// 			@o_player_id, 
-	// 			@winner,
-	// 		)
-	// 	`);
+	addToDatabase()
+	{
+		const insertMatchStmt = this.server.db.prepare(`
+			INSERT INTO tic_tac_toe_matches (
+				x_player_id,
+				o_player_id,
+				winner
+			) VALUES (?, ?, ?)
+		`);
 
-	// 	const matchData: types.tttDataBase = {
-	// 		x_player_id: this.player1.symbol == 'X'
-	// 			? this.player1.playerId: this.player2.playerId,
-	// 		o_player_id: this.player1.symbol == 'O'
-	// 			? this.player1.playerId: this.player2.playerId,
-	// 		winner: this.winner == 'X'
-	// 			? 'x' : this.winner == 'O'
-	// 			? 'o' : 'draw'
-	// 	};
-	// 	try
-	// 	{
-	// 		insertMatchStmt.run(matchData);
-	// 	}
-	// 	catch (err)
-	// 	{
-	// 		console.error("Failed to insert match:", err);
-	// 	}
-	// }
+		const xPlayerId: number = this.player1.symbol === 'X' ? this.player1.playerId : this.player2.playerId;
+		const oPlayerId: number = this.player1.symbol === 'O' ? this.player1.playerId : this.player2.playerId;
+		const winnerStr: 'x' | 'o' | 'draw' = this.winner === 'X' ? 'x' : this.winner === 'O' ? 'o' : 'draw';
+		console.log('xPlayerId:', xPlayerId);
+		console.log('oPlayerId:', oPlayerId);
+		console.log('winnerStr:', winnerStr);
+		try {
+			insertMatchStmt.run(xPlayerId, oPlayerId, winnerStr);
+		} catch (err) {
+			console.error("Failed to insert match:", err);
+		}
+	}
+}
+
+export function tttGame(
+	player1 : playerInfo,
+    player2 : playerInfo,
+    server: FastifyInstance
+)
+{
+	player1.socket.send(JSON.stringify({Symbol: 'X'}));
+	player2.socket.send(JSON.stringify({Symbol: 'O'}));
+
+	new TicTacToeGame(player1, player2, server);
 }

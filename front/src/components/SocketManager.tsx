@@ -49,7 +49,7 @@ const  SocketManager = () =>
 
         gameSocket.onmessage = (msg) =>
         {
-            const data = JSON.parse(msg.data.toString());
+            const {type, data} = JSON.parse(msg.data.toString());
             console.log("GAME: ", data);
         }
         manager.updateGameSocket(gameSocket);
@@ -124,6 +124,13 @@ const  SocketManager = () =>
                     manager.updateLatestMessage(newMessage);
                   }
               }
+              else if (type === "invite")
+              {
+                console.log("received invite", data);
+                manager.setInvite({sender: data.sender, username: data.username, code: data.code});
+              }
+              else if (type === "startInvite")
+                router.push(`/games/invite?code=${encodeURIComponent(data.code)}`);
               else if (type === "friend_online")
               {
                     manager.addOnlineUser(data);

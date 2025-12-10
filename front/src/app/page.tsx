@@ -11,6 +11,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [twoFACode, setTwoFACode] = useState("");
   
   // Surface OAuth errors from callback redirects (e.g., ?error=oauth_failed)
   useEffect(() => {
@@ -41,20 +43,49 @@ const handleLogin = async (e: React.FormEvent) => {
   setLoading(true);
 
   try {
+    console.log('Attempting login with:', {
+      email: loginEmail,
+      password: '***',
+      twofa_token: twoFACode || undefined,
+      twoFACodeLength: twoFACode.length
+    });
+
     const result = await login({
       email: loginEmail,
       password: loginPassword,
+      twofa_token: twoFACode || undefined,
     });
 
+    console.log('Login result:', result);
+    console.log('Has requires2FA?', 'requires2FA' in result);
+    console.log('Has user?', 'user' in result);
+
+    // Check if 2FA is required
+    if ('requires2FA' in result && result.requires2FA) {
+      console.log('2FA required, showing input');
+      setRequires2FA(true);
+      setLoading(false);
+      return;
+    }
+
     // Store user data in localStorage for quick access
-    localStorage.setItem("user", JSON.stringify(result.user));
-    manager.updateUser(result.user);
-    // Redirect to dashboard
-    setTimeout(() => {
-      window.location.href = '/dashboard';
-    }, 500);
+    if ('user' in result) {
+      console.log('User found, logging in:', result.user);
+      localStorage.setItem("user", JSON.stringify(result.user));
+      manager.updateUser(result.user);
+      // Redirect to dashboard
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500);
+    } else {
+      console.error('No user in result:', result);
+      setError('Login failed - no user data received');
+    }
   } catch (err: any) {
+    console.error('Login error:', err);
     setError(err.message);
+    setRequires2FA(false);
+    setTwoFACode("");
   } finally {
     setLoading(false);
   }
@@ -182,12 +213,40 @@ const handleRegister = async (e: React.FormEvent) => {
                   />
                 </div>
 
+                {requires2FA && (
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="twofa"
+                      className="block font-pixelify font-normal text-black text-base tracking-[0] leading-normal"
+                    >
+                      2FA Code*
+                    </label>
+                    <input
+                      id="twofa"
+                      type="text"
+                      inputMode="numeric"
+                      value={twoFACode}
+                      onChange={(e) => {
+                        const code = e.target.value.replace(/[^0-9]/g, '');
+                        console.log('2FA code changed:', code);
+                        setTwoFACode(code);
+                      }}
+                      maxLength={6}
+                      autoFocus
+                      autoComplete="off"
+                      placeholder="000000"
+                      className="w-full h-[49px] bg-white rounded-[140px] border border-solid border-black px-6 font-inter text-black text-xl tracking-[0] leading-normal text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+                    <p className="text-xs text-gray-600 text-center">Enter the code from your Google Authenticator app</p>
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   disabled={loading}
                   className="w-full h-12 bg-[#4a7bb8] rounded-[20px] font-pixelify font-normal text-white text-base tracking-[0] leading-normal hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Loading..." : "Login"}
+                  {loading ? "Loading..." : (requires2FA ? "Verify Code" : "Login")}
                 </button>
 
                 <div className="flex items-center gap-2 text-sm justify-center">

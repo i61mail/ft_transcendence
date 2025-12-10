@@ -16,6 +16,7 @@ import messageRoutes from './routes/message';
 import friendshipRoutes from './routes/friendship';
 import blockRoutes from './routes/block';
 import socketRoutes from './routes/socket';
+import twofaRoutes from './routes/twofa';
 import fastifyStatic from '@fastify/static';
 import { WebSocket } from 'ws';
 import { Chat } from './types/chat.types';
@@ -91,6 +92,12 @@ try {
     // Backfill: set display_name = username for existing users
     db.exec("UPDATE users SET display_name = username WHERE display_name IS NULL");
   }
+
+  if (!colNames.has('twofa_secret')) {
+    app.log.warn("Applying migration: adding '2FA' columns to users table");
+    db.exec("ALTER TABLE users ADD COLUMN twofa_secret TEXT DEFAULT NULL");
+    db.exec("ALTER TABLE users ADD COLUMN twofa_enabled INTEGER DEFAULT 0");
+  }
 } catch (e) {
   app.log.error({ err: e }, 'Database migration step failed');
 }
@@ -135,6 +142,7 @@ if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
 
 app.register(authRoutes, { prefix: '/auth' });
 app.register(oauthRoutes, { prefix: '/auth' });
+app.register(twofaRoutes, { prefix: '/auth/2fa' });
 app.register(profileRoutes, { prefix: '/profile' });
 app.register(messageRoutes);
 app.register(friendshipRoutes);
