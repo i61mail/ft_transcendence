@@ -14,6 +14,7 @@ const OnlineGame = () =>
     const [start, setStart] = useState(false);
     const sentRef = useRef<boolean>(false);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const initialDataRef = useRef<string | null>(null);
     const router = useRouter(); 
 
     const handleFinished = () =>
@@ -36,16 +37,23 @@ const OnlineGame = () =>
             sentRef.current = true;
             manager.gameSocket.onmessage = (msg) => 
             {
-                console.log("hummmm", manager.gameSocket != null);
-                setStart(true);
-                if (canvasRef.current && manager.gameSocket)
-                {
-                    console.log("started game");
-                    startGame(canvasRef.current, manager.gameSocket, msg.data, handleFinished);
+                console.log("hummmm", canvasRef.current != null);
+                // Only capture the first message
+                if (initialDataRef.current === null) {
+                    initialDataRef.current = msg.data;
+                    setStart(true);
                 }
             }
         }
     }, [])
+
+    useEffect(() => {
+        if (start && canvasRef.current && manager.gameSocket && initialDataRef.current) {
+            console.log("dataref:", initialDataRef.current);
+            startGame(canvasRef.current, manager.gameSocket, initialDataRef.current, handleFinished);
+            initialDataRef.current = null; // Clear so we don't restart
+        }
+    }, [start])
 
     return (
         <>

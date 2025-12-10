@@ -280,10 +280,8 @@ class onlineController extends Controller
         {
             this.socket.onmessage = (msg) => {
                 const data = msg.data.toString();
-                console.log("player input:", msg.data);
                 
                 this._status = parseInt(data[0], 10);
-                console.log("player status:", this._status);
             }
         }
     }
