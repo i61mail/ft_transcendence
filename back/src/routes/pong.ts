@@ -392,21 +392,28 @@ class Court
         }
 
         this.scoreBoard = new ScoreBoard()
+        this.onCloseHandler(player1, player2);
     }
 
     onCloseHandler(player1: playerInfo, player2: playerInfo)
     {
         player1.socket.onclose = () =>
         {
-            this.scoreBoard.winnerByForfeit = types.PlayerIndex.rightPlayer;
-            this.endGame()
+            if (this._isMatchStarted)
+            {
+                this.scoreBoard.winnerByForfeit = types.PlayerIndex.rightPlayer;
+                this.endGame();
+            }
         }
         if (player1.id != player2.id)
         {
             player2.socket.onclose = () =>
             {
-                this.scoreBoard.winnerByForfeit = types.PlayerIndex.rightPlayer;
-                this.endGame()
+                if (this._isMatchStarted)
+                {
+                    this.scoreBoard.winnerByForfeit = types.PlayerIndex.leftPlayer;
+                    this.endGame();
+                }
             }
         }
     }
@@ -485,6 +492,7 @@ class Court
 
     endGame()
     {
+        console.log("game ended");
         this._isMatchStarted = false;
         this.addToDatabase();
         this.leftPlayerController.socket.send("finished");
@@ -631,6 +639,7 @@ export function pongLocal(
             player1: 'Player 1',
             player2: 'Player 2'
         }));
+
     let pong: PongGame = new PongGame(types.GameMode.local, server, player);
 }
 

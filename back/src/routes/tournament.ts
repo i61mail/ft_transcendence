@@ -5,6 +5,7 @@ import { playerInfo } from '../types/playerInfo.types';
 import { WebSocket } from 'ws';
 import { FastifyInstance } from 'fastify';
 import { Socket } from 'dgram';
+import { Server } from 'http';
 
 const tournaments: Map<string, Tournament> = new Map<string, Tournament>();
 
@@ -156,6 +157,7 @@ class Tournament
         if (this.isPlayersFull())
         {
             this.tData.status = trnmtStatus.startingSemi;
+            
             setTimeout(() => 
             {
                 this.startSemiGame();
@@ -206,6 +208,7 @@ class Tournament
             )
             {
                 this.tData.status = trnmtStatus.startingFinal;
+
                 this.tData.final.player1 = this.tData.semi[0].winner;
                 this.tData.final.player2 = this.tData.semi[1].winner;
                 this.broadcastTournamentData();

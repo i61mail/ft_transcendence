@@ -1,7 +1,7 @@
 import { WebSocket } from 'ws';
 import fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import { Chat } from '../types/chat.types';
-import { pongAI, pongLocal, pongOnline } from '../routes/pong';
+import { pongAI, PongGame, pongLocal, pongOnline } from '../routes/pong';
 import { GameMode } from '../types/pong.types';
 import { joinTournament, startTournament } from '../routes/tournament';
 import { playerInfo } from '../types/playerInfo.types';
@@ -244,8 +244,6 @@ const handleOnlineGame = async (socket: WebSocket, id: number, username: string 
     }
 }
 
-let lists: WebSocket[] = [];
-
 export const gameController = async (socket: WebSocket, request: FastifyRequest) =>
 {
     const server = request.server;
@@ -258,22 +256,21 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
           username: username,
           socket: socket
         };
-        if (gameType === "init")
-        {
-            console.log("created new game socket...");
+
+        const gameHandlers: Record<string, () => PongGame | void> = {
+            "local": () => pongLocal(player, server),
+            "online": () => { handleOnlineGame(socket, id, username, server); },
+            "startTournament": () => { startTournament(player, server); },
+            "joinTournament": () => { joinTournament(player, code); },
+            "ai": () => pongAI(player, difficulty, server),
+            "tictactoe": () => { handletttGame(socket, id, username, server); }
+        };
+
+        const handler: () => void | PongGame = gameHandlers[gameType];
+
+        if (handler) {
+            handler();
         }
-        else if (gameType === "local")
-            pongLocal(player, server);
-        else if (gameType === "online")
-            handleOnlineGame(socket, id, username, server);
-        else if (gameType === "startTournament")
-            startTournament(player, server);
-        else if (gameType === "joinTournament")
-            joinTournament(player, code);
-        else if (gameType === "ai")
-            pongAI(player, difficulty, server);
-        else if (gameType === "tictactoe")
-            handletttGame(socket, id, username, server);
     }
 
     socket.onclose = () =>

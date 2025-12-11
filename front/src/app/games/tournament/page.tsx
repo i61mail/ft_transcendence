@@ -63,81 +63,84 @@ export default function PongTournament()
 	const [tournament, setTournament] = useState<TournamentData>(initialTournament);
 	const [copied, setCopied] = useState(false);
 	const manager = useglobalStore();
-    const sentRef = useRef<boolean>(false);
+	const socketRef = useRef<WebSocket | null>(null);
+	const conditionT = useRef<boolean>(false);
 	const router = useRouter();
 	const params = useSearchParams();
 	const code: string | null = params.get('code');
 	const currId: number = manager.user?.id!;
 
-    useEffect(() =>
-    {
-        if (manager.gameSocket && !sentRef.current)
-        {
-			console.log('params', params);
-			const data: any = {id: currId, username: manager.user?.username , code: code};
+    useEffect(() => {
+        if (conditionT.current) return;
+        conditionT.current = true;
+
+        console.log("create socket");
+        const socket = new WebSocket("ws://localhost:4000/sockets/games");
+        socketRef.current = socket;
+
+        socket.onclose = () => {
+            console.log("game socket closed!!!");
+        };
+
+        socket.onopen = () => {
+            console.log('params', params);
+            const data: any = { id: currId, username: manager.user?.username, code: code };
             if (code)
-				data.gameType = 'joinTournament';
-			else
-				data.gameType = "startTournament";
+                data.gameType = 'joinTournament';
+            else
+                data.gameType = "startTournament";
 
-			const sendData = () => {
-				if (manager.gameSocket?.readyState === WebSocket.OPEN) {
-					manager.gameSocket.send(JSON.stringify(data));
-					sentRef.current = true;
-				} else if (manager.gameSocket?.readyState === WebSocket.CONNECTING) {
-					// Wait for connection to open
-					manager.gameSocket.addEventListener('open', () => {
-						manager.gameSocket?.send(JSON.stringify(data));
-						sentRef.current = true;
-					}, { once: true });
-				}
-			};
+            socket.send(JSON.stringify(data));
 
-			sendData();
+            socket.onmessage = (msg) => {
+                if (msg.data == "finished")
+                    return;
+                if (msg.data == "invalid code") {
+                    window.alert("Invalid tournament code. Redirecting to Games page.");
+                    router.push('/games');
+                    return;
+                }
+                if (msg.data == "tournament started") {
+                    window.alert("Tournament has already started. Redirecting to Games page.");
+                    router.push('/games');
+                    return;
+                }
 
-            manager.gameSocket.onmessage = (msg) =>
-            {
-				if (msg.data == "finished")
-					return ;
-				if (msg.data == "invalid code") {
-					window.alert("Invalid tournament code. Redirecting to Games page.");
-					router.push('/games');
-					return;
-				}
-				if (msg.data == "tournament started") {
-					window.alert("Tournament has already started. Redirecting to Games page.");
-					router.push('/games');
-					return;
-				}
-				
-				const state: any = JSON.parse(msg.data.toString());
-				if (state.error || state.code == undefined) {
-					window.alert("Invalid tournament code. Redirecting to Games page.");
-					router.push('/games');
-					return;
-				}
-				console.log("joined tournament:", state.code);
-				if (state.status == trnmtStatus.playingSemi
-					|| (state.status == trnmtStatus.playingFinal
-						&& (state.final.player1!.id == currId || state.final.player2!.id == currId))
-					)
-				{
-					router.push('/games/tournament/play');
-				}
-				else if (state.status == trnmtStatus.close)
-				{
-					window.alert(
-						"🏁 Tournament Closed\n\n" +
-						"The tournament has been closed by the host. You will be redirected to the Games page.\n\n" +
-						"Thanks for playing! 🎮"
-					);
-					router.push('/games');
-				}
-				else
-					setTournament(state);
+                const state: any = JSON.parse(msg.data.toString());
+                if (state.error || state.code == undefined) {
+                    window.alert("Invalid tournament code. Redirecting to Games page.");
+                    router.push('/games');
+                    return;
+                }
+                console.log("joined tournament:", state.code);
+                if (state.status == trnmtStatus.playingSemi
+                    || (state.status == trnmtStatus.playingFinal
+                        && (state.final.player1!.id == currId || state.final.player2!.id == currId))
+                ) {
+                    router.push('/games/tournament/play');
+                }
+                else if (state.status == trnmtStatus.close) {
+                    window.alert(
+                        "🏁 Tournament Closed\n\n" +
+                        "The tournament has been closed by the host. You will be redirected to the Games page.\n\n" +
+                        "Thanks for playing! 🎮"
+                    );
+                    router.push('/games');
+                }
+                else
+                    setTournament(state);
+            };
+        };
+
+        return () => {
+            conditionT.current = false;
+            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+                console.log("Closing socket on page leave...");
+                socket.close();
             }
-        }
-    }, [manager.gameSocket])
+            socketRef.current = null;
+        };
+    }, []);
 
 	const statusString = (status: trnmtStatus): string =>
 	{
