@@ -2,6 +2,7 @@ import { playerInfo } from "../types/playerInfo.types";
 import * as types from "../types/ticTacToe.types";
 import type { WebSocket } from "ws";
 import { FastifyInstance } from 'fastify';
+import { log } from "console";
 
 class Player
 {
@@ -23,8 +24,10 @@ class Player
 	{
 		// this.socket.send(this.symbol);
 
-		this.socket.onmessage = (msg) => {
+		this.socket.onmessage = (msg) =>
+		{
 			console.log("received:", msg.data);
+			console.log("to:", this.ttt.currentPlayer, this.symbol);
 			if (this.ttt.currentPlayer == this.symbol)
 				this.ttt.send(msg.data.toString());
 		}
@@ -58,6 +61,9 @@ export class TicTacToeGame
 		let symbol1 : types.Symbol = randomizer ? 'X' : 'O';
 		let symbol2 : types.Symbol = randomizer ? 'O' : 'X';;
 
+		player1.socket.send(JSON.stringify({Symbol: symbol1}));
+		player2.socket.send(JSON.stringify({Symbol: symbol2}));
+
 		this.player1 = new Player(symbol1, this, player1);
 		this.player2 = new Player(symbol2, this, player2);
 		this.server = server;
@@ -84,6 +90,7 @@ export class TicTacToeGame
 				board: this.board,
 				currentPLayer: this.currentPlayer
 			};
+			console.log("sent: ", gameMsg);
 			this.player1.send(gameMsg);
 			this.player2.send(gameMsg);
 			if (hasWinner)
@@ -184,8 +191,6 @@ export function tttGame(
     server: FastifyInstance
 )
 {
-	player1.socket.send(JSON.stringify({Symbol: 'X'}));
-	player2.socket.send(JSON.stringify({Symbol: 'O'}));
 
 	new TicTacToeGame(player1, player2, server);
 }

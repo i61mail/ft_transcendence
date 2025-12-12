@@ -15,42 +15,49 @@ const TournamentPlayGame = () =>
     const conditionT = useRef<boolean>(false);
     const router = useRouter();
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         if (conditionT.current) return;
         conditionT.current = true;
 
-        console.log("create socket");
+        console.log("create socket tournament game");
         const socket = new WebSocket("ws://localhost:4000/sockets/games");
         socketRef.current = socket;
 
-        const handleFinished = () => {
+        const handleFinished = () =>
+        {
             if (socketRef.current) {
                 socketRef.current.close();
-                if (typeof window === 'undefined' || window.location.pathname !== '/games/tournament/play') {
-                    return;
-                }
+                // if (typeof window === 'undefined' || window.location.pathname !== '/games/tournament/play') {
+                //     return;
+                // }
                 router.push('/games/tournament');
             }
         };
 
-        socket.onclose = () => {
-            console.log("game socket closed!!!");
+        socket.onclose = () =>
+        {
+            console.log("tournament game socket closed!!!");
         };
 
-        socket.onopen = () => {
+        socket.onopen = () =>
+        {
             console.log("starting tournament play...", socket.readyState);
             const data = { gameType: "tournamentPlay", id: manager.user?.id, username: manager.user?.username };
             socket.send(JSON.stringify(data));
-            socket.onmessage = (msg) => {
-                if (canvasRef.current && socket) {
+            socket.onmessage = (msg) =>
+            {
+                if (canvasRef.current && socket)
                     startGame(canvasRef.current, socket, msg.data, handleFinished);
-                }
             };
         };
 
-        return () => {
+        return () =>
+        {
+            console.log("return called");
             conditionT.current = false;
-            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
+            {
                 console.log("Closing socket on page leave...");
                 socket.close();
             }

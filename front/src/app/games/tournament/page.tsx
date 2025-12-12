@@ -92,7 +92,8 @@ export default function PongTournament()
 
             socket.send(JSON.stringify(data));
 
-            socket.onmessage = (msg) => {
+            socket.onmessage = (msg) =>
+			{
                 if (msg.data == "finished")
                     return;
                 if (msg.data == "invalid code") {
@@ -107,16 +108,20 @@ export default function PongTournament()
                 }
 
                 const state: any = JSON.parse(msg.data.toString());
+				if (state.code == undefined)
+					return ;
                 if (state.error || state.code == undefined) {
                     window.alert("Invalid tournament code. Redirecting to Games page.");
                     router.push('/games');
                     return;
                 }
-                console.log("joined tournament:", state.code);
                 if (state.status == trnmtStatus.playingSemi
                     || (state.status == trnmtStatus.playingFinal
                         && (state.final.player1!.id == currId || state.final.player2!.id == currId))
-                ) {
+                )
+				{
+					console.log("switched to tournament");
+					socket.close();
                     router.push('/games/tournament/play');
                 }
                 else if (state.status == trnmtStatus.close) {

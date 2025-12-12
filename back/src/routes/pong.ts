@@ -622,6 +622,7 @@ export function pongOnline(
         player1: player1.username,
         player2: player2.username
     });
+    
     player1.socket.send(data);
     player2.socket.send(data);
 
