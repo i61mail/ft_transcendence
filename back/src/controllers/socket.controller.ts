@@ -6,7 +6,6 @@ import { GameMode } from '../types/pong.types';
 import { generateCode, joinTournament, startTournament } from '../routes/tournament';
 import { playerInfo } from '../types/playerInfo.types';
 import { tttGame } from '../routes/ticTacToe';
-import { send } from 'process';
 
 const chatMessageHandler = (socket: WebSocket, request: FastifyRequest) => {
   const server = request.server;
@@ -98,6 +97,16 @@ const createInviteGame = async (socket: WebSocket, sender: number, receiver: num
     })
 }
 
+export const sendNotification = async (server: FastifyInstance, id: number) =>
+{
+  const data = {type: "startTournament"};
+  server.globalSockets.forEach((value, sock)=>{
+    if (id === value && sock.readyState === WebSocket.OPEN)
+    {
+        sock.send(JSON.stringify(data));
+    }
+  })
+}
 
 export const createGlobalSocket = async (
   socket: WebSocket,
