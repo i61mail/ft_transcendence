@@ -70,6 +70,7 @@ export default function PongTournament()
 
     useEffect(() =>
     {
+		setTimeout(()=>manager.setTournamentNotification(false), 300);
         if (manager.gameSocket && !sentRef.current)
         {
 			let data: any = {id: currId, username: manager.user?.username , code: code};

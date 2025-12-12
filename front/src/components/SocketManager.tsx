@@ -139,6 +139,10 @@ const  SocketManager = () =>
               {
                     manager.removeOnlineUser(data);
               }
+              else if (type === "startTournament")
+              {
+                manager.setTournamentNotification(true);
+              }
             }
         }
     }, [manager.pointedUser])

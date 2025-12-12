@@ -31,6 +31,8 @@ interface GLobalState {
     onlineUsers: Set<number>,
     chatIsReady: boolean,
     invite: Invite | null,
+    tournamentNotification: boolean,
+    setTournamentNotification: (notif: boolean) => void,
     setInvite: (v: Invite | null) => void,
     setChatIsReady: (s: boolean) => void,
     updateGameSocket: (s: WebSocket | null) => void,
@@ -65,9 +67,14 @@ const useglobalStore = create<GLobalState>((set,get) => (
     chatIsReady: false,
     onlineUsers: new Set<number>(),
     invite: null,
+    tournamentNotification: false,
     setInvite: (v: Invite | null) =>
     {
         set({invite: v});
+    },
+    setTournamentNotification: (notif: boolean) =>
+    {
+        set({tournamentNotification: notif})
     },
     setChatIsReady: (s: boolean) =>
     {
@@ -116,6 +123,11 @@ const useglobalStore = create<GLobalState>((set,get) => (
                 {
                     get().removeOnlineUser(data);            
                 }
+                else if (type === "startTournament")
+                {
+                    get().setTournamentNotification(true);
+                }
+
             }
         }
     },
