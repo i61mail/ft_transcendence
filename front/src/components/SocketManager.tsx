@@ -56,11 +56,24 @@ const  SocketManager = () =>
     }, [manager.gameSocket, manager.user])
 
 
-    useEffect(()=>
-    {
-        if (manager.user || window.location.pathname === "/")
-            return ;
-        
+    useEffect(() => {
+        // Only attempt to retrieve the current user for protected routes.
+        // If the user visits a non-existent path (404) we should not auto-redirect to the root.
+        const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+        const protectedPrefixes = [
+            '/dashboard',
+            '/chats',
+            '/profile',
+            '/games',
+            '/tictactoe',
+            '/tournament'
+        ];
+
+        if (manager.user || pathname === "/" || !protectedPrefixes.some(p => pathname.startsWith(p))) {
+            // Not on a protected route (or already have a user) — don't try to fetch/redirect
+            return;
+        }
+
         async function getFriends(user: User) {
             const res = await fetch(`http://localhost:4000/friendships/${user?.id}`, {
                 credentials: 'include'
