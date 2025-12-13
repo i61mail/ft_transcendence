@@ -1,5 +1,4 @@
 'use client'
-import { error } from 'console';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import AlertModal from './AlertModal';
@@ -51,15 +50,40 @@ const Message = (msg: Message) => {
         checkInviteExistence();
   }
 
+  const isSent = msg.type === "sent";
+  const isInvite = !!msg.inviteCode;
+
   return (
-    <div className={`w-full h-auto flex ${msg.type === "sent" && "flex-row-reverse"} px-4`}>
-      <div className={`w-[40%] p-3 items-end h-auto     ${msg.inviteCode 
-      ? "bg-violet-600 text-white"  // New Invite Color
-      : msg.type === "sent" 
-        ? "bg-[#7d8fb8] text-white" // Your Original Sent Color
-        : "bg-gray-200 text-black"  // Your Original Received Color
-    } rounded-md`}>
-        <p>{msg.message}{msg.inviteCode && <a onClick={()=>joinGame(msg.inviteCode!)} className='className="font-bold text-green-400 hover:text-yellow-100 underline cursor-pointer ml-1 decoration-2 underline-offset-2"'>join now</a>}</p>
+    <div className={`w-full flex ${isSent ? "justify-end" : "justify-start"} px-2 md:px-4`}>
+      <div 
+        className={`
+          max-w-[85%] sm:max-w-[70%] md:max-w-[60%] 
+          px-4 py-3 
+          ${isInvite 
+            ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/20"
+            : isSent 
+              ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20" 
+              : "bg-white/20 backdrop-blur-sm text-[#2d5a8a] border border-white/30"
+          } 
+          ${isSent ? "rounded-2xl rounded-br-md" : "rounded-2xl rounded-bl-md"}
+          transition-all duration-300 hover:scale-[1.02]
+        `}
+      >
+        <p className="text-sm md:text-base break-words leading-relaxed">
+          {msg.message}
+          {isInvite && (
+            <button 
+              onClick={() => joinGame(msg.inviteCode!)} 
+              className="inline-flex items-center gap-1 ml-2 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs md:text-sm font-semibold transition-all duration-300 hover:scale-105"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Join Game
+            </button>
+          )}
+        </p>
       </div>
       <AlertModal
           isOpen={alertState.isOpen} 

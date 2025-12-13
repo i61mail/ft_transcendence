@@ -22,15 +22,14 @@ const OnlineGame = () =>
     {
         if (socket)
             socket.close();
-        router.push('/games');
+        router.push('/chats');
     };
 
  
 
     useEffect(() =>
     {
-        
-        if (!code) {
+        if (!code || !manager.user) {
             router.push('/dashboard');
             return;
         }
@@ -83,7 +82,7 @@ const OnlineGame = () =>
                 socket.close();
             }
         };
-    }, []);
+    }, [code]);
 
     return (
         <>
