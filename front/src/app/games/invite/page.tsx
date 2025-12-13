@@ -2,13 +2,13 @@
 
 import useglobalStore from "@/store/globalStore";
 import { startGame } from "@/lib/pong/game";
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import GameCanvas from "@/components/GameCanvas";
 
 
 
-const OnlineGame = () =>
+const InviteGameContent = () =>
 {
     const manager = useglobalStore();
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,4 +71,14 @@ const OnlineGame = () =>
     )
 }
 
-export default OnlineGame;
+const InviteGame = () => {
+    return (
+        <Suspense fallback={<div className="min-h-screen w-screen bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5] flex items-center justify-center">
+            <div className="text-xl font-semibold text-gray-700">Loading...</div>
+        </div>}>
+            <InviteGameContent />
+        </Suspense>
+    );
+}
+
+export default InviteGame;

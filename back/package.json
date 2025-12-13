@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/server.ts",
-    "build": "tsc",
+    "build": "tsc && mkdir -p dist/database && cp src/database/init.sql dist/database/",
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

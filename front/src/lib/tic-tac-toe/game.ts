@@ -168,25 +168,25 @@ class TicTacToeGame
 	}
 
 
-	drawTurnIndicator()
-	{
-		// Draw turn indicator at the top of the canvas
-		this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-		this.ctx.fillRect(0, 0, intf.SETTINGS.canvaSize, 60);
+	// drawTurnIndicator()
+	// {
+	// 	// Draw turn indicator at the top of the canvas
+	// 	this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+	// 	this.ctx.fillRect(0, 0, intf.SETTINGS.canvaSize, 60);
 		
-		// Determine if it's the player's turn
-		const isMyTurn = this.currentPlayer === this.playableChar;
+	// 	// Determine if it's the player's turn
+	// 	const isMyTurn = this.currentPlayer === this.playableChar;
 		
-		// Set color based on whose turn it is
-		this.ctx.fillStyle = isMyTurn ? '#4CAF50' : '#FF9800';
-		this.ctx.font = 'bold 24px sans-serif';
-		this.ctx.textAlign = 'center';
-		this.ctx.textBaseline = 'middle';
+	// 	// Set color based on whose turn it is
+	// 	this.ctx.fillStyle = isMyTurn ? '#4CAF50' : '#FF9800';
+	// 	this.ctx.font = 'bold 24px sans-serif';
+	// 	this.ctx.textAlign = 'center';
+	// 	this.ctx.textBaseline = 'middle';
 		
-		// Display turn message
-		const turnText = isMyTurn ? `YOUR TURN (${this.playableChar})` : `OPPONENT'S TURN (${this.currentPlayer})`;
-		this.ctx.fillText(turnText, intf.SETTINGS.canvaSize / 2, 30);
-	}
+	// 	// Display turn message
+	// 	const turnText = isMyTurn ? `YOUR TURN (${this.playableChar})` : `OPPONENT'S TURN (${this.currentPlayer})`;
+	// 	this.ctx.fillText(turnText, intf.SETTINGS.canvaSize / 2, 30);
+	// }
 
 
 	drawStatus()

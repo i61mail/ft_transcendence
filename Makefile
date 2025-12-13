@@ -1,4 +1,4 @@
-.PHONY: front back dev help remote setup
+.PHONY: front back dev help remote setup build
 
 .DEFAULT_GOAL := dev
 
@@ -28,3 +28,8 @@ help:
 	@echo "  make back       # run npm run dev in ./back"
 	@echo "  make dev        # run front in background, back in foreground (default)"
 	@echo "  make remote     # run dev servers accessible remotely"
+
+
+build:
+	npm run build --prefix front
+	npm run build --prefix back
