@@ -3,7 +3,7 @@ import fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import { Chat } from '../types/chat.types';
 import { pongAI, PongGame, pongLocal, pongOnline } from '../routes/pong';
 import { GameMode } from '../types/pong.types';
-import { joinTournament, playTournament, startTournament } from '../routes/tournament';
+import { generateCode, joinTournament, playTournament, startTournament } from '../routes/tournament';
 import { playerInfo } from '../types/playerInfo.types';
 import { tttGame } from '../routes/ticTacToe';
 
@@ -81,6 +81,33 @@ export const messageNotification = async (
   }
 };
 
+const inviteList = new Map<string, Queue>;
+
+const createInviteGame = async (socket: WebSocket, sender: number, receiver: number, username: string, server: FastifyInstance) =>
+{
+    const code: string = generateCode();
+    const q = new Queue;
+    const p1: Player  = {socket: socket, id: sender, username: username};
+    q.enqueue(p1)
+    inviteList.set(code, q);
+    const invite = {type: "invite", data: {sender: sender, code: code, username: username}};
+    server.globalSockets.forEach((key, sock) => {
+      if (key === receiver && sock !== socket)
+        sock.send(JSON.stringify(invite));
+    })
+}
+
+export const sendNotification = async (server: FastifyInstance, id: number) =>
+{
+  const data = {type: "startTournament"};
+  server.globalSockets.forEach((value, sock)=>{
+    if (id === value && sock.readyState === WebSocket.OPEN)
+    {
+        sock.send(JSON.stringify(data));
+    }
+  })
+}
+
 export const createGlobalSocket = async (
   socket: WebSocket,
   request: FastifyRequest
@@ -135,6 +162,17 @@ export const createGlobalSocket = async (
                 });
             }
         }
+        else if (type === "invite")
+        {
+          const {sender, receiver, username} = content;
+          console.log("invite", sender, receiver);
+          createInviteGame(socket, sender, receiver, username, server);
+        }
+        else if (type === "refuseInvite")
+        {
+          const {code, id} = content;
+          handleInviteRefusal(socket, id, code);
+        }
     }
 };
 
@@ -146,7 +184,7 @@ interface Player
 }
 
 
-class Queue{
+export class Queue{
     private items: Player[] = [];
     private offset = 0;
 
@@ -240,9 +278,66 @@ const handleOnlineGame = async (socket: WebSocket, id: number, username: string 
         console.log("starting online game now...", pongQueue.size())
         const p2: Player | undefined = pongQueue.dequeue();
         if (p1 && p2)
-            pongOnline(p1, p2, server);
+          pongOnline(p1, p2, server);
     }
 }
+
+const handleInviteOnly = async (socket: WebSocket, player: Player, code: string, server: FastifyInstance) => 
+{
+  if (!inviteList.has(code))
+      return ;
+  socket.onclose = () =>
+  {
+    inviteList.clear();
+  }
+  const arr = inviteList.get(code);
+  console.log(arr?.size());
+  if (arr && arr.size() < 2)
+  {
+    const p1: Player | undefined = arr.dequeue();
+    const data = {type: "startInvite", data: {code: code}};
+    console.log("sending confirmation to", p1?.username, p1?.id);
+    if (p1)
+    {
+      server.globalSockets.forEach((val, sock) => 
+      {
+        if (p1.id === val)
+          sock.send(JSON.stringify(data))
+      })
+      // p1.socket.send(JSON.stringify(data))
+    }
+    console.log("enqueing", player.id, player.username);
+    arr.enqueue(player);
+    if (p1)
+      arr.enqueue(p1);
+    inviteList.set(code, arr);
+  }
+  else if (arr && arr.size() == 2)
+  {
+    const p2: Player | undefined = arr.dequeue();
+    if (player && p2)
+    {
+      // const data = {type: "startInvite", data: {code: code}};
+      // if (p2.socket.readyState === WebSocket.OPEN)
+      //   p2.socket.send(JSON.stringify(data))
+      console.log("starting invite", player.username, p2.username);
+      pongOnline(player, p2, server);
+    }
+  }
+}
+
+
+const handleInviteRefusal = async (socket: WebSocket, id: number, code: string) =>
+{
+  if (!inviteList.has(code))
+      return ;
+  const p1 = inviteList.get(code)?.dequeue();
+  if (p1)
+    inviteList.delete(code);
+}
+
+
+let lists: WebSocket[] = [];
 
 export const gameController = async (socket: WebSocket, request: FastifyRequest) =>
 {
@@ -272,6 +367,20 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
         if (handler) {
             handler();
         }
+        else if (gameType === "local")
+            pongLocal(player, server);
+        else if (gameType === "online")
+            handleOnlineGame(socket, id, username, server);
+        else if (gameType === "startTournament")
+            startTournament(player, server);
+        else if (gameType === "joinTournament")
+            joinTournament(player, code);
+        else if (gameType === "ai")
+            pongAI(player, difficulty, server);
+        else if (gameType === "tictactoe")
+            handletttGame(socket, id, username, server);
+        else if (gameType === "invite")
+            handleInviteOnly(socket, player, code, server);
     }
 
     socket.onclose = () =>

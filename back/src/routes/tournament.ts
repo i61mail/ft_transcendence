@@ -257,7 +257,6 @@ class Tournament
             )
             {
                 this.tData.status = trnmtStatus.startingFinal;
-
                 this.tData.final.player1 = this.tData.semi[0].winner;
                 this.tData.final.player2 = this.tData.semi[1].winner;
                 this.broadcastTournamentData();
@@ -338,7 +337,7 @@ class Tournament
     }
 }
 
-function generateCode(): string
+export function generateCode(): string
 {
     const characters: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const length: number = 6;

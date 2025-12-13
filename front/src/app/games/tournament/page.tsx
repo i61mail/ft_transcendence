@@ -81,6 +81,7 @@ export default function PongTournament()
 
     useEffect(() =>
 	{
+		setTimeout(()=>manager.setTournamentNotification(false), 300);
         if (conditionT.current || !manager.user?.id) return;
         conditionT.current = true;
 

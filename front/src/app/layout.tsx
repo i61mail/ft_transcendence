@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SocketManager from "@/components/SocketManager";
+import NotificationBLock from "@/components/chat/NotificationBLock";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +29,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full min-h-screen bg-white`}
       >
-        <SocketManager />
+        <SocketManager/>
+        <NotificationBLock/>
         {children}
       </body>
     </html>

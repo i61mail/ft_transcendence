@@ -640,7 +640,6 @@ export function pongLocal(
             player1: 'Player 1',
             player2: 'Player 2'
         }));
-
     let pong: PongGame = new PongGame(types.GameMode.local, server, player);
 }
 
