@@ -14,7 +14,6 @@ interface Props {
 const ChatPreview = (data: Props) => {
   const manager = useGlobalStore();
   const router = useRouter();
-  const [latestMessage, setLatestMessage] = useState('');
   const [notification, setNotification] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [online, setStatus] = useState(false);
@@ -98,11 +97,6 @@ const ChatPreview = (data: Props) => {
           }`}>
             {data.friend.display_name || data.friend.username}
           </h2>
-          {latestMessage && (
-            <p className="text-xs md:text-sm text-[#2d5a8a]/60 truncate">
-              {latestMessage}
-            </p>
-          )}
         </div>
         
         {/* Notification Badge */}

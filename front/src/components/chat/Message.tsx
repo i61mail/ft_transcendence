@@ -21,14 +21,13 @@ const Message = (msg: Message) => {
 
   const joinGame = (code: string) =>
   {
-            async function checkInviteExistence() {
+      async function checkInviteExistence() {
         try
         {
           const check = await fetch(`http://localhost:4000/invite?code=${code}`);
           if (check.ok)
           {
-            console.log("check", check);
-            router.push(`/games/invite?code=${encodeURIComponent(code)}`);
+            router.push("/games/invite?code=" + encodeURIComponent(code));
           }
           else
           {

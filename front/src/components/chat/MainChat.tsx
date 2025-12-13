@@ -5,14 +5,9 @@ import Message from './Message'
 import { MessageProps } from '@/types/chat.types'
 import MessageForm from './MessageForm'
 import useGlobalStore from '@/store/globalStore'
-import { useRouter } from 'next/navigation'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-interface MainChatProps {
-  allMessages?: MessageProps[];
-  ref: React.RefObject<WebSocket | null>;
-}
 
 const MainChat = () => {
   const manager = useGlobalStore();
@@ -21,29 +16,55 @@ const MainChat = () => {
   const user = useGlobalStore(state => state.user);
   const [isBlocked, setIsBlocked] = useState(false);
   const [showBlockMenu, setShowBlockMenu] = useState(false);
-  const [invite, setInvite] = useState(false);
-  const router = useRouter();
+  const [showInviteButton, setInviteButton] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
-
+  const rendered = useRef<boolean>(false);
   // Close menu when clicking outside
+  // useEffect(() => {
+  //   const handleClickOutside = (event: MouseEvent) => {
+  //     if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+  //       setShowBlockMenu(false);
+  //     }
+  //   };
+
+  //   if (showBlockMenu) {
+  //     document.addEventListener('mousedown', handleClickOutside);
+  //   }
+
+  //   return () => {
+  //     document.removeEventListener('mousedown', handleClickOutside);
+  //   };
+  // }, [showBlockMenu]);
+
+  // useEffect(() => {
+  //   async function getMessages() {
+  //     try {
+  //       const response = await fetch(
+  //         `${API_URL}/messages/friendship/${pointedUser?.id}?user_id=${user?.id}`,
+  //         {
+  //           method: 'GET',
+  //           credentials: 'include',
+  //           headers: {
+  //             'Content-type': 'application/json',
+  //           },
+  //         }
+  //       );
+  //       const data: MessageProps[] = await response.json();
+  //       console.log("all messsages", data);
+  //       manager.loadMessage(data.reverse());
+  //     } catch (err) {
+  //       console.error('failed to fetch messages');
+  //     }
+  //   }
+  //   let timeout = setTimeout(getMessages, 100);
+  //   return () => clearTimeout(timeout);
+  // }, [pointedUser?.id, user?.id]);
+
+  // Check if user is blocked
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowBlockMenu(false);
-      }
-    };
+    if (rendered.current) return;
 
-    if (showBlockMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showBlockMenu]);
-
-  useEffect(() => {
-    async function getMessages() {
+        async function getMessages() {
       try {
         const response = await fetch(
           `${API_URL}/messages/friendship/${pointedUser?.id}?user_id=${user?.id}`,
@@ -62,15 +83,9 @@ const MainChat = () => {
         console.error('failed to fetch messages');
       }
     }
-    let timeout = setTimeout(getMessages, 100);
-    return () => clearTimeout(timeout);
-  }, [pointedUser?.id, user?.id]);
 
-  // Check if user is blocked
-  useEffect(() => {
     async function checkBlockStatus() {
       if (!pointedUser?.friend_id || !user?.id) return;
-      
       try {
         const response = await fetch(
           `${API_URL}/blocks/${user.id}/check/${pointedUser.friend_id}`,
@@ -84,6 +99,14 @@ const MainChat = () => {
         );
         const data = await response.json();
         setIsBlocked(data.blocked);
+        rendered.current = true;
+        if (!data.block)
+        {
+          let timeout = setTimeout(getMessages, 100);
+          return () => clearTimeout(timeout);
+        }
+        else
+          setInviteButton(false);
       } catch (err) {
         console.error('Failed to check block status');
       }
@@ -91,14 +114,6 @@ const MainChat = () => {
     checkBlockStatus();
   }, [pointedUser?.friend_id, user?.id]);
 
-
-  useEffect(()=>
-  {
-    if (manager.invite && manager.invite.sender !== manager.user?.id)
-    {
-      setInvite(true);
-    }
-  }, [manager.invite])
 
   const handleBlockToggle = async () => {
     if (!pointedUser?.friend_id || !user?.id) return;
@@ -140,48 +155,12 @@ const MainChat = () => {
 
   const sendInvite = () =>
   {
-
-
     const data = {type: "invite", content: {sender: manager.user?.id, receiver: pointedUser?.friend_id, username: manager.user?.username, friendship_id: manager.pointedUser?.id}};
     if (manager.socket && manager.socket.readyState === WebSocket.OPEN)
     {
       manager.socket.send(JSON.stringify(data));
     }
   }
-
-  const handleCloseInvite = () =>
-  {
-    const data = {type: "refuseInvite", content: {id: manager.user?.id, code: manager.invite?.code}};
-    if (manager.socket && manager.socket.readyState === WebSocket.OPEN)
-    {
-      manager.socket.send(JSON.stringify(data));
-    }
-    setInvite(false);
-  }
-
-  // const handleJoinGame = () =>
-  // {
-  //   if (manager.invite)
-  //   {
-  //     setInvite(false);
-  //     async function checkInviteExistence() {
-  //     try
-  //     {
-  //       const check = await fetch(`localhost:4000/invite?code=${manager.invite?.code}`);
-  //       if (check.ok && manager.invite)
-  //       {
-  //         console.log("check", check);
-  //         router.push(`/games/invite?code=${encodeURIComponent(manager.invite?.code)}`);
-  //       }
-  //       }
-  //       catch (err)
-  //       {
-  //         console.log(err);
-  //       }
-  //     }
-  //     checkInviteExistence();
-  //   }
-  // }
 
   return (
     <div className='relative flex-1 flex flex-col backdrop-blur-xl bg-white/10 rounded-2xl md:rounded-3xl shadow-2xl border border-white/20 overflow-hidden'>
@@ -214,7 +193,7 @@ const MainChat = () => {
         {/* Actions */}
         <div ref={menuRef} className="relative flex items-center gap-2">
           {/* Invite Button */}
-          {!isBlocked && (
+          {!isBlocked && showInviteButton && (
             <button 
               className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
               onClick={sendInvite}
@@ -286,7 +265,7 @@ const MainChat = () => {
 
       {/* Messages Area */}
       <div className='flex-1 flex flex-col-reverse p-4 md:p-6 gap-4 overflow-y-auto custom-scrollbar'>
-        {isBlocked ? (
+        {isBlocked && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
               <svg className="w-8 h-8 text-red-500/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,7 +275,8 @@ const MainChat = () => {
             <p className="font-pixelify text-lg text-[#2d5a8a]/70">You have blocked this user</p>
             <p className="text-sm text-[#2d5a8a]/50 mt-1">Unblock to continue chatting</p>
           </div>
-        ) : (
+        )}
+        {!isBlocked && (
           messages.filter(msg => msg.inviter !== manager.user?.id).map(msg => (
             <Message key={msg.id} message={msg.content} type={msg.receiver === pointedUser?.friend_id ? 'sent' : 'received'} inviteCode={msg.inviteCode} inviter={msg.inviter} />
           ))
@@ -304,7 +284,7 @@ const MainChat = () => {
       </div>
       
       {/* Message Input */}
-      {!isBlocked && <MessageForm isBlocked={isBlocked} />}
+      {!isBlocked && showInviteButton && <MessageForm isBlocked={isBlocked} />}
       
       {/* Custom Scrollbar Styles */}
       <style jsx>{`
