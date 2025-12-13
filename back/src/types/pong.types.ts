@@ -102,9 +102,9 @@ export enum keyStat
 
 export enum Difficulty // might need to be balanced later, also you can add as much difuclities as you want
 {
-    easy = 2,
-    meduim = 1,
-    hard = 0
+    easy = 3,
+    meduim = 2,
+    hard = 1.5
 }
 
 export interface PongDataBase

@@ -291,7 +291,7 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                 </svg>
               </button>
               {showSettingsMenu && (
-                <div className="absolute right-0 top-full mt-2 w-48 z-[60]">
+                <div className="absolute right-0 top-full pt-2 w-48 z-[60]">
                   <div className="bg-[#a8b0c5] border-2 border-[#8aabd6] rounded-xl shadow-xl overflow-visible">
                     <button
                       onClick={() => router.push('/profile')}

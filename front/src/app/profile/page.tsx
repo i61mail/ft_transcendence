@@ -292,12 +292,15 @@ export default function ProfilePage() {
                         : (match.left_player_display_name || match.left_player_username);
                       const userScore = isLeftPlayer ? match.left_score : match.right_score;
                       const opponentScore = isLeftPlayer ? match.right_score : match.left_score;
+                      const isLocalGame = match.game_mode === 'local';
 
                       return (
                         <div 
                           key={`${match.game_type || 'pong'}-${match.id}`}
                           className={`flex items-center justify-between p-4 rounded-xl border-2 backdrop-blur-md transition-all duration-300 hover:scale-[1.02] ${
-                            isDraw
+                            isLocalGame
+                              ? 'bg-blue-500/20 border-blue-400/50 hover:bg-blue-500/30'
+                              : isDraw
                               ? 'bg-yellow-500/20 border-yellow-400/50 hover:bg-yellow-500/30'
                               : isWinner 
                               ? 'bg-green-500/20 border-green-400/50 hover:bg-green-500/30' 
@@ -305,10 +308,10 @@ export default function ProfilePage() {
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${isDraw ? 'bg-yellow-500' : isWinner ? 'bg-green-500' : 'bg-red-500'} shadow-lg`}></div>
+                            <div className={`w-2 h-2 rounded-full ${isLocalGame ? 'bg-blue-500' : isDraw ? 'bg-yellow-500' : isWinner ? 'bg-green-500' : 'bg-red-500'} shadow-lg`}></div>
                             <div>
                               <p className="font-pixelify font-semibold text-[#2d5a8a] text-base">
-                                {isDraw ? '🤝 Draw' : isWinner ? '🏆 Victory' : '💔 Defeat'} vs {opponentName}
+                                {isLocalGame ? '🎮 Local Game' : isDraw ? '🤝 Draw' : isWinner ? '🏆 Victory' : '💔 Defeat'}{!isLocalGame && ` vs ${opponentName}`}
                               </p>
                               <p className="font-pixelify text-xs text-[#2d5a8a]/60">
                                 {new Date(match.created_at).toLocaleDateString()} • {match.game_mode}
