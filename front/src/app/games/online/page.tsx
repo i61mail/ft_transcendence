@@ -16,8 +16,9 @@ const OnlineGame = () =>
     const initialDataRef = useRef<string | null>(null);
     const router = useRouter();
 
-    useEffect(() => {
-        if (conditionT.current) return;
+    useEffect(() =>
+    {
+        if (conditionT.current || !manager.user?.id) return;
         conditionT.current = true;
 
         console.log("create socket")
@@ -58,7 +59,7 @@ const OnlineGame = () =>
             }
             socketRef.current = null;
         };
-    }, []);
+    }, [manager.user]);
 
     useEffect(() => {
         if (start && canvasRef.current && socketRef.current && initialDataRef.current) {
