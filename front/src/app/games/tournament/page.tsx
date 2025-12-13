@@ -69,10 +69,19 @@ export default function PongTournament()
 	const router = useRouter();
 	const params = useSearchParams();
 	const code: string | null = params.get('code');
-	const currId: number = manager.user?.id!;
+	// const [manager.user?.id, setmanager.user?.id] = useState<number | null>(manager.user?.id ?? null);
+	// const [currUsername, setCurrUsername] = useState<string | null>(manager.user?.username ?? null);
 
-    useEffect(() => {
-        if (conditionT.current) return;
+	// useEffect(() => {
+	// 	if (manager.user) {
+	// 		setmanager.user?.id(manager.user.id);
+	// 		setCurrUsername(manager.user.username);
+	// 	}
+	// }, [manager.user]);
+
+    useEffect(() =>
+	{
+        if (conditionT.current || !manager.user?.id) return;
         conditionT.current = true;
 
         console.log("create socket");
@@ -84,12 +93,12 @@ export default function PongTournament()
         };
 
         socket.onopen = () => {
-            console.log('params', params);
-            const data: any = { id: currId, username: manager.user?.username, code: code };
+			const data: any = { id: manager.user?.id, username: manager.user?.username, code: code };
             if (code)
                 data.gameType = 'joinTournament';
-            else
+			else
                 data.gameType = "startTournament";
+			console.log('tournament data:', data);
 
             socket.send(JSON.stringify(data));
 
@@ -120,14 +129,14 @@ export default function PongTournament()
 
 				if (state.status == trnmtStatus.playingSemi)
 				{
-					const match = state.semi.find((m: any) => (m?.player1?.id === currId || m?.player2?.id === currId));
+					const match = state.semi.find((m: any) => (m?.player1?.id === manager.user?.id || m?.player2?.id === manager.user?.id));
 					if (match && !match.winner)
 						shouldPlay = true;
 				} else if
 				(
 					state.status == trnmtStatus.playingFinal
-					&& (state.final?.player1?.id === currId
-						|| state.final?.player2?.id === currId)
+					&& (state.final?.player1?.id === manager.user?.id
+						|| state.final?.player2?.id === manager.user?.id)
 				)
 					shouldPlay = true;
 
@@ -161,7 +170,7 @@ export default function PongTournament()
             }
             socketRef.current = null;
         };
-    }, []);
+    }, [manager.user]);
 
 	const statusString = (status: trnmtStatus): string =>
 	{
@@ -201,7 +210,7 @@ export default function PongTournament()
 
 	const handleDeleteTournament = () =>
 	{
-		manager.gameSocket?.send(JSON.stringify({id: currId, action: "delete"}));
+		socketRef.current?.send(JSON.stringify({id: manager.user?.id, action: "delete"}));
 	};
 
 	const handleCopyCode = async () => {
@@ -266,7 +275,7 @@ export default function PongTournament()
 							</div>
 						</div>
 
-						{tournament.host?.id === currId && (
+						{tournament.host?.id === manager.user?.id && (
 							<button
 								className="px-6 py-3 bg-gradient-to-br from-red-400 to-red-600 hover:from-red-500 hover:to-red-700 text-white font-pixelify font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-105"
 								onClick={handleDeleteTournament}

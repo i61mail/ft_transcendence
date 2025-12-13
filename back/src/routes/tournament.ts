@@ -359,6 +359,7 @@ function findPlayer(player: playerInfo): boolean
 {
     const code: string | null = playersInTournaments.get(player.id) ?? null;
 
+    console.log("player:", player.id, player.username, "wants to join", code);
     if (!player.socket)
     {
         console.log("no socket is open");
@@ -378,7 +379,6 @@ export function startTournament(host: playerInfo, server: FastifyInstance)
         return ;
     const code: string = generateCode();
 
-    playersInTournaments.set(host.id, code);
     if (Tournament.server == null)
         Tournament.server = server;
     tournaments.set(code, new Tournament(code));
