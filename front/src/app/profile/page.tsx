@@ -47,17 +47,27 @@ export default function ProfilePage() {
   const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
-    if (userData) setUser(JSON.parse(userData));
+    if (userData && userData !== "undefined") {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        console.error("Failed to parse user data:", e);
+        localStorage.removeItem("user");
+      }
+    }
 
     const verifyAuthAndLoadProfile = async () => {
       try {
         // Verify authentication
         const response = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
-        if (!response.ok) throw new Error("Not authenticated");
+        if (!response.ok) {
+          localStorage.removeItem("user");
+          router.push("/");
+          return;
+        }
         const data = await response.json();
         setUser(data.user);
         localStorage.setItem("user", JSON.stringify(data.user));
@@ -74,51 +84,18 @@ export default function ProfilePage() {
         setLoading(false);
       } catch (e: any) {
         console.error("Error loading profile:", e);
-        setError(e.message || "Failed to load profile");
-        setLoading(false);
-        
-        // If not authenticated, redirect to home
-        if (e.message === "Not authenticated") {
-          localStorage.removeItem("user");
-          router.push("/");
-        }
+        localStorage.removeItem("user");
+        router.push("/");
       }
     };
     
     verifyAuthAndLoadProfile();
   }, [router]);
 
-  if (loading) {
+  if (loading || !profile || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#bcc3d4]">
-        <p className="text-lg text-gray-700">Loading profile...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col bg-[#bcc3d4]">
-        <Header user={user} onUserUpdate={setUser} activeRoute="profile" />
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="bg-[#a8b0c5] rounded-3xl p-12 w-full max-w-6xl shadow-lg text-center">
-            <p className="text-2xl text-gray-700 mb-4">⚠️ Unable to load profile</p>
-            <p className="text-gray-600">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <div className="min-h-screen flex flex-col bg-[#bcc3d4]">
-        <Header user={user} onUserUpdate={setUser} activeRoute="profile" />
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="bg-[#a8b0c5] rounded-3xl p-12 w-full max-w-6xl shadow-lg text-center">
-            <p className="text-2xl text-gray-700">👤 Profile not found</p>
-          </div>
-        </div>
+        <p className="text-xl font-pixelify text-[#2d5a8a]">Loading...</p>
       </div>
     );
   }

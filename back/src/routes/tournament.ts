@@ -5,6 +5,7 @@ import { playerInfo } from '../types/playerInfo.types';
 import { WebSocket } from 'ws';
 import { FastifyInstance } from 'fastify';
 import { Socket } from 'dgram';
+import { Server } from 'http';
 
 const tournaments: Map<string, Tournament> = new Map<string, Tournament>();
 
@@ -113,7 +114,6 @@ class Tournament
         {
             const data = JSON.parse(msg.data.toString());
 
-            console.log("action:", data.action);
             if (data.action == 'delete' && player.id == this.tData.host!.id)
             {
                 this.tData.status = trnmtStatus.close;
@@ -156,6 +156,7 @@ class Tournament
         if (this.isPlayersFull())
         {
             this.tData.status = trnmtStatus.startingSemi;
+            
             setTimeout(() => 
             {
                 this.startSemiGame();
@@ -167,14 +168,63 @@ class Tournament
 
     interval(winner: number, match: Match, intervalId: NodeJS.Timeout)
     {
-        console.log('winner:', winner, 'player1:', match.player1?.id, 'player2:', match.player2?.id);
+        // console.log('winner:', winner, 'player1:', match.player1?.id, 'player2:', match.player2?.id);
         if (winner == 0)
             return ;
         if (winner == 1)
             match.winner = match.player1;
         else
             match.winner = match.player2;
+        match.player1?.socket.send(this.socketData);
+        match.player2?.socket.send(this.socketData);
         clearInterval(intervalId);
+    }
+
+    playGame(player: playerInfo)
+    {
+        let playerPos = 0;
+        let counter = 0;
+        this.forEachPlayer((currPlayer: playerInfo) =>
+        {
+            if (player.id == currPlayer.id)
+            {
+                currPlayer.socket = player.socket;
+                playerPos = counter;
+            }
+            else
+                counter++;
+        });
+
+        if (this.tData.status == trnmtStatus.playingSemi)
+        {
+            if 
+            (
+                playerPos <= 1
+                && this.tData.semi[0].winner == null
+                && this.tData.semi[0].player1?.socket.readyState == WebSocket.OPEN
+                && this.tData.semi[0].player2?.socket.readyState == WebSocket.OPEN
+            )
+                this.startGame(this.tData.semi[0]);
+            else if
+            (
+                (playerPos == 2 || playerPos == 3)
+                && this.tData.semi[1].winner == null
+                && this.tData.semi[1].player1?.socket.readyState == WebSocket.OPEN
+                && this.tData.semi[1].player2?.socket.readyState == WebSocket.OPEN
+            )
+                this.startGame(this.tData.semi[1]);
+        }
+        else if
+        (
+            this.tData.status == trnmtStatus.playingFinal
+            && this.tData.final.winner == null
+            && this.tData.final.player1?.socket.readyState == WebSocket.OPEN
+            && this.tData.final.player2?.socket.readyState == WebSocket.OPEN
+        )
+        {
+
+            this.startGame(this.tData.final);
+        }
     }
 
     startGame(match: Match)
@@ -187,20 +237,21 @@ class Tournament
         const intervalId: NodeJS.Timeout = setInterval(()=>
         {
             this.interval(game.winner, match, intervalId);
-        }, 1000);
+        }, 1100);
     }
 
     startSemiGame()
     {
         this.tData.status = trnmtStatus.playingSemi;
         this.broadcastTournamentData();
-        
-        this.startGame(this.tData.semi[0]);
-        this.startGame(this.tData.semi[1]);
+        this.forEachPlayer((player: playerInfo)=>
+        {
+            player.socket.close();
+        });
 
         const intervalId: NodeJS.Timeout = setInterval(() =>
         {
-            console.log('semi finale:', this.tData.semi[0].winner != null, this.tData.semi[1].winner != null);
+            // console.log('semi finale:', this.tData.semi[0].winner != null, this.tData.semi[1].winner != null);
             if (this.tData.semi[0].winner != null
                 && this.tData.semi[1].winner != null
             )
@@ -233,7 +284,9 @@ class Tournament
     {
         this.tData.status = trnmtStatus.playingFinal;
         this.broadcastTournamentData();
-        this.startGame(this.tData.final);
+        this.tData.final.player1?.socket.close();
+        this.tData.final.player2?.socket.close();
+    
         const intervalId: NodeJS.Timeout = setInterval(()=>
         {
             if (this.tData.final.winner != null)
@@ -250,9 +303,8 @@ class Tournament
         }, 1000);
     }
 
-    broadcastTournamentData()
+    get socketData(): string
     {
-        // Create a sanitized version without socket properties to avoid circular references
         const sanitizePlayer = (p?: playerInfo | null) =>
             p ? { id: p.id, username: p.username } : null;
 
@@ -270,11 +322,17 @@ class Tournament
             final: sanitizeMatch(this.tData.final),
         };
 
-        const data: string = JSON.stringify(sanitizedData);
+        return (JSON.stringify(sanitizedData));
+    }
+
+    broadcastTournamentData()
+    {
+        // Create a sanitized version without socket properties to avoid circular references
+        
 
         this.forEachPlayer((player: playerInfo) =>
         {
-            player.socket.send(data);
+            player.socket.send(this.socketData);
         });
     }
 }
@@ -300,6 +358,7 @@ function findPlayer(player: playerInfo): boolean
 {
     const code: string | null = playersInTournaments.get(player.id) ?? null;
 
+    console.log("player:", player.id, player.username, "wants to join", code);
     if (!player.socket)
     {
         console.log("no socket is open");
@@ -319,7 +378,6 @@ export function startTournament(host: playerInfo, server: FastifyInstance)
         return ;
     const code: string = generateCode();
 
-    playersInTournaments.set(host.id, code);
     if (Tournament.server == null)
         Tournament.server = server;
     tournaments.set(code, new Tournament(code));
@@ -333,10 +391,37 @@ export function joinTournament(player: playerInfo, code: string) // maybe return
     if (findPlayer(player))
         return ;
     playersInTournaments.set(player.id, code);
-    if (!tournaments.has(code))
-        console.log("tournament doesnt exist");
-    else if (!tournaments.get(code)?.addPlayer(player))
+    const currTournament: Tournament | undefined = tournaments.get(code);
+    if (currTournament == undefined)
+    {
+        player.socket.send(JSON.stringify({error: "invalid code"}));
+    }
+    else if (!currTournament.addPlayer(player))
+    {
+        player.socket.send(JSON.stringify({error: "tournament started"}));
         console.log("tournament already started");
+    }
     else
-        console.log("tournament joined succefuly");
+        console.log("tournament joined successfully");
+}
+
+export function playTournament(player: playerInfo)
+{
+    console.log("start playing tournament game");
+    const currCode: string | undefined = playersInTournaments.get(player.id);
+    
+    if (currCode == undefined)
+    {
+        player.socket.send(JSON.stringify({error: "player is not registered in any tournament"}));
+        return ;
+    }
+
+    const currTournament: Tournament | undefined = tournaments.get(currCode);
+
+    if (currTournament == undefined)
+    {
+        player.socket.send(JSON.stringify({error: "the tournament has beend deleted"}));
+        return ;
+    }
+    currTournament.playGame(player);
 }

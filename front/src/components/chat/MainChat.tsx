@@ -9,6 +9,7 @@ import MessageForm from './MessageForm'
 import useGlobalStore from '@/store/globalStore'
 import { useRouter } from 'next/navigation'
 import { tree } from 'next/dist/build/templates/app-page'
+import { Cedarville_Cursive } from 'next/font/google'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -41,6 +42,7 @@ const MainChat = () => {
           }
         );
         const data: MessageProps[] = await response.json();
+        console.log("all messsages", data);
         manager.loadMessage(data.reverse());
       } catch (err) {
         console.error('failed to fetch messages');
@@ -124,7 +126,9 @@ const MainChat = () => {
 
   const sendInvite = () =>
   {
-    const data = {type: "invite", content: {sender: manager.user?.id, receiver: pointedUser?.friend_id, username: manager.user?.username}};
+
+
+    const data = {type: "invite", content: {sender: manager.user?.id, receiver: pointedUser?.friend_id, username: manager.user?.username, friendship_id: manager.pointedUser?.id}};
     if (manager.socket && manager.socket.readyState === WebSocket.OPEN)
     {
       manager.socket.send(JSON.stringify(data));
@@ -141,14 +145,29 @@ const MainChat = () => {
     setInvite(false);
   }
 
-  const handleJoinGame = () =>
-  {
-    if (manager.invite)
-    {
-      setInvite(false);
-      router.push(`/games/invite?code=${encodeURIComponent(manager.invite?.code)}`);
-    }
-  }
+  // const handleJoinGame = () =>
+  // {
+  //   if (manager.invite)
+  //   {
+  //     setInvite(false);
+  //     async function checkInviteExistence() {
+  //     try
+  //     {
+  //       const check = await fetch(`localhost:4000/invite?code=${manager.invite?.code}`);
+  //       if (check.ok && manager.invite)
+  //       {
+  //         console.log("check", check);
+  //         router.push(`/games/invite?code=${encodeURIComponent(manager.invite?.code)}`);
+  //       }
+  //       }
+  //       catch (err)
+  //       {
+  //         console.log(err);
+  //       }
+  //     }
+  //     checkInviteExistence();
+  //   }
+  // }
 
   return (
     <div className='relative flex-3 flex flex-col rounded-t-[30] bg-[#B0BBCF]'>
@@ -197,7 +216,7 @@ const MainChat = () => {
       </div>
 
 
-      {invite && (
+      {/* {invite && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-gray-800 text-white p-6 rounded-lg max-w-sm w-full mx-4 shadow-2xl border border-gray-700">
             <p className="text-lg mb-6">
@@ -205,7 +224,7 @@ const MainChat = () => {
             </p>
             <div className="flex justify-end gap-3">
               <button
-                onClick={handleJoinGame}
+                // onClick={handleJoinGame}
                 className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-md transition-colors duration-200"
               >
                 Join game
@@ -219,7 +238,7 @@ const MainChat = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
 
 
@@ -230,8 +249,8 @@ const MainChat = () => {
               <p className="font-pixelify text-lg">You have blocked this user</p>
             </div>
           ) : (
-            messages.map(msg => (
-              <Message key={msg.id} message={msg.content} type={msg.receiver === pointedUser?.friend_id ? 'sent' : 'received'} />
+            messages.filter(msg => msg.inviter !== manager.user?.id).map(msg => (
+              <Message key={msg.id} message={msg.content} type={msg.receiver === pointedUser?.friend_id ? 'sent' : 'received'} inviteCode={msg.inviteCode} inviter={msg.inviter} />
             ))
           )
         }

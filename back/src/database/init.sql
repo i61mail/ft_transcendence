@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS messages (
   receiver INTEGER NOT NULL,
   content TEXT NOT NULL,
   is_blocked BOOLEAN DEFAULT 0,
+  inviteCode TEXT DEFAULT NULL,
+  inviter INTEGER DEFAULT -1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

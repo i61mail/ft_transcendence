@@ -1,6 +1,7 @@
 interface settingsInterface
 {
 	canvaSize: number;
+	headerHeight: number;
     squareSize: number;
 	squareColor: string;
 	borderColor: string;
@@ -13,22 +14,24 @@ interface settingsInterface
 	textColor: string;
 }
 
-const SQUARESIZE = 300;
+const SQUARESIZE = 140;
+const HEADER_HEIGHT = 60;
 
 export const SETTINGS: settingsInterface =
 {
-	// tictactoe settings (dark theme)
-	canvaSize: SQUARESIZE * 3,
+	// tictactoe settings (light theme matching the app)
+	canvaSize: SQUARESIZE * 3 + HEADER_HEIGHT,
+	headerHeight: HEADER_HEIGHT,
 	squareSize: SQUARESIZE,
-	squareColor: "#121212",
-	borderColor: "#6f6e6eff",
-	borderSize: 4,
-	xColor: "#FF5252",
-	oColor: "#64B5F6",
-	xoLineWidth: 6,
-	winLineColor: 'rgba(241, 196, 15, 0.25)',
+	squareColor: "rgba(255, 255, 255, 0.3)",
+	borderColor: "#2d5a8a",
+	borderSize: 3,
+	xColor: "#ef4444",
+	oColor: "#3b82f6",
+	xoLineWidth: 8,
+	winLineColor: 'rgba(16, 185, 129, 0.3)',
 	winLineSize: 4,
-	textColor: 'rgba(0,0,0,0.6)'
+	textColor: '#2d5a8a'
 };
 
 export enum messageType

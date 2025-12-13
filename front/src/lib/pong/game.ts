@@ -220,6 +220,10 @@ class Padle
         if (!context)
             return;
 
+        // Guard against invalid position values
+        if (!isFinite(this.posX) || !isFinite(this.posY))
+            return;
+
         // Draw glowing shadow
         context.shadowBlur = 20;
         context.shadowColor = this.renderColor;
@@ -281,8 +285,10 @@ class Court
 
     public listen(message: intf.messageInterface)
     {
-        this.leftPadle.posY = message.leftPlayerPosY;
-        this.rightPadle.posY = message.rightPlayerPosY;
+        if (typeof message.leftPlayerPosY === 'number' && isFinite(message.leftPlayerPosY))
+            this.leftPadle.posY = message.leftPlayerPosY;
+        if (typeof message.rightPlayerPosY === 'number' && isFinite(message.rightPlayerPosY))
+            this.rightPadle.posY = message.rightPlayerPosY;
         this._ball.update(message.ballPosX, message.ballPosY);
         this._scoreBoard.update(message.leftPlayerScore, message.rightPlayerScore);
     }

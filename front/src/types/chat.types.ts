@@ -5,6 +5,8 @@ export interface MessageProps {
   content: string;
   date?: Date;
   friendship_id?: number;
+  inviteCode: string | null,
+  inviter: number
 }
 
 export interface FriendshipProps {

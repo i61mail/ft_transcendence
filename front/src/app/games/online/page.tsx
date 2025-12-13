@@ -6,46 +6,73 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import GameCanvas from "@/components/GameCanvas";
 
-
-
 const OnlineGame = () =>
 {
     const manager = useglobalStore();
     const [start, setStart] = useState(false);
-    const sentRef = useRef<boolean>(false);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const router = useRouter(); 
+    const socketRef = useRef<WebSocket | null>(null);
+    const conditionT = useRef<boolean>(false);
+    const initialDataRef = useRef<string | null>(null);
+    const router = useRouter();
 
-    const handleFinished = () =>
-    {
-        if (manager.gameSocket)
-        {
-            router.push('/games');
-        }
-    };
-    useEffect(() =>
-    {
-        if (!manager.gameSocket)
-            router.push("/games");
-        if (manager.gameSocket && !sentRef.current)
-        {
-            
-            console.log("starting online game...");
-            const data = {gameType: "online", id: manager.user?.id, username: manager.user?.username};
-            manager.gameSocket.send(JSON.stringify(data));
-            sentRef.current = true;
-            manager.gameSocket.onmessage = (msg) => 
-            {
-                console.log("hummmm", manager.gameSocket != null);
-                setStart(true);
-                if (canvasRef.current && manager.gameSocket)
-                {
-                    console.log("started game");
-                    startGame(canvasRef.current, manager.gameSocket, msg.data, handleFinished);
+    useEffect(() => {
+        if (conditionT.current) return;
+        conditionT.current = true;
+
+        console.log("create socket")
+        const socket = new WebSocket("ws://localhost:4000/sockets/games");
+        socketRef.current = socket;
+
+        const handleFinished = () => {
+            if (socketRef.current) {
+                socketRef.current.close();
+                if (typeof window === 'undefined' || window.location.pathname !== '/games/online') {
+                    return;
                 }
+                router.push('/games');
             }
+        };
+
+        socket.onclose = () => {
+            console.log("game socket closed!!!");
+        };
+
+        socket.onopen = () => {
+            console.log("starting game...", socket.readyState);
+            const data = { gameType: "online", id: manager.user?.id, username: manager.user?.username };
+            socket.send(JSON.stringify(data));
+            socket.onmessage = (msg) => {
+                if (initialDataRef.current === null) {
+                    initialDataRef.current = msg.data;
+                    setStart(true);
+                }
+            };
+        };
+
+        return () => {
+            conditionT.current = false;
+            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+                console.log("Closing socket on page leave...");
+                socket.close();
+            }
+            socketRef.current = null;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (start && canvasRef.current && socketRef.current && initialDataRef.current) {
+            console.log("dataref:", initialDataRef.current);
+            const handleFinished = () => {
+                if (socketRef.current) {
+                    socketRef.current.close();
+                    router.push('/games');
+                }
+            };
+            startGame(canvasRef.current, socketRef.current, initialDataRef.current, handleFinished);
+            initialDataRef.current = null; // Clear so we don't restart
         }
-    }, [])
+    }, [start]);
 
     return (
         <>

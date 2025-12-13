@@ -20,6 +20,8 @@ import twofaRoutes from './routes/twofa';
 import fastifyStatic from '@fastify/static';
 import { WebSocket } from 'ws';
 import { Chat } from './types/chat.types';
+import { Queue } from './controllers/socket.controller';
+import inviteRoutes from './routes/invite';
 
 const app = Fastify({
   logger: true,
@@ -38,6 +40,8 @@ app.decorate('chatConnections', new Map<WebSocket, string>());
 app.decorate('chatPreviewNotifications', new Map<WebSocket, Chat>());
 app.decorate('globalSockets', new Map<WebSocket, number>());
 app.decorate('gameSockets', new Map<WebSocket, number>());
+app.decorate('inviteQueue', new Map<string, Queue>)
+
 
 // Register WebSocket
 app.register(websocket);
@@ -148,6 +152,7 @@ app.register(messageRoutes);
 app.register(friendshipRoutes);
 app.register(blockRoutes);
 app.register(socketRoutes);
+app.register(inviteRoutes);
 
 // Health check endpoint
 app.get('/', async (request, reply) => {

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { API_URL, getMatchHistory, getLeaderboard } from "@/lib/api";
+import { getFriends } from "@/lib/api";
 
 interface MatchStats {
   wins: number;
@@ -376,6 +377,7 @@ export default function Dashboard() {
   const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -411,6 +413,16 @@ export default function Dashboard() {
         } catch (err) {
           console.log("Failed to load leaderboard:", err);
           setLeaderboard([]);
+        }
+
+        // Load friends
+        try {
+          const friendsData = await getFriends(data.user.id);
+          console.log("Friends data received:", friendsData);
+          setFriends(Array.isArray(friendsData) ? friendsData : []);
+        } catch (err) {
+          console.log("Failed to load friends:", err);
+          setFriends([]);
         }
 
         setLoading(false);
@@ -485,46 +497,37 @@ export default function Dashboard() {
 
       <main className="p-6 relative z-0">
         <div className="max-w-[2000px] mx-auto">
-        <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-6">
+        <div className="flex flex-col xl:flex-row gap-6 items-stretch">
           
           {/* Friends Panel - LEFT SIDE */}
-          <div className="hidden xl:block">
-            <div className="top-24 z-0">
-              <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 shadow-2xl border border-white/20 flex flex-col" style={{ minHeight: 'calc(105vh - 120px)' }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <h2 className="font-pixelify text-xl font-bold text-[#2d5a8a]">Friends</h2>
+          <div className="hidden xl:flex xl:w-[280px] flex-shrink-0">
+            <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 shadow-2xl border border-white/20 flex flex-col w-full">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
                 </div>
+                <h2 className="font-pixelify text-xl font-bold text-[#2d5a8a]">Friends</h2>
+              </div>
                 
                 <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1">
-                  {user?.friends && user.friends.length > 0 ? (
-                    user.friends.map((friend: any) => (
+                  {friends && friends.length > 0 ? (
+                    friends.map((friend: any) => (
                       <div 
                         key={friend.id}
                         className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 cursor-pointer group"
                       >
-                        <div className="relative">
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-600">
-                            <img 
-                              src={friend.avatar_url ? `${API_URL}${friend.avatar_url}` : `${API_URL}/uploads/default-avatar.png`}
-                              alt={friend.display_name || friend.username}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          {friend.online && (
-                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                          )}
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-600">
+                          <img 
+                            src={friend.avatar_url ? `${API_URL}${friend.avatar_url}` : `${API_URL}/uploads/default-avatar.png`}
+                            alt={friend.display_name || friend.username}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-pixelify font-bold text-[#2d5a8a] text-sm truncate group-hover:text-blue-600 transition-colors">
                             {friend.display_name || friend.username}
-                          </p>
-                          <p className="font-pixelify text-xs text-gray-500 truncate">
-                            {friend.online ? 'Online' : 'Offline'}
                           </p>
                         </div>
                       </div>
@@ -542,10 +545,9 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-            </div>
           </div>
 
-          <div>
+          <div className="flex-1">
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Donut Chart - Win/Loss Ratio */}
@@ -811,7 +813,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="relative z-10 max-h-[300px] overflow-y-auto custom-scrollbar">
-              <div className="overflow-x-auto">
+              <div>
                 <table className="w-full">
                   <thead className="sticky top-0 bg-white/10 backdrop-blur-md z-10">
                     <tr className="border-b-2 border-white/20 text-left">

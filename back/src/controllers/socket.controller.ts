@@ -1,11 +1,13 @@
 import { WebSocket } from 'ws';
 import fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import { Chat } from '../types/chat.types';
-import { pongAI, pongLocal, pongOnline } from '../routes/pong';
+import { pongAI, PongGame, pongLocal, pongOnline } from '../routes/pong';
 import { GameMode } from '../types/pong.types';
-import { generateCode, joinTournament, startTournament } from '../routes/tournament';
+import { generateCode, joinTournament, playTournament, startTournament } from '../routes/tournament';
 import { playerInfo } from '../types/playerInfo.types';
 import { tttGame } from '../routes/ticTacToe';
+
+const INVITE_EXPIRATION_MS = 2 * 60 * 1000; 
 
 const chatMessageHandler = (socket: WebSocket, request: FastifyRequest) => {
   const server = request.server;
@@ -81,20 +83,63 @@ export const messageNotification = async (
   }
 };
 
-const inviteList = new Map<string, Queue>;
+// const inviteList = new Map<string, Queue>;
 
-const createInviteGame = async (socket: WebSocket, sender: number, receiver: number, username: string, server: FastifyInstance) =>
+// const createInviteGame = async (socket: WebSocket, sender: number, receiver: number, username: string, server: FastifyInstance) =>
+// {
+//     const code: string = generateCode();
+//     const q = new Queue;
+//     const p1: Player  = {socket: socket, id: sender, username: username};
+//     q.enqueue(p1)
+//     inviteList.set(code, q);
+//     const invite = {type: "invite", data: {sender: sender, code: code, username: username}};
+//     server.globalSockets.forEach((key, sock) => {
+//       if (key === receiver && sock !== socket)
+//         sock.send(JSON.stringify(invite));
+//     })
+// }
+
+
+const createInviteGame = async (socket: WebSocket, content: any, server: FastifyInstance) =>
 {
+    // const {receiver, sender, content, id, friendship_id} = result;
+    const {sender, receiver, username, friendship_id} = content;
+    console.log("invite", sender, receiver);
+    const value = `${username} invited you to play a game`;
+
     const code: string = generateCode();
     const q = new Queue;
     const p1: Player  = {socket: socket, id: sender, username: username};
-    q.enqueue(p1)
-    inviteList.set(code, q);
-    const invite = {type: "invite", data: {sender: sender, code: code, username: username}};
+    q.enqueue(p1);
+    server.inviteQueue.set(code, q);
+
+    //Save the message
+    const insertStm = server.db.prepare(
+      `INSERT INTO messages (friendship_id, sender, receiver, content, is_blocked, inviteCode, inviter) VALUES (?,?,?,?,?,?,?)`
+    );
+    const result = insertStm.run(friendship_id, sender, receiver, value, 0, code, sender);
+    console.log("result invite", result);
+    
+    const fetchMessage = server.db.prepare('SELECT * FROM messages where id = ?').get(result.lastInsertRowid);
+    console.log(fetchMessage);
+
+    // const invite = {type: "invite", data: {sender: sender, code: code, username: username}};
+    const invite = {type: "message", data: fetchMessage}
     server.globalSockets.forEach((key, sock) => {
       if (key === receiver && sock !== socket)
         sock.send(JSON.stringify(invite));
     })
+
+    //logic for expiration
+    setTimeout(() => {
+    const lobby = server.inviteQueue.get(code);
+    if (lobby) {
+      if (lobby.size() === 1) { 
+        server.inviteQueue.delete(code);
+        console.log(`Invite ${code} expired and was removed.`);
+      }
+    }
+  }, INVITE_EXPIRATION_MS);
 }
 
 export const sendNotification = async (server: FastifyInstance, id: number) =>
@@ -164,14 +209,7 @@ export const createGlobalSocket = async (
         }
         else if (type === "invite")
         {
-          const {sender, receiver, username} = content;
-          console.log("invite", sender, receiver);
-          createInviteGame(socket, sender, receiver, username, server);
-        }
-        else if (type === "refuseInvite")
-        {
-          const {code, id} = content;
-          handleInviteRefusal(socket, id, code);
+          createInviteGame(socket, content, server);
         }
     }
 };
@@ -284,13 +322,13 @@ const handleOnlineGame = async (socket: WebSocket, id: number, username: string 
 
 const handleInviteOnly = async (socket: WebSocket, player: Player, code: string, server: FastifyInstance) => 
 {
-  if (!inviteList.has(code))
+  if (!server.inviteQueue.has(code))
       return ;
   socket.onclose = () =>
   {
-    inviteList.clear();
+    server.inviteQueue.clear();
   }
-  const arr = inviteList.get(code);
+  const arr = server.inviteQueue.get(code);
   console.log(arr?.size());
   if (arr && arr.size() < 2)
   {
@@ -310,7 +348,7 @@ const handleInviteOnly = async (socket: WebSocket, player: Player, code: string,
     arr.enqueue(player);
     if (p1)
       arr.enqueue(p1);
-    inviteList.set(code, arr);
+    server.inviteQueue.set(code, arr);
   }
   else if (arr && arr.size() == 2)
   {
@@ -322,19 +360,20 @@ const handleInviteOnly = async (socket: WebSocket, player: Player, code: string,
       //   p2.socket.send(JSON.stringify(data))
       console.log("starting invite", player.username, p2.username);
       pongOnline(player, p2, server);
+      server.inviteQueue.delete(code);
     }
   }
 }
 
 
-const handleInviteRefusal = async (socket: WebSocket, id: number, code: string) =>
-{
-  if (!inviteList.has(code))
-      return ;
-  const p1 = inviteList.get(code)?.dequeue();
-  if (p1)
-    inviteList.delete(code);
-}
+// const handleInviteRefusal = async (socket: WebSocket, id: number, code: string) =>
+// {
+//   if (!inviteList.has(code))
+//       return ;
+//   const p1 = inviteList.get(code)?.dequeue();
+//   if (p1)
+//     inviteList.delete(code);
+// }
 
 
 let lists: WebSocket[] = [];
@@ -351,9 +390,21 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
           username: username,
           socket: socket
         };
-        if (gameType === "init")
-        {
-            console.log("created new game socket...");
+
+        const gameHandlers: Record<string, () => PongGame | void> = {
+            "local": () => pongLocal(player, server),
+            "online": () => { handleOnlineGame(socket, id, username, server); },
+            "startTournament": () => { startTournament(player, server); },
+            "joinTournament": () => { joinTournament(player, code); },
+            "playTournament": () => { playTournament(player); },
+            "ai": () => pongAI(player, difficulty, server),
+            "tictactoe": () => { handletttGame(socket, id, username, server); }
+        };
+
+        const handler: () => void | PongGame = gameHandlers[gameType];
+
+        if (handler) {
+            handler();
         }
         else if (gameType === "local")
             pongLocal(player, server);

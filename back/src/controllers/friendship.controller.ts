@@ -35,7 +35,7 @@ export const extractFriendships = async (
         friend.display_name = user.display_name;
       }
     });
-    console.log(friendList);
+    // console.log(friendList);
     reply.send(friendList);
   } catch (err) {
     request.server.log.error(err);

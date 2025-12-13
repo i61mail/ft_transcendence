@@ -280,10 +280,8 @@ class onlineController extends Controller
         {
             this.socket.onmessage = (msg) => {
                 const data = msg.data.toString();
-                console.log("player input:", msg.data);
                 
                 this._status = parseInt(data[0], 10);
-                console.log("player status:", this._status);
             }
         }
     }
@@ -394,21 +392,28 @@ class Court
         }
 
         this.scoreBoard = new ScoreBoard()
+        this.onCloseHandler(player1, player2);
     }
 
     onCloseHandler(player1: playerInfo, player2: playerInfo)
     {
         player1.socket.onclose = () =>
         {
-            this.scoreBoard.winnerByForfeit = types.PlayerIndex.rightPlayer;
-            this.endGame()
+            if (this._isMatchStarted)
+            {
+                this.scoreBoard.winnerByForfeit = types.PlayerIndex.rightPlayer;
+                this.endGame();
+            }
         }
         if (player1.id != player2.id)
         {
             player2.socket.onclose = () =>
             {
-                this.scoreBoard.winnerByForfeit = types.PlayerIndex.rightPlayer;
-                this.endGame()
+                if (this._isMatchStarted)
+                {
+                    this.scoreBoard.winnerByForfeit = types.PlayerIndex.leftPlayer;
+                    this.endGame();
+                }
             }
         }
     }
@@ -487,6 +492,7 @@ class Court
 
     endGame()
     {
+        console.log("game ended");
         this._isMatchStarted = false;
         this.addToDatabase();
         this.leftPlayerController.socket.send("finished");
@@ -610,12 +616,13 @@ export function pongOnline(
     server: FastifyInstance
 ) : PongGame
 {
-    const data: string =JSON.stringify(
+    const data: string = JSON.stringify(
     {
         gm: types.GameMode.online,
         player1: player1.username,
         player2: player2.username
     });
+    
     player1.socket.send(data);
     player2.socket.send(data);
 

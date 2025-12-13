@@ -13,6 +13,7 @@ const  SocketManager = () =>
     const manager = useglobalStore();
     const router = useRouter();
     const mounted = useRef<Boolean>(false);
+    const gameSocketRef = useRef<WebSocket | null>(null);
     
     useEffect(() =>
     {
@@ -32,10 +33,10 @@ const  SocketManager = () =>
     {
         if (manager.gameSocket || !manager.user)
             return ;
-        console.log("game connection----------");
         const gameSocket = new WebSocket("ws://localhost:4000/sockets/games");
         gameSocket.onopen = () =>
         {
+            console.log("game connection----------");
             const init = {gameType: "init"};
             gameSocket?.send(JSON.stringify(init));
             manager.updateGameSocket(gameSocket);
@@ -56,11 +57,24 @@ const  SocketManager = () =>
     }, [manager.gameSocket, manager.user])
 
 
-    useEffect(()=>
-    {
-        if (manager.user || window.location.pathname === "/")
-            return ;
-        
+    useEffect(() => {
+        // Only attempt to retrieve the current user for protected routes.
+        // If the user visits a non-existent path (404) we should not auto-redirect to the root.
+        const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+        const protectedPrefixes = [
+            '/dashboard',
+            '/chats',
+            '/profile',
+            '/games',
+            '/tictactoe',
+            '/tournament'
+        ];
+
+        if (manager.user || pathname === "/" || !protectedPrefixes.some(p => pathname.startsWith(p))) {
+            // Not on a protected route (or already have a user) — don't try to fetch/redirect
+            return;
+        }
+
         async function getFriends(user: User) {
             const res = await fetch(`http://localhost:4000/friendships/${user?.id}`, {
                 credentials: 'include'
@@ -95,7 +109,7 @@ const  SocketManager = () =>
         retrieve();
     }, [manager.user])
 
-
+    
     useEffect(() => 
     {
         if (manager.socket)
@@ -106,9 +120,9 @@ const  SocketManager = () =>
               
               if (type === "message")
               {
-                  const {receiver, sender, content, id, friendship_id} = data;
-                  const newMessage: MessageProps = {sender: sender, receiver: receiver, content: content, id: id, friendship_id: friendship_id};
-                  
+                  const {receiver, sender, content, id, friendship_id, inviteCode, inviter} = data;
+                  const newMessage: MessageProps = {sender: sender, receiver: receiver, content: content, id: id, friendship_id: friendship_id, inviteCode: inviteCode, inviter: inviter};
+                  console.log("received message", data)
                   // Only ignore if I'm the SENDER (echo back to me)
                   // Accept if I'm the RECEIVER (someone else sent to me)
                   if (sender === manager.user?.id) {
@@ -124,13 +138,11 @@ const  SocketManager = () =>
                     manager.updateLatestMessage(newMessage);
                   }
               }
-              else if (type === "invite")
-              {
-                console.log("received invite", data);
-                manager.setInvite({sender: data.sender, username: data.username, code: data.code});
-              }
               else if (type === "startInvite")
-                router.push(`/games/invite?code=${encodeURIComponent(data.code)}`);
+              {
+                console.log("redirecting to invite page...");
+                  router.push(`/games/invite?code=${encodeURIComponent(data.code)}`);
+              }
               else if (type === "friend_online")
               {
                     manager.addOnlineUser(data);
