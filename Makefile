@@ -33,3 +33,6 @@ help:
 build:
 	npm run build --prefix front
 	npm run build --prefix back
+
+start:
+	npm run start --prefix back & npm run start --prefix front

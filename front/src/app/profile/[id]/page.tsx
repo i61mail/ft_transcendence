@@ -149,7 +149,7 @@ export default function UserProfilePage() {
   }
 
   const avatarUrl = profile.avatar_url 
-    ? `${API_URL}${profile.avatar_url}`
+    ? (profile.avatar_url.startsWith('http') ? profile.avatar_url : `${API_URL}${profile.avatar_url}`)
     : "/default-avatar.png";
 
   const displayName = profile.display_name || profile.username;
