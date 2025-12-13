@@ -4,51 +4,55 @@ import useglobalStore from "@/store/globalStore";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { startGame } from "@/lib/pong/game";
-
-let hh = 0;
+import GameCanvas from "@/components/GameCanvas";
 
 const LocalGame = () =>
 {
-
     const manager = useglobalStore();
     const router = useRouter();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const conditionT = useRef<boolean>(false);
 
-    const handleFinished = () =>
-    {
-        if (manager.gameSocket)
-        {
+    useEffect(() => {
+        if (conditionT.current) return;
+        conditionT.current = true;
+
+        console.log("create socket")
+        const socket = new WebSocket("ws://localhost:4000/sockets/games");
+
+        const handleFinished = () => {
+            socket.close();
+            if (typeof window === 'undefined' || window.location.pathname !== '/games/local')
+                return;
             router.push('/games');
-        }
-    };
-    useEffect(()=>
-    {
-        if (conditionT.current)
-            return ;
-        if (manager.gameSocket)
-        {
-            console.log("starting game...");
-            const data = {gameType: "local", id: manager.user?.id, username: manager.user?.username};
-            manager.gameSocket.send(JSON.stringify(data));
-            conditionT.current = true;
-            manager.gameSocket.onmessage = (msg) =>
-            {
-                if (canvasRef.current)
-                    startGame(canvasRef.current, manager.gameSocket!, msg.data.toString(), handleFinished);
+        };
+
+        socket.onclose = () => {
+            console.log("game socket closed!!!");
+        };
+
+        socket.onopen = () => {
+            console.log("starting game...", socket.readyState);
+            const data = { gameType: "local", id: manager.user?.id, username: manager.user?.username };
+            socket.send(JSON.stringify(data));
+            socket.onmessage = (msg) => {
+                if (canvasRef.current && socket)
+                    startGame(canvasRef.current, socket, msg.data.toString(), handleFinished);
+            };
+        };
+
+        return () => {
+            conditionT.current = false;
+            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+                console.log("Closing socket on page leave...");
+                socket.close();
             }
-        }else
-            router.push("/games");
-    }, [manager.socket])
+        };
+    }, []);
 
     return (
-    <>
-        <canvas ref={canvasRef} width={800} height={600}>
-            if you see this message, than the canvas did not load propraly
-        </canvas>
-
-    </>
-);
+        <GameCanvas canvasRef={canvasRef} width={800} height={600} />
+    );
 }
 
 export default LocalGame;

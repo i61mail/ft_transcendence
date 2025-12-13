@@ -4,6 +4,7 @@ import { PlayerIndex } from '@/lib/pong/interfaces';
 import useglobalStore from '@/store/globalStore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
+import Header from '@/components/Header';
 
 interface playerInfo
 {
@@ -61,55 +62,115 @@ const initialTournament: TournamentData =
 export default function PongTournament()
 {
 	const [tournament, setTournament] = useState<TournamentData>(initialTournament);
+	const [copied, setCopied] = useState(false);
 	const manager = useglobalStore();
-    const sentRef = useRef<boolean>(false);
+	const socketRef = useRef<WebSocket | null>(null);
+	const conditionT = useRef<boolean>(false);
 	const router = useRouter();
 	const params = useSearchParams();
 	const code: string | null = params.get('code');
-	const currId: number = manager.user?.id!;
+	// const [manager.user?.id, setmanager.user?.id] = useState<number | null>(manager.user?.id ?? null);
+	// const [currUsername, setCurrUsername] = useState<string | null>(manager.user?.username ?? null);
+
+	// useEffect(() => {
+	// 	if (manager.user) {
+	// 		setmanager.user?.id(manager.user.id);
+	// 		setCurrUsername(manager.user.username);
+	// 	}
+	// }, [manager.user]);
 
     useEffect(() =>
-    {
-        if (manager.gameSocket && !sentRef.current)
-        {
-			let data: any = {id: currId, username: manager.user?.username , code: code};
-            if (code)
-				data.gameType = 'joinTournament';
-			else
-				data.gameType = "startTournament";
+	{
+        if (conditionT.current || !manager.user?.id) return;
+        conditionT.current = true;
 
-			console.log("data:", data);
-            manager.gameSocket.send(JSON.stringify(data));
-            sentRef.current = true;
-            manager.gameSocket.onmessage = (msg) =>
-            {
-				if (msg.data == "finished")
-					return ;
-				const state: any = JSON.parse(msg.data.toString());
+        console.log("create socket");
+        const socket = new WebSocket("ws://localhost:4000/sockets/games");
+        socketRef.current = socket;
+
+        socket.onclose = () => {
+            console.log("game socket closed!!!");
+        };
+
+        socket.onopen = () => {
+			const data: any = { id: manager.user?.id, username: manager.user?.username, code: code };
+            if (code)
+                data.gameType = 'joinTournament';
+			else
+                data.gameType = "startTournament";
+			console.log('tournament data:', data);
+
+            socket.send(JSON.stringify(data));
+
+            socket.onmessage = (msg) =>
+			{
+                if (msg.data == "finished")
+                    return;
+                if (msg.data == "invalid code") {
+                    window.alert("Invalid tournament code. Redirecting to Games page.");
+                    router.push('/games');
+                    return;
+                }
+                if (msg.data == "tournament started") {
+                    window.alert("Tournament has already started. Redirecting to Games page.");
+                    router.push('/games');
+                    return;
+                }
+
+                const state: any = JSON.parse(msg.data.toString());
 				if (state.code == undefined)
 					return ;
-				console.log("joined tournament:", state.code);
-				if (state.status == trnmtStatus.playingSemi
-					|| (state.status == trnmtStatus.playingFinal
-						&& (state.final.player1!.id == currId || state.final.player2!.id == currId))
-					)
+                if (state.error || state.code == undefined) {
+                    window.alert("Invalid tournament code. Redirecting to Games page.");
+                    router.push('/games');
+                    return;
+                }
+				let shouldPlay: boolean = false;
+
+				if (state.status == trnmtStatus.playingSemi)
 				{
-					router.push('/games/tournament/play');
-				}
-				else if (state.status == trnmtStatus.close)
+					const match = state.semi.find((m: any) => (m?.player1?.id === manager.user?.id || m?.player2?.id === manager.user?.id));
+					if (match && !match.winner)
+						shouldPlay = true;
+				} else if
+				(
+					state.status == trnmtStatus.playingFinal
+					&& (state.final?.player1?.id === manager.user?.id
+						|| state.final?.player2?.id === manager.user?.id)
+				)
+					shouldPlay = true;
+
+				if (shouldPlay)
 				{
-					window.alert(
-						"🏁 Tournament Closed\n\n" +
-						"The tournament has been closed by the host. You will be redirected to the Games page.\n\n" +
-						"Thanks for playing! 🎮"
-					);
-					router.push('/games');
-				}
-				else
-					setTournament(state);
+					console.log("switched to tournament play");
+					// Store socket in global state for the play page to use
+					manager.updateGameSocket(socket);
+					socketRef.current = null; // Don't close in cleanup
+                    router.push('/games/tournament/play');
+                } else if (state.status == trnmtStatus.close)
+				{
+                    window.alert(
+                        "🏁 Tournament Closed\n\n" +
+                        "The tournament has been closed by the host. You will be redirected to the Games page.\n\n" +
+                        "Thanks for playing! 🎮"
+                    );
+                    router.push('/games');
+                }
+                else
+                    setTournament(state);
+            };
+        };
+
+        return () => {
+            conditionT.current = false;
+            // Only close if we still own the socket (not passed to play page)
+            if (socketRef.current && (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING)) {
+                console.log("Closing socket on page leave...");
+                socketRef.current.close();
             }
-        }
-    }, [manager.gameSocket])
+            socketRef.current = null;
+        };
+    }, [manager.user]);
 
 	const statusString = (status: trnmtStatus): string =>
 	{
@@ -149,126 +210,251 @@ export default function PongTournament()
 
 	const handleDeleteTournament = () =>
 	{
-		manager.gameSocket?.send(JSON.stringify({id: currId, action: "delete"}));
+		socketRef.current?.send(JSON.stringify({id: manager.user?.id, action: "delete"}));
 	};
 
+	const handleCopyCode = async () => {
+		try {
+			await navigator.clipboard.writeText(tournament.code);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		} catch (err) {
+			console.error('Failed to copy:', err);
+		}
+	};
 
 	return (
-		<div className="bg-gray-50 min-h-screen py-8 px-4">
-			<div className="max-w-6xl mx-auto">
+		<div className="min-h-screen bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5]">
+			<Header user={manager.user} />
+			<div className="relative py-8 px-4">
+				{/* Animated Background Elements */}
+				<div className="fixed inset-0 overflow-hidden pointer-events-none">
+				<div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-blob top-0 -left-20"></div>
+				<div className="absolute w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-blob animation-delay-2000 top-0 right-0"></div>
+				<div className="absolute w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-blob animation-delay-4000 bottom-0 left-1/2"></div>
+				<div className="absolute w-72 h-72 bg-yellow-500/10 rounded-full blur-3xl animate-blob animation-delay-4000 bottom-20 right-20"></div>
+			</div>
+
+			<div className="max-w-6xl mx-auto relative z-10">
+				{/* Header Card */}
 				<div className="mb-8">
-					<div className="bg-white rounded-lg shadow-md p-6 flex items-center justify-between">
-						<div>
-							<p className="text-sm text-gray-600 mb-1">Tournament Code</p>
-							<p className="text-2xl font-bold text-gray-800 font-mono">
-								{tournament.code}
-							</p>
-						</div>
-						<p className="text-2xl font-bold text-gray-800 font-mono">{statusString(tournament.status)}</p>
-						{(() =>
-						{
-							if (tournament.host?.id === currId)
-							{
-								return (
+					<div className="backdrop-blur-xl bg-white/20 rounded-3xl p-6 shadow-2xl border-2 border-white/40 flex items-center justify-between">
+						<div className="flex items-center gap-4">
+							<div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#3b82f6] to-[#a855f7] flex items-center justify-center shadow-lg">
+								<span className="text-white font-bold text-xl">#</span>
+							</div>
+							<div>
+								<p className="font-pixelify text-sm text-[#2d5a8a]/70 mb-1">Tournament Code</p>
+								<div className="flex items-center gap-3">
+									<p className="font-pixelify text-3xl font-bold text-[#2d5a8a] tracking-widest">
+										{tournament.code}
+									</p>
 									<button
-										className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md transition"
-										onClick={handleDeleteTournament}
+										onClick={handleCopyCode}
+										className={`px-3 py-1.5 rounded-xl font-pixelify text-sm font-bold transition-all ${
+											copied 
+												? 'bg-green-400/30 text-green-700 border-2 border-green-400'
+												: 'bg-white/30 text-[#2d5a8a] border-2 border-white/50 hover:bg-white/50'
+										}`}
 									>
-										Delete the tournament
+										{copied ? 'Copied!' : 'Copy'}
 									</button>
-								);
-							}
-							else
-							{
-								return (
-									<div/>
-								);
-							}
-						})()}
+								</div>
+							</div>
+						</div>
+						
+						<div className="flex items-center gap-3">
+							<div className={`px-4 py-2 rounded-2xl font-pixelify font-bold text-sm ${
+								tournament.status === trnmtStatus.waiting 
+									? 'bg-yellow-400/30 text-yellow-700 border-2 border-yellow-400/50' 
+									: tournament.status === trnmtStatus.finished 
+									? 'bg-green-400/30 text-green-700 border-2 border-green-400/50'
+									: 'bg-blue-400/30 text-blue-700 border-2 border-blue-400/50'
+							}`}>
+								{statusString(tournament.status)}
+							</div>
+						</div>
+
+						{tournament.host?.id === manager.user?.id && (
+							<button
+								className="px-6 py-3 bg-gradient-to-br from-red-400 to-red-600 hover:from-red-500 hover:to-red-700 text-white font-pixelify font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-105"
+								onClick={handleDeleteTournament}
+							>
+								Delete Tournament
+							</button>
+						)}
 					</div>
 				</div>
 
-				<h1 className="text-3xl font-bold text-center text-gray-800 mb-12">
+				{/* Title */}
+				<h1 className="font-pixelify text-5xl font-bold text-center text-[#2d5a8a] mb-10 drop-shadow-lg">
 					Tournament Bracket
 				</h1>
 
-				<div className="grid grid-cols-3 gap-8 items-center">
-
-					<div className="space-y-16">
-
-						<div className="bg-white rounded-lg shadow-md p-6">
-							<div className="text-xs text-gray-500 uppercase mb-4 text-center">
-								Semi-Final 1
+				{/* Tournament Bracket */}
+				<div className="grid grid-cols-5 gap-6 items-center">
+					
+					{/* Semi-Finals Column */}
+					<div className="col-span-2 space-y-8">
+						{/* Semi-Final 1 */}
+						<div className="backdrop-blur-xl bg-white/20 rounded-3xl p-6 shadow-2xl border-2 border-white/40 hover:bg-white/30 transition-all">
+							<div className="flex items-center gap-2 mb-4">
+								<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+									<span className="text-white font-bold text-sm">1</span>
+								</div>
+								<span className="font-pixelify text-sm text-[#2d5a8a]/70 uppercase tracking-wide">Semi-Final</span>
 							</div>
 
 							<div className="space-y-3">
-								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[0] ? getPlayerClass(tournament.semi[0].winner, tournament.semi[0].player1) : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semi?.[0]?.player1?.username || '-'}
+								<div className={`p-4 rounded-2xl text-center transition-all font-pixelify font-bold ${
+									tournament.semi?.[0]?.winner?.id === tournament.semi?.[0]?.player1?.id && tournament.semi?.[0]?.winner
+										? 'bg-gradient-to-r from-green-400/30 to-emerald-400/30 border-2 border-green-400 text-green-700 shadow-lg'
+										: tournament.semi?.[0]?.winner && tournament.semi?.[0]?.player1
+										? 'bg-red-100/50 border-2 border-red-300 text-red-400 opacity-60'
+										: 'bg-white/30 border-2 border-white/50 text-[#2d5a8a]'
+								}`}>
+									{tournament.semi?.[0]?.player1?.username || 'Waiting...'}
 								</div>
 
-								<div className="text-center text-sm text-gray-400 font-semibold">VS</div>
+								<div className="text-center font-pixelify text-lg text-[#2d5a8a]/50 font-bold">VS</div>
 
-								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[0] ? getPlayerClass(tournament.semi[0].winner, tournament.semi[0].player2) : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semi?.[0]?.player2?.username || '-'}
+								<div className={`p-4 rounded-2xl text-center transition-all font-pixelify font-bold ${
+									tournament.semi?.[0]?.winner?.id === tournament.semi?.[0]?.player2?.id && tournament.semi?.[0]?.winner
+										? 'bg-gradient-to-r from-green-400/30 to-emerald-400/30 border-2 border-green-400 text-green-700 shadow-lg'
+										: tournament.semi?.[0]?.winner && tournament.semi?.[0]?.player2
+										? 'bg-red-100/50 border-2 border-red-300 text-red-400 opacity-60'
+										: 'bg-white/30 border-2 border-white/50 text-[#2d5a8a]'
+								}`}>
+									{tournament.semi?.[0]?.player2?.username || 'Waiting...'}
 								</div>
 							</div>
 						</div>
 
-						<div className="bg-white rounded-lg shadow-md p-6">
-							<div className="text-xs text-gray-500 uppercase mb-4 text-center">
-								Semi-Final 2
+						{/* Semi-Final 2 */}
+						<div className="backdrop-blur-xl bg-white/20 rounded-3xl p-6 shadow-2xl border-2 border-white/40 hover:bg-white/30 transition-all">
+							<div className="flex items-center gap-2 mb-4">
+								<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+									<span className="text-white font-bold text-sm">2</span>
+								</div>
+								<span className="font-pixelify text-sm text-[#2d5a8a]/70 uppercase tracking-wide">Semi-Final</span>
 							</div>
 
 							<div className="space-y-3">
-								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[1] ? getPlayerClass(tournament.semi[1].winner, tournament.semi[1].player1) : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semi?.[1]?.player1?.username || '-'}
+								<div className={`p-4 rounded-2xl text-center transition-all font-pixelify font-bold ${
+									tournament.semi?.[1]?.winner?.id === tournament.semi?.[1]?.player1?.id && tournament.semi?.[1]?.winner
+										? 'bg-gradient-to-r from-green-400/30 to-emerald-400/30 border-2 border-green-400 text-green-700 shadow-lg'
+										: tournament.semi?.[1]?.winner && tournament.semi?.[1]?.player1
+										? 'bg-red-100/50 border-2 border-red-300 text-red-400 opacity-60'
+										: 'bg-white/30 border-2 border-white/50 text-[#2d5a8a]'
+								}`}>
+									{tournament.semi?.[1]?.player1?.username || 'Waiting...'}
 								</div>
 
-								<div className="text-center text-sm text-gray-400 font-semibold">VS</div>
+								<div className="text-center font-pixelify text-lg text-[#2d5a8a]/50 font-bold">VS</div>
 
-								<div className={`p-3 border-2 rounded text-center transition-all ${tournament.semi?.[1] ? getPlayerClass(tournament.semi[1].winner, tournament.semi[1].player2) : 'bg-white border-gray-200 text-gray-800'}`}>
-									{tournament.semi?.[1]?.player2?.username || '-'}
+								<div className={`p-4 rounded-2xl text-center transition-all font-pixelify font-bold ${
+									tournament.semi?.[1]?.winner?.id === tournament.semi?.[1]?.player2?.id && tournament.semi?.[1]?.winner
+										? 'bg-gradient-to-r from-green-400/30 to-emerald-400/30 border-2 border-green-400 text-green-700 shadow-lg'
+										: tournament.semi?.[1]?.winner && tournament.semi?.[1]?.player2
+										? 'bg-red-100/50 border-2 border-red-300 text-red-400 opacity-60'
+										: 'bg-white/30 border-2 border-white/50 text-[#2d5a8a]'
+								}`}>
+									{tournament.semi?.[1]?.player2?.username || 'Waiting...'}
 								</div>
 							</div>
 						</div>
 					</div>
 
-					<div className="flex justify-center items-center">
-						<div className="h-full border-l-2 border-r-2 border-gray-300 w-full"></div>
+					{/* Connector Lines */}
+					<div className="col-span-1 flex flex-col items-center justify-center relative h-full min-h-[400px]">
+						{/* Top bracket arm */}
+						<div className="absolute top-[25%] left-0 w-1/2 h-0.5 bg-[#2d5a8a]/30"></div>
+						<div className="absolute top-[25%] left-1/2 w-0.5 h-[25%] bg-[#2d5a8a]/30"></div>
+						
+						{/* Bottom bracket arm */}
+						<div className="absolute bottom-[25%] left-0 w-1/2 h-0.5 bg-[#2d5a8a]/30"></div>
+						<div className="absolute bottom-[25%] left-1/2 w-0.5 h-[25%] bg-[#2d5a8a]/30"></div>
+						
+						{/* Center horizontal line to final */}
+						<div className="absolute top-1/2 left-1/2 w-1/2 h-0.5 bg-[#2d5a8a]/30 -translate-y-1/2"></div>
 					</div>
 
-				<div className="flex items-center">
-					<div className={`bg-white rounded-lg shadow-md p-6 w-full transition-all duration-500 ${tournament.final?.winner ? 'shadow-xl ring-2 ring-yellow-400' : ''}`}>
-						<div className="text-xs text-gray-500 uppercase mb-4 text-center">
-							Grand Final
-						</div>
-						<div className="space-y-3">
-							<div className={`p-3 border-2 rounded text-center transition-all ${tournament.final ? getPlayerClass(tournament.final.winner, tournament.final.player1) : 'bg-white border-gray-200 text-gray-800'}`}>
-								{tournament.final?.player1?.username || "TBD"}
-							</div>							<div className="text-center text-sm text-gray-400 font-semibold">VS</div>
-
-							<div className={`p-3 border-2 rounded text-center transition-all ${tournament.final ? getPlayerClass(tournament.final.winner, tournament.final.player2) : 'bg-white border-gray-200 text-gray-800'}`}>
-								{tournament.final?.player2?.username || "TBD"}
-							</div>
+					{/* Finals Column */}
+					<div className="col-span-2">
+						<div className={`backdrop-blur-xl bg-white/20 rounded-3xl p-8 shadow-2xl border-2 transition-all duration-500 ${
+							tournament.final?.winner 
+								? 'border-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.3)] bg-gradient-to-br from-yellow-50/30 to-amber-50/30' 
+								: 'border-white/40 hover:bg-white/30'
+						}`}>
+							<div className="flex items-center justify-center gap-2 mb-6">
+								<span className="font-pixelify text-lg text-[#2d5a8a] uppercase tracking-wide font-bold">Grand Final</span>
 							</div>
 
-						<div className="mt-4 pt-4 border-t border-gray-200">
-						<div className="text-xs text-gray-500 mb-2">Champion:</div>
-
-						{tournament.final?.winner ? (
-								<div className="p-4 bg-gradient-to-r from-yellow-100 to-yellow-200 border-2 border-yellow-400 rounded-lg text-center text-yellow-800 font-extrabold shadow-lg transform scale-105 animate-pulse">
-									🏆 {getWinnerText(tournament.final)} 🏆
+							<div className="space-y-4">
+								<div className={`p-4 rounded-2xl text-center transition-all font-pixelify font-bold text-lg ${
+									tournament.final?.winner?.id === tournament.final?.player1?.id && tournament.final?.winner
+										? 'bg-gradient-to-r from-green-400/30 to-emerald-400/30 border-2 border-green-400 text-green-700 shadow-lg'
+										: tournament.final?.winner && tournament.final?.player1
+										? 'bg-red-100/50 border-2 border-red-300 text-red-400 opacity-60'
+										: 'bg-white/30 border-2 border-white/50 text-[#2d5a8a]'
+								}`}>
+									{tournament.final?.player1?.username || 'TBD'}
 								</div>
+
+								<div className="text-center font-pixelify text-xl text-[#2d5a8a]/50 font-bold">VS</div>
+
+								<div className={`p-4 rounded-2xl text-center transition-all font-pixelify font-bold text-lg ${
+									tournament.final?.winner?.id === tournament.final?.player2?.id && tournament.final?.winner
+										? 'bg-gradient-to-r from-green-400/30 to-emerald-400/30 border-2 border-green-400 text-green-700 shadow-lg'
+										: tournament.final?.winner && tournament.final?.player2
+										? 'bg-red-100/50 border-2 border-red-300 text-red-400 opacity-60'
+										: 'bg-white/30 border-2 border-white/50 text-[#2d5a8a]'
+								}`}>
+									{tournament.final?.player2?.username || 'TBD'}
+								</div>
+							</div>
+
+							{/* Champion Display */}
+							<div className="mt-6 pt-6 border-t-2 border-[#2d5a8a]/10">
+								<div className="font-pixelify text-sm text-[#2d5a8a]/70 mb-3 text-center uppercase tracking-wide">Champion</div>
+								{tournament.final?.winner ? (
+									<div className="p-5 bg-gradient-to-r from-yellow-300/50 via-amber-300/50 to-yellow-300/50 border-2 border-yellow-400 rounded-2xl text-center shadow-lg animate-pulse">
+										<span className="font-pixelify text-2xl font-extrabold text-yellow-700">
+											{getWinnerText(tournament.final)}
+										</span>
+									</div>
 								) : (
-								<div className="p-2 bg-gray-100 rounded text-center text-sm text-gray-400">
-									TBD
-								</div>
-							)}
+									<div className="p-4 bg-white/20 border-2 border-dashed border-[#2d5a8a]/30 rounded-2xl text-center">
+										<span className="font-pixelify text-lg text-[#2d5a8a]/50">Awaiting Champion...</span>
+									</div>
+								)}
 							</div>
 						</div>
 					</div>
 				</div>
+
+				{/* Info Card */}
+				<div className="mt-10 backdrop-blur-xl bg-white/20 rounded-3xl p-6 shadow-2xl border-2 border-white/40">
+					<h3 className="font-pixelify text-xl font-bold text-[#2d5a8a] mb-4">
+						Tournament Info
+					</h3>
+					<ul className="font-pixelify text-sm text-[#2d5a8a]/80 space-y-2">
+						<li className="flex items-center gap-2">
+							<span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+							Share the tournament code with friends to let them join
+						</li>
+						<li className="flex items-center gap-2">
+							<span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+							Tournament starts automatically when 4 players have joined
+						</li>
+						<li className="flex items-center gap-2">
+							<span className="w-2 h-2 bg-green-400 rounded-full"></span>
+							Winners advance to the Grand Final
+						</li>
+					</ul>
+				</div>
 			</div>
+		</div>
 		</div>
   );
 }

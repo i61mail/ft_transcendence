@@ -13,6 +13,7 @@ const  SocketManager = () =>
     const manager = useglobalStore();
     const router = useRouter();
     const mounted = useRef<Boolean>(false);
+    const gameSocketRef = useRef<WebSocket | null>(null);
     
     useEffect(() =>
     {
@@ -32,10 +33,10 @@ const  SocketManager = () =>
     {
         if (manager.gameSocket || !manager.user)
             return ;
-        console.log("game connection----------");
         const gameSocket = new WebSocket("ws://localhost:4000/sockets/games");
         gameSocket.onopen = () =>
         {
+            console.log("game connection----------");
             const init = {gameType: "init"};
             gameSocket?.send(JSON.stringify(init));
             manager.updateGameSocket(gameSocket);

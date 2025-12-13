@@ -4,59 +4,73 @@ import useglobalStore from "@/store/globalStore";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { startGame } from "@/lib/pong/game";
-
-let hh = 0;
+import GameCanvas from "@/components/GameCanvas";
 
 const AIGame = () =>
 {
-
     const manager = useglobalStore();
     const router = useRouter();
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const socketRef = useRef<WebSocket | null>(null);
     const conditionT = useRef<boolean>(false);
     const params = useSearchParams();
     const difficulty: string | null = params.get('diff');
-    
-    const handleFinished = () =>
-    {
-        if (manager.gameSocket)
-        {
+
+    useEffect(() => {
+        if (difficulty != 'easy' && difficulty != 'meduim' && difficulty != 'hard') {
             router.push('/games');
+            return;
         }
-    };
-    useEffect(()=>
-    {
-        if (difficulty != 'easy' && difficulty != 'meduim' && difficulty != 'hard')
-            router.push('/games');
-        if (conditionT.current)
-            return ;
-        if (manager.gameSocket)
-        {
-            console.log("starting game...");
-            const data =
-            {
+        if (conditionT.current) return;
+        conditionT.current = true;
+
+        console.log("create socket")
+        const socket = new WebSocket("ws://localhost:4000/sockets/games");
+        socketRef.current = socket;
+
+        const handleFinished = () => {
+            if (socketRef.current) {
+                socketRef.current.close();
+                if (typeof window === 'undefined' || window.location.pathname !== '/games/ai') {
+                    return;
+                }
+                router.push('/games');
+            }
+        };
+
+        socket.onclose = () => {
+            console.log("game socket closed!!!");
+        };
+
+        socket.onopen = () => {
+            console.log("starting game...", socket.readyState);
+            const data = {
                 gameType: "ai",
                 id: manager.user?.id,
                 username: manager.user?.username,
                 difficulty: difficulty
             };
-            manager.gameSocket.send(JSON.stringify(data));
-            conditionT.current = true;
-            manager.gameSocket.onmessage = (msg) =>
-            {
-                if (canvasRef.current)
-                    startGame(canvasRef.current, manager.gameSocket!, msg.data.toString(), handleFinished);
+            socket.send(JSON.stringify(data));
+            socket.onmessage = (msg) => {
+                if (canvasRef.current && socket)
+                    startGame(canvasRef.current, socket, msg.data.toString(), handleFinished);
+            };
+        };
+
+        return () => {
+            conditionT.current = false;
+            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+                console.log("Closing socket on page leave...");
+                socket.close();
             }
-        }else
-            router.push("/games");
-    }, [manager.socket])
+            socketRef.current = null;
+        };
+    }, []);
+
 
     return (
     <>
-        <canvas ref={canvasRef} width={800} height={600}>
-            if you see this message, than the canvas did not load propraly
-        </canvas>
-
+        <GameCanvas canvasRef={canvasRef} width={800} height={600} />
     </>
 );
 }

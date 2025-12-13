@@ -32,9 +32,12 @@ class TicTacToeGame
 	{
 		const canvasRect: DOMRect = this.canvas.getBoundingClientRect();
 		const x: number = (e.clientX - canvasRect.left);
-		const y: number = (e.clientY - canvasRect.top);
+		const y: number = (e.clientY - canvasRect.top) - SETTINGS.headerHeight;
+		
+		// Calculate grid position (accounting for header offset)
+		const gridWidth = SETTINGS.squareSize * 3;
 		const collumn: number = Math.floor((x / canvasRect.width) * 3);
-		const row: number = Math.floor((y / canvasRect.height) * 3);
+		const row: number = Math.floor((y / gridWidth) * 3);
 
 		if (row < 0 || row > 2 || collumn < 0 || collumn > 2
 			|| this.board[row][collumn] != ''
@@ -71,101 +74,143 @@ class TicTacToeGame
 	{
 		if (!this.ctx)
 			return ;
-		this.ctx.clearRect(0, 0, SETTINGS.canvaSize, SETTINGS.canvaSize);
+		
+		const gridWidth = SETTINGS.squareSize * 3;
+		this.ctx.clearRect(0, 0, gridWidth, SETTINGS.canvaSize);
 		
 		// Draw turn indicator at the top
 		this.drawTurnIndicator();
 		
+		const offsetY = SETTINGS.headerHeight;
+		
 		this.ctx.lineWidth = SETTINGS.borderSize;
 		this.ctx.strokeStyle = SETTINGS.borderColor;
+		this.ctx.lineCap = 'round';
+		
 		for (let i = 1; i <= 2; i++) {
 			// vertical
 			this.ctx.beginPath();
-			this.ctx.moveTo(i * SETTINGS.squareSize, 10);
-			this.ctx.lineTo(i * SETTINGS.squareSize, SETTINGS.canvaSize - 10);
+			this.ctx.moveTo(i * SETTINGS.squareSize, offsetY + 10);
+			this.ctx.lineTo(i * SETTINGS.squareSize, offsetY + gridWidth - 10);
 			this.ctx.stroke();
 			// horizontal
 			this.ctx.beginPath();
-			this.ctx.moveTo(10, i * SETTINGS.squareSize);
-			this.ctx.lineTo(SETTINGS.canvaSize - 10, i * SETTINGS.squareSize);
+			this.ctx.moveTo(10, offsetY + i * SETTINGS.squareSize);
+			this.ctx.lineTo(gridWidth - 10, offsetY + i * SETTINGS.squareSize);
 			this.ctx.stroke();
 		}
 	}
 
 	drawX(r: number, c: number)
 	{
-		const padding = SETTINGS.squareSize * 0.2;
+		const offsetY = SETTINGS.headerHeight;
+		const padding = SETTINGS.squareSize * 0.25;
 		const x1 = c * SETTINGS.squareSize + padding;
-		const y1 = r * SETTINGS.squareSize + padding;
+		const y1 = offsetY + r * SETTINGS.squareSize + padding;
 		const x2 = (c + 1) * SETTINGS.squareSize - padding;
-		const y2 = (r + 1) * SETTINGS.squareSize - padding;
+		const y2 = offsetY + (r + 1) * SETTINGS.squareSize - padding;
 
 		this.ctx.strokeStyle = SETTINGS.xColor;
 		this.ctx.lineWidth = SETTINGS.xoLineWidth;
+		this.ctx.lineCap = 'round';
+		this.ctx.shadowColor = SETTINGS.xColor;
+		this.ctx.shadowBlur = 10;
 		this.ctx.beginPath();
 		this.ctx.moveTo(x1, y1);
 		this.ctx.lineTo(x2, y2);
 		this.ctx.moveTo(x2, y1);
 		this.ctx.lineTo(x1, y2);
 		this.ctx.stroke();
+		this.ctx.shadowBlur = 0;
 	}
 
 	drawO(r: number, c: number)
 	{
+		const offsetY = SETTINGS.headerHeight;
 		const cx = c * SETTINGS.squareSize + SETTINGS.squareSize / 2;
-		const cy = r * SETTINGS.squareSize + SETTINGS.squareSize / 2;
+		const cy = offsetY + r * SETTINGS.squareSize + SETTINGS.squareSize / 2;
 		const radius = SETTINGS.squareSize * 0.3;
 
 		this.ctx.strokeStyle = SETTINGS.oColor;
 		this.ctx.lineWidth = SETTINGS.xoLineWidth;
+		this.ctx.lineCap = 'round';
+		this.ctx.shadowColor = SETTINGS.oColor;
+		this.ctx.shadowBlur = 10;
 		this.ctx.beginPath();
 		this.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
 		this.ctx.stroke();
+		this.ctx.shadowBlur = 0;
 	}
 
 
 	drawTurnIndicator()
 	{
+		const gridWidth = SETTINGS.squareSize * 3;
+		
 		// Draw turn indicator at the top of the canvas
-		this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-		this.ctx.fillRect(0, 0, intf.SETTINGS.canvaSize, 60);
+		this.ctx.fillStyle = 'rgba(45, 90, 138, 0.9)';
+		this.ctx.beginPath();
+		this.ctx.roundRect(10, 10, gridWidth - 20, SETTINGS.headerHeight - 20, 12);
+		this.ctx.fill();
 		
 		// Determine if it's the player's turn
 		const isMyTurn = this.currentPlayer === this.playableChar;
 		
 		// Set color based on whose turn it is
-		this.ctx.fillStyle = isMyTurn ? '#4CAF50' : '#FF9800';
-		this.ctx.font = 'bold 24px sans-serif';
+		this.ctx.fillStyle = isMyTurn ? '#10b981' : '#f59e0b';
+		this.ctx.font = 'bold 18px "Pixelify Sans", sans-serif';
 		this.ctx.textAlign = 'center';
 		this.ctx.textBaseline = 'middle';
 		
 		// Display turn message
 		const turnText = isMyTurn ? `YOUR TURN (${this.playableChar})` : `OPPONENT'S TURN (${this.currentPlayer})`;
-		this.ctx.fillText(turnText, intf.SETTINGS.canvaSize / 2, 30);
+		this.ctx.fillText(turnText, gridWidth / 2, SETTINGS.headerHeight / 2);
 	}
 
 
 	drawStatus()
 	{
-		this.ctx.fillStyle = intf.SETTINGS.textColor;
-		this.ctx.fillRect(0, intf.SETTINGS.canvaSize - 50, intf.SETTINGS.canvaSize, 50);
-		this.ctx.fillStyle = '#fff';
-		this.ctx.font = '18px sans-serif';
+		const gridWidth = SETTINGS.squareSize * 3;
+		
+		// Draw status bar at the bottom (over the turn indicator area)
+		this.ctx.fillStyle = 'rgba(45, 90, 138, 0.95)';
+		this.ctx.beginPath();
+		this.ctx.roundRect(10, 10, gridWidth - 20, SETTINGS.headerHeight - 20, 12);
+		this.ctx.fill();
+		
+		this.ctx.fillStyle = '#ffffff';
+		this.ctx.font = 'bold 18px "Pixelify Sans", sans-serif';
 		this.ctx.textAlign = 'center';
 		this.ctx.textBaseline = 'middle';
-		const text = this.winner == 'Draw' ? 'Draw!' : `${this.winner} wins!`;
-		this.ctx.fillText(text, intf.SETTINGS.canvaSize / 2, intf.SETTINGS.canvaSize - 25);
+		
+		let text: string;
+		if (this.winner === 'Draw') {
+			text = "It's a Draw!";
+		} else if (this.winner === this.playableChar) {
+			text = "You Win!";
+		} else {
+			text = "You Lose!";
+		}
+		this.ctx.fillText(text, gridWidth / 2, SETTINGS.headerHeight / 2);
 	}
 
 	highlightWinning()
 	{
+		if (!this.winningCells || this.winningCells.length === 0) return;
+		
+		const offsetY = SETTINGS.headerHeight;
+		
 		this.ctx.fillStyle = SETTINGS.winLineColor;
 		for (const [r, c] of this.winningCells) {
-			this.ctx.fillRect(c * SETTINGS.squareSize + SETTINGS.borderSize,
-				r * SETTINGS.squareSize + SETTINGS.borderSize,
-				SETTINGS.squareSize - SETTINGS.borderSize * 2,
-				SETTINGS.squareSize - SETTINGS.borderSize * 2
+			this.ctx.beginPath();
+			this.ctx.roundRect(
+				c * SETTINGS.squareSize + 8,
+				offsetY + r * SETTINGS.squareSize + 8,
+				SETTINGS.squareSize - 16,
+				SETTINGS.squareSize - 16,
+				12
 			);
+			this.ctx.fill();
 		}
 	}
 
@@ -199,8 +244,9 @@ export function startGame(
     onFinish: () => void
 )
 {
+	const gridWidth = SETTINGS.squareSize * 3;
 	canvas.style.backgroundColor = SETTINGS.squareColor;
-	canvas.width = SETTINGS.canvaSize;
+	canvas.width = gridWidth;
 	canvas.height = SETTINGS.canvaSize;
 
 	const symbol: intf.Symbol | null = JSON.parse(data).Symbol ?? null;
