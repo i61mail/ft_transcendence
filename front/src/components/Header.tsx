@@ -18,6 +18,7 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
@@ -145,21 +146,87 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
   return (
     <>
       <header 
-        className="sticky top-0 z-50 bg-transparent backdrop-blur-md h-[110px] flex items-center justify-between px-12 border-b-2 border-[#8aabd6]/30 shadow-xl relative"
+        className="sticky top-0 z-50 bg-transparent backdrop-blur-md h-auto md:h-[110px] flex flex-col md:flex-row items-center justify-between px-4 md:px-8 lg:px-12 py-3 md:py-0 border-b-2 border-[#8aabd6]/30 shadow-xl relative"
         style={{ boxShadow: '0 10px 30px rgba(90, 120, 158, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.3)' }}
       >
         <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#5A789E] to-transparent opacity-30"></div>
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 flex items-center justify-center">
-            <span className="text-[#2d5a8a] text-7xl font-serif font-bold" style={{ fontFamily: "Pixelify Sans, sans-serif", textShadow: '0 0 10px rgba(45, 90, 138, 0.3)' }}>𝕭</span>
+        
+        {/* Logo Section */}
+        <div className="flex items-center justify-between w-full md:w-auto gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center flex-shrink-0">
+              <span className="text-[#2d5a8a] text-4xl md:text-7xl font-serif font-bold" style={{ fontFamily: "Pixelify Sans, sans-serif", textShadow: '0 0 10px rgba(45, 90, 138, 0.3)' }}>𝕭</span>
+            </div>
+            <h1 className="font-pixelify text-2xl md:text-4xl font-bold text-black" style={{ textShadow: '0 0 8px rgba(0, 0, 0, 0.1)' }}>ANANA</h1>
           </div>
-          <h1 className="font-pixelify text-4xl font-bold text-black" style={{ textShadow: '0 0 8px rgba(0, 0, 0, 0.1)' }}>ANANA</h1>
+          
+          {/* Mobile Menu Button */}
+          <button 
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className="md:hidden w-10 h-10 rounded-lg bg-white/10 border border-white/30 flex items-center justify-center hover:bg-white/20 transition-all duration-300"
+          >
+            <svg className="w-6 h-6 text-[#2d5a8a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {showMobileMenu ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
 
-        <nav className="flex items-center gap-16">
+        {/* Mobile Navigation Menu */}
+        {showMobileMenu && (
+          <div className="md:hidden w-full mt-3 pb-3 border-t border-white/20 pt-3">
+            <nav className="flex flex-col gap-2">
+              <button 
+                onClick={() => {
+                  router.push('/dashboard');
+                  setShowMobileMenu(false);
+                }} 
+                className={`relative font-pixelify text-base px-4 py-3 rounded-xl cursor-pointer hover:shadow-lg transition-all duration-300 border backdrop-blur-md ${
+                  activeRoute === 'dashboard' 
+                    ? 'bg-white/30 border-white/50 text-[#1a237e] font-bold shadow-lg' 
+                    : 'bg-white/10 border-white/20 text-[#2d5a8a] hover:bg-white/20 hover:border-white/40'
+                }`}
+              >
+                <span className="relative">HOME</span>
+              </button>
+              <button 
+                onClick={() => {
+                  router.push('/chats');
+                  setShowMobileMenu(false);
+                }}
+                className={`relative font-pixelify text-base px-4 py-3 rounded-xl cursor-pointer hover:shadow-lg transition-all duration-300 border backdrop-blur-md ${
+                  activeRoute === 'chat' 
+                    ? 'bg-white/30 border-white/50 text-[#1a237e] font-bold shadow-lg' 
+                    : 'bg-white/10 border-white/20 text-[#2d5a8a] hover:bg-white/20 hover:border-white/40'
+                }`}
+              >
+                <span className="relative">CHAT</span>
+              </button>
+              <button
+                onClick={() => {
+                  router.push('/games');
+                  setShowMobileMenu(false);
+                }}
+                className={`relative font-pixelify text-base px-4 py-3 rounded-xl cursor-pointer hover:shadow-lg transition-all duration-300 border backdrop-blur-md ${
+                  activeRoute === 'game' 
+                    ? 'bg-white/30 border-white/50 text-[#1a237e] font-bold shadow-lg' 
+                    : 'bg-white/10 border-white/20 text-[#2d5a8a] hover:bg-white/20 hover:border-white/40'
+                }`}
+              >
+                <span className="relative">GAME</span>
+              </button>
+            </nav>
+          </div>
+        )}
+
+        {/* Navigation - Hidden on mobile, visible on md and up */}
+        <nav className="hidden md:flex items-center gap-4 lg:gap-16 flex-1 justify-center">
           <button 
             onClick={() => router.push('/dashboard')} 
-            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border overflow-hidden backdrop-blur-md ${
+            className={`relative font-pixelify text-sm lg:text-xl px-4 lg:px-8 py-2 lg:py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border overflow-hidden backdrop-blur-md ${
               activeRoute === 'dashboard' 
                 ? 'bg-white/30 border-white/50 text-[#1a237e] font-bold shadow-lg' 
                 : 'bg-white/10 border-white/20 text-[#2d5a8a] hover:bg-white/20 hover:border-white/40'
@@ -169,7 +236,7 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
           </button>
           <button 
             onClick={() => router.push('/chats')}
-            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border overflow-hidden backdrop-blur-md ${
+            className={`relative font-pixelify text-sm lg:text-xl px-4 lg:px-8 py-2 lg:py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border overflow-hidden backdrop-blur-md ${
               activeRoute === 'chat' 
                 ? 'bg-white/30 border-white/50 text-[#1a237e] font-bold shadow-lg' 
                 : 'bg-white/10 border-white/20 text-[#2d5a8a] hover:bg-white/20 hover:border-white/40'
@@ -179,7 +246,7 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
           </button>
           <button
              onClick={() => router.push('/games')}
-            className={`relative font-pixelify text-xl px-8 py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border overflow-hidden backdrop-blur-md ${
+            className={`relative font-pixelify text-sm lg:text-xl px-4 lg:px-8 py-2 lg:py-4 rounded-2xl cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 border overflow-hidden backdrop-blur-md ${
               activeRoute === 'game' 
                 ? 'bg-white/30 border-white/50 text-[#1a237e] font-bold shadow-lg' 
                 : 'bg-white/10 border-white/20 text-[#2d5a8a] hover:bg-white/20 hover:border-white/40'
@@ -189,39 +256,42 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
           </button>
         </nav>
 
-        <div className="flex items-center gap-20">
-          <div className="flex items-center gap-7 backdrop-blur-md bg-white/10 rounded-2xl px-10 py-4 border border-white/30 shadow-lg hover:bg-white/15 transition-all duration-300">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full overflow-hidden backdrop-blur-md bg-white/20 ring-2 ring-white/50 shadow-lg">
+        {/* User Section */}
+        <div className="flex items-center gap-3 md:gap-8 lg:gap-20 w-full md:w-auto mt-3 md:mt-0 justify-end">
+          {/* User Info - Hidden on small mobile, visible on md and up */}
+          <div className="hidden lg:flex items-center gap-3 md:gap-7 backdrop-blur-md bg-white/10 rounded-2xl px-3 md:px-10 py-2 md:py-4 border border-white/30 shadow-lg hover:bg-white/15 transition-all duration-300 flex-1 md:flex-none">
+            <div className="relative hidden sm:block">
+              <div className="w-10 h-10 md:w-16 md:h-16 rounded-full overflow-hidden backdrop-blur-md bg-white/20 ring-2 ring-white/50 shadow-lg">
                 <img src={user?.avatar_url ? (user.avatar_url.startsWith('http') ? user.avatar_url : `${API_URL}${user.avatar_url}`) : "/default-avatar.png"} alt="Avatar" className="w-full h-full object-cover" />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+              <div className="absolute -bottom-1 -right-1 w-3 h-3 md:w-5 md:h-5 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
             </div>
             <div className="text-left">
-              <p className="font-pixelify text-2xl font-bold text-[#2d5a8a] drop-shadow-sm">{user?.display_name || user?.username}</p>
-              <p className="text-base text-[#2d5a8a]/70 font-medium">{user?.email}</p>
+              <p className="font-pixelify text-sm md:text-2xl font-bold text-[#2d5a8a] drop-shadow-sm truncate">{user?.display_name || user?.username}</p>
+              <p className="text-xs md:text-base text-[#2d5a8a]/70 font-medium truncate">{user?.email}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1.5 md:gap-3 flex-shrink-0">
             <button 
               onClick={() => setShowSearchModal(true)}
-              className="relative w-12 h-12 backdrop-blur-md bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300 border border-white/30 shadow-lg hover:scale-110 group"
+              className="relative w-9 h-9 md:w-12 md:h-12 backdrop-blur-md bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300 border border-white/30 shadow-lg hover:scale-110 group"
             >
-              <svg className="w-5 h-5 text-[#2d5a8a] group-hover:text-[#1a4d7a] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 md:w-5 md:h-5 text-[#2d5a8a] group-hover:text-[#1a4d7a] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </button>
 
             <div className="relative z-50" onMouseEnter={() => setShowSettingsMenu(true)} onMouseLeave={() => setShowSettingsMenu(false)}>
-              <button className="w-12 h-12 backdrop-blur-md bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300 border border-white/30 shadow-lg hover:scale-110 group">
-                <svg className="w-5 h-5 text-[#2d5a8a] group-hover:text-[#1a4d7a] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button className="w-9 h-9 md:w-12 md:h-12 backdrop-blur-md bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300 border border-white/30 shadow-lg hover:scale-110 group">
+                <svg className="w-4 h-4 md:w-5 md:h-5 text-[#2d5a8a] group-hover:text-[#1a4d7a] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </button>
               {showSettingsMenu && (
-                <div className="absolute right-0 top-full pt-1 w-48">
+                <div className="absolute right-0 top-full mt-2 w-48 z-[60]">
                   <div className="bg-[#a8b0c5] border-2 border-[#8aabd6] rounded-xl shadow-xl overflow-visible">
                     <button
                       onClick={() => router.push('/profile')}

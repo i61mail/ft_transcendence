@@ -497,11 +497,11 @@ export default function Dashboard() {
 
       <main className="p-6 relative z-0">
         <div className="max-w-[2000px] mx-auto">
-        <div className="flex flex-col xl:flex-row gap-6 items-end">
+        <div className="flex flex-col xl:flex-row gap-6 items-stretch">
           
           {/* Friends Panel - LEFT SIDE */}
-          <div className="hidden xl:block xl:w-[280px] flex-shrink-0">
-            <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 shadow-2xl border border-white/20 flex flex-col" style={{ minHeight: 'calc(105vh - 120px)' }}>
+          <div className="hidden xl:flex xl:w-[280px] flex-shrink-0">
+            <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 shadow-2xl border border-white/20 flex flex-col w-full">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
