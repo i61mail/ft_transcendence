@@ -4,6 +4,7 @@ import { PlayerIndex } from '@/lib/pong/interfaces';
 import useglobalStore from '@/store/globalStore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
+import Header from '@/components/Header';
 
 interface playerInfo
 {
@@ -115,16 +116,30 @@ export default function PongTournament()
                     router.push('/games');
                     return;
                 }
-                if (state.status == trnmtStatus.playingSemi
-                    || (state.status == trnmtStatus.playingFinal
-                        && (state.final.player1!.id == currId || state.final.player2!.id == currId))
-                )
+				let shouldPlay: boolean = false;
+
+				if (state.status == trnmtStatus.playingSemi)
 				{
-					console.log("switched to tournament");
-					socket.close();
+					const match = state.semi.find((m: any) => (m?.player1?.id === currId || m?.player2?.id === currId));
+					if (match && !match.winner)
+						shouldPlay = true;
+				} else if
+				(
+					state.status == trnmtStatus.playingFinal
+					&& (state.final?.player1?.id === currId
+						|| state.final?.player2?.id === currId)
+				)
+					shouldPlay = true;
+
+				if (shouldPlay)
+				{
+					console.log("switched to tournament play");
+					// Store socket in global state for the play page to use
+					manager.updateGameSocket(socket);
+					socketRef.current = null; // Don't close in cleanup
                     router.push('/games/tournament/play');
-                }
-                else if (state.status == trnmtStatus.close) {
+                } else if (state.status == trnmtStatus.close)
+				{
                     window.alert(
                         "🏁 Tournament Closed\n\n" +
                         "The tournament has been closed by the host. You will be redirected to the Games page.\n\n" +
@@ -139,9 +154,10 @@ export default function PongTournament()
 
         return () => {
             conditionT.current = false;
-            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+            // Only close if we still own the socket (not passed to play page)
+            if (socketRef.current && (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING)) {
                 console.log("Closing socket on page leave...");
-                socket.close();
+                socketRef.current.close();
             }
             socketRef.current = null;
         };
@@ -199,9 +215,11 @@ export default function PongTournament()
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5] relative py-8 px-4">
-			{/* Animated Background Elements */}
-			<div className="fixed inset-0 overflow-hidden pointer-events-none">
+		<div className="min-h-screen bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5]">
+			<Header user={manager.user} />
+			<div className="relative py-8 px-4">
+				{/* Animated Background Elements */}
+				<div className="fixed inset-0 overflow-hidden pointer-events-none">
 				<div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-blob top-0 -left-20"></div>
 				<div className="absolute w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-blob animation-delay-2000 top-0 right-0"></div>
 				<div className="absolute w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-blob animation-delay-4000 bottom-0 left-1/2"></div>
@@ -427,6 +445,7 @@ export default function PongTournament()
 					</ul>
 				</div>
 			</div>
+		</div>
 		</div>
   );
 }

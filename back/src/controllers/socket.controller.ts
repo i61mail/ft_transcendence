@@ -3,7 +3,7 @@ import fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import { Chat } from '../types/chat.types';
 import { pongAI, PongGame, pongLocal, pongOnline } from '../routes/pong';
 import { GameMode } from '../types/pong.types';
-import { joinTournament, startTournament } from '../routes/tournament';
+import { joinTournament, playTournament, startTournament } from '../routes/tournament';
 import { playerInfo } from '../types/playerInfo.types';
 import { tttGame } from '../routes/ticTacToe';
 
@@ -262,6 +262,7 @@ export const gameController = async (socket: WebSocket, request: FastifyRequest)
             "online": () => { handleOnlineGame(socket, id, username, server); },
             "startTournament": () => { startTournament(player, server); },
             "joinTournament": () => { joinTournament(player, code); },
+            "playTournament": () => { playTournament(player); },
             "ai": () => pongAI(player, difficulty, server),
             "tictactoe": () => { handletttGame(socket, id, username, server); }
         };

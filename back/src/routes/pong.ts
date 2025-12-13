@@ -616,7 +616,7 @@ export function pongOnline(
     server: FastifyInstance
 ) : PongGame
 {
-    const data: string =JSON.stringify(
+    const data: string = JSON.stringify(
     {
         gm: types.GameMode.online,
         player1: player1.username,

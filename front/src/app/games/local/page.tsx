@@ -11,7 +11,6 @@ const LocalGame = () =>
     const manager = useglobalStore();
     const router = useRouter();
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const socketRef = useRef<WebSocket | null>(null);
     const conditionT = useRef<boolean>(false);
 
     useEffect(() => {
@@ -20,16 +19,12 @@ const LocalGame = () =>
 
         console.log("create socket")
         const socket = new WebSocket("ws://localhost:4000/sockets/games");
-        socketRef.current = socket;
 
         const handleFinished = () => {
-            if (socketRef.current) {
-                socketRef.current.close();
-                if (typeof window === 'undefined' || window.location.pathname !== '/games/local') {
-                    return;
-                }
-                router.push('/games');
-            }
+            socket.close();
+            if (typeof window === 'undefined' || window.location.pathname !== '/games/local')
+                return;
+            router.push('/games');
         };
 
         socket.onclose = () => {
@@ -52,7 +47,6 @@ const LocalGame = () =>
                 console.log("Closing socket on page leave...");
                 socket.close();
             }
-            socketRef.current = null;
         };
     }, []);
 

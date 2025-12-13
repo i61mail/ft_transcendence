@@ -2,37 +2,30 @@
 
 import useglobalStore from "@/store/globalStore";
 import { startGame } from "@/lib/pong/game";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import GameCanvas from "@/components/GameCanvas";
 
 const TournamentPlayGame = () =>
 {
     const manager = useglobalStore();
-    const [start, setStart] = useState(false);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const socketRef = useRef<WebSocket | null>(null);
-    const conditionT = useRef<boolean>(false);
+    const initializedRef = useRef<boolean>(false);
     const router = useRouter();
 
     useEffect(() =>
     {
-        if (conditionT.current) return;
-        conditionT.current = true;
+        // Prevent double initialization in Strict Mode
+        if (initializedRef.current) return;
+        initializedRef.current = true;
 
-        console.log("create socket tournament game");
+        console.log("Creating socket for tournament play");
         const socket = new WebSocket("ws://localhost:4000/sockets/games");
-        socketRef.current = socket;
 
         const handleFinished = () =>
         {
-            if (socketRef.current) {
-                socketRef.current.close();
-                // if (typeof window === 'undefined' || window.location.pathname !== '/games/tournament/play') {
-                //     return;
-                // }
-                router.push('/games/tournament');
-            }
+            socket.close();
+            router.push('/games/tournament');
         };
 
         socket.onclose = () =>
@@ -43,26 +36,21 @@ const TournamentPlayGame = () =>
         socket.onopen = () =>
         {
             console.log("starting tournament play...", socket.readyState);
-            const data = { gameType: "tournamentPlay", id: manager.user?.id, username: manager.user?.username };
+            const data = { gameType: "playTournament", id: manager.user?.id, username: manager.user?.username };
             socket.send(JSON.stringify(data));
+
             socket.onmessage = (msg) =>
             {
+                console.log("game received: ", msg.data);
+                const parsed = JSON.parse(msg.data);
+                if (parsed.gm === undefined)
+                    return;
                 if (canvasRef.current && socket)
                     startGame(canvasRef.current, socket, msg.data, handleFinished);
             };
         };
 
-        return () =>
-        {
-            console.log("return called");
-            conditionT.current = false;
-            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
-            {
-                console.log("Closing socket on page leave...");
-                socket.close();
-            }
-            socketRef.current = null;
-        };
+        // No cleanup to avoid Strict Mode closing the socket
     }, []);
 
     return (
