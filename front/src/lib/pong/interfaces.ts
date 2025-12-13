@@ -52,8 +52,8 @@ export const SETTINGS: settingsInterface =
     paddleHeight: 80,
     // scoreboard
     winningScore: 7,
-    smallFont: "20px Arial",
-    largeFont: "30px Arial",
+    smallFont: "bold 18px 'Pixelify Sans', sans-serif",
+    largeFont: "bold 28px 'Pixelify Sans', sans-serif",
     scoreTextColor: "#e0e7ff", // light blue
     // ball
     ballMinSpeed: 200,
