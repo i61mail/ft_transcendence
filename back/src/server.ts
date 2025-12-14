@@ -28,7 +28,7 @@ const app = Fastify({ logger: true });
 // Register CORS
 app.register(cors,
 {
-  origin: process.env.FRONTEND_ORIGIN || 'https://localhost:8080',
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],

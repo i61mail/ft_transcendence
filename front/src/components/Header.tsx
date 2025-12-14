@@ -6,7 +6,7 @@ import AvatarUpload from "@/components/AvatarUpload";
 import { updateProfile } from "@/lib/api";
 import useglobalStore from "@/store/globalStore";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8080/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://10.13.10.12:8080/api';
 
 interface HeaderProps
 {
