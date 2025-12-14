@@ -17,7 +17,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 5,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -264,7 +264,7 @@
       },
       "id": 37,
       "panels": [],
-      "title": "General Metrics for frontend",
+      "title": "General Metrics for nginx",
       "type": "row"
     },
     {

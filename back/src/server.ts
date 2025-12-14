@@ -22,6 +22,7 @@ import { WebSocket } from 'ws';
 import { Chat } from './types/chat.types';
 import { Queue } from './controllers/socket.controller';
 import inviteRoutes from './routes/invite';
+import apiRoutes from './routes/api';
 
 const app = Fastify({
   logger: true,
@@ -63,6 +64,10 @@ app.register(multipart, {
 
 // Create and attach SQLite database manually
 const db = new Database(path.join(__dirname, '../database.db'));
+
+
+//register metrics endpoint
+app.register(apiRoutes);
 
 // Attach database to Fastify instance
 app.decorate('db', db);
