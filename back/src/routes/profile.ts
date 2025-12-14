@@ -7,37 +7,25 @@ import bcrypt from 'bcrypt';
 
 const pump = promisify(pipeline);
 
-export default async function profileRoutes(app: FastifyInstance) {
-  
-  // ═══════════════════════════════════════════════════════════
-  // GET /profile - Get current user's profile
-  // ═══════════════════════════════════════════════════════════
+export default async function profileRoutes(app: FastifyInstance)
+{
+  // get /profile
   app.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      // Try to get token from cookie first, then fallback to Authorization header
+    try 
+    {
       const authHeader = request.headers.authorization;
       const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
       const token = (request as any).cookies?.access_token || bearer;
       
-      if (!token) {
-        return reply.code(401).send({
-          error: 'Missing or invalid authorization',
-        });
-      }
-
-      // Verify token
+      if (!token)
+        return reply.code(401).send({ error: 'Missing or invalid authorization' });
       const decoded = app.jwt.verify(token) as { id: number; email: string };
-
-      // Get user profile from database
       const user = app.db
         .prepare('SELECT id, email, username, display_name, avatar_url, created_at FROM users WHERE id = ?')
         .get(decoded.id) as any;
 
-      if (!user) {
-        return reply.code(404).send({
-          error: 'User not found',
-        });
-      }
+      if (!user)
+        return reply.code(404).send({ error: 'User not found' });
 
       return reply.code(200).send({
         user: {
@@ -49,32 +37,22 @@ export default async function profileRoutes(app: FastifyInstance) {
           created_at: user.created_at,
         },
       });
-    } catch (err) {
+    } 
+    catch (err)
+    {
       app.log.error(err);
-      return reply.code(500).send({
-        error: 'Failed to fetch profile',
-      });
+      return reply.code(500).send({ error: 'Failed to fetch profile' });
     }
   });
 
-  // ═══════════════════════════════════════════════════════════
-  // GET /profile/leaderboard - Get top players by win rate
-  // ═══════════════════════════════════════════════════════════
+  // get top players leaderboard
   app.get('/leaderboard', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      console.log('Leaderboard endpoint hit');
-      
-      // Get all users with their match stats and creation time
+    try
+    {
       const users = app.db
         .prepare('SELECT id, username, display_name, avatar_url, created_at FROM users')
         .all() as any[];
-
-      console.log('Found users:', users.length);
-
-      // Calculate stats for each user
       const leaderboard = users.map((user) => {
-        console.log('Processing user:', user.username);
-        
         // Get pong matches (online and tournament only)
         const pongMatches = app.db
           .prepare(`
@@ -105,35 +83,28 @@ export default async function profileRoutes(app: FastifyInstance) {
           `)
           .all(user.id, user.id) as any[];
 
-        console.log(`User ${user.username} - pong matches: ${pongMatches.length}, tictactoe matches: ${tttMatches.length}`);
-
         let wins = 0;
         let losses = 0;
 
-        // Process pong matches
         pongMatches.forEach((match) => {
           const isLeftPlayer = match.left_player_id === user.id;
           const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
           
-          if (isWinner) {
+          if (isWinner)
             wins++;
-          } else {
+          else
             losses++;
-          }
         });
-
-        // Process tic-tac-toe matches (excluding draws)
         tttMatches.forEach((match) => {
-          if (match.winner === 'draw') return; // Skip draws
-          
+          if (match.winner === 'draw')
+            return;
           const isLeftPlayer = match.left_player_id === user.id;
           const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
           
-          if (isWinner) {
+          if (isWinner)
             wins++;
-          } else {
+          else
             losses++;
-          }
         });
 
         const totalGames = wins + losses;
@@ -152,81 +123,54 @@ export default async function profileRoutes(app: FastifyInstance) {
         };
       });
 
-      // Sort by:
-      // 1. Players with games: by win rate (desc), then by total games (desc)
-      // 2. Players without games: by account creation time (oldest first)
       leaderboard.sort((a, b) => {
-        // Both have played games
-        if (a.totalGames > 0 && b.totalGames > 0) {
-          if (b.winRate !== a.winRate) {
+        if (a.totalGames > 0 && b.totalGames > 0)
+        {
+          if (b.winRate !== a.winRate)
             return b.winRate - a.winRate;
-          }
           return b.totalGames - a.totalGames;
         }
-        
-        // Only a has played games
-        if (a.totalGames > 0) {
+        if (a.totalGames > 0)
           return -1;
-        }
-        
-        // Only b has played games
-        if (b.totalGames > 0) {
+        if (b.totalGames > 0)
           return 1;
-        }
-        
-        // Neither has played games, sort by creation time (oldest first)
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       });
 
-      // Return top 10 players (including those with no games)
       const topPlayers = leaderboard.slice(0, 10);
-
       return reply.code(200).send({
         leaderboard: topPlayers
       });
-    } catch (err) {
+    } 
+    catch (err) 
+    {
       app.log.error(err);
       return reply.code(500).send({ error: 'Failed to fetch leaderboard' });
     }
   });
 
-  // ═══════════════════════════════════════════════════════════
-  // GET /profile/:id - Get a user's profile by ID
-  // ═══════════════════════════════════════════════════════════
+  // get /profile by ID
   app.get('/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-    try {
-      // Try to get token from cookie first, then fallback to Authorization header
+    try
+    {
       const authHeader = request.headers.authorization;
       const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
       const token = (request as any).cookies?.access_token || bearer;
       
-      if (!token) {
-        return reply.code(401).send({
-          error: 'Missing or invalid authorization',
-        });
-      }
-
-      // Verify token (authentication required to view profiles)
+      if (!token)
+        return reply.code(401).send({ error: 'Missing or invalid authorization' });
       app.jwt.verify(token) as { id: number; email: string };
 
       const userId = parseInt(request.params.id);
-      if (isNaN(userId)) {
-        return reply.code(400).send({
-          error: 'Invalid user ID',
-        });
-      }
+      if (isNaN(userId))
+        return reply.code(400).send({ error: 'Invalid user ID' });
 
-      // Get user profile from database (exclude sensitive info like email for other users)
       const user = app.db
         .prepare('SELECT id, username, display_name, avatar_url, created_at FROM users WHERE id = ?')
         .get(userId) as any;
 
-      if (!user) {
-        return reply.code(404).send({
-          error: 'User not found',
-        });
-      }
-
+      if (!user)
+        return reply.code(404).send({ error: 'User not found' });
       return reply.code(200).send({
         user: {
           id: user.id,
@@ -236,190 +180,133 @@ export default async function profileRoutes(app: FastifyInstance) {
           created_at: user.created_at,
         },
       });
-    } catch (err) {
+    }
+    catch (err)
+    {
       app.log.error(err);
-      return reply.code(500).send({
-        error: 'Failed to fetch profile',
-      });
+      return reply.code(500).send({ error: 'Failed to fetch profile' });
     }
   });
 
-  // ═══════════════════════════════════════════════════════════
-  // POST /profile/avatar - Upload user avatar
-  // ═══════════════════════════════════════════════════════════
+  // post user avatar
   app.post('/avatar', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      // Try to get token from cookie first, then fallback to Authorization header
+    try
+    {
       const authHeader = request.headers.authorization;
       const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
       const token = (request as any).cookies?.access_token || bearer;
       
-      if (!token) {
-        return reply.code(401).send({
-          error: 'Missing or invalid authorization',
-        });
-      }
-
-      // Verify token
+      if (!token)
+        return reply.code(401).send({ error: 'Missing or invalid authorization' });
       const decoded = app.jwt.verify(token) as { id: number; email: string };
-
-      // Get uploaded file
       const data = await request.file();
 
-      if (!data) {
-        return reply.code(400).send({
-          error: 'No file uploaded',
-        });
-      }
+      if (!data)
+        return reply.code(400).send({ error: 'No file uploaded' });
 
-      // Validate file type
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(data.mimetype)) {
-        return reply.code(400).send({
-          error: 'Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed',
-        });
-      }
+      if (!allowedTypes.includes(data.mimetype))
+        return reply.code(400).send({ error: 'Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed' });
 
-      // Create uploads directory if it doesn't exist
       const uploadsDir = path.join(__dirname, '../../uploads');
-      if (!fs.existsSync(uploadsDir)) {
+      if (!fs.existsSync(uploadsDir))
         fs.mkdirSync(uploadsDir, { recursive: true });
-      }
 
-      // Generate unique filename
       const fileExtension = data.mimetype.split('/')[1];
       const filename = `avatar-${decoded.id}-${Date.now()}.${fileExtension}`;
       const filepath = path.join(uploadsDir, filename);
 
-      // Save file
       await pump(data.file, fs.createWriteStream(filepath));
-
-      // Update database with avatar URL
       const avatarUrl = `/uploads/${filename}`;
       app.db
         .prepare('UPDATE users SET avatar_url = ? WHERE id = ?')
         .run(avatarUrl, decoded.id);
 
-      return reply.code(200).send({
-        message: 'Avatar uploaded successfully',
-        avatar_url: avatarUrl,
-      });
-    } catch (err) {
+      return reply.code(200).send({ message: 'Avatar uploaded successfully', avatar_url: avatarUrl });
+    }
+    catch (err)
+    {
       app.log.error(err);
-      return reply.code(500).send({
-        error: 'Failed to upload avatar',
-      });
+      return reply.code(500).send({ error: 'Failed to upload avatar' });
     }
   });
 
-  // ═══════════════════════════════════════════════════════════
-  // PUT /profile - Update basic user information (e.g., username)
-  // ═══════════════════════════════════════════════════════════
+ // update user information 
   app.put('/', {
     schema: {
       body: {
         type: 'object',
         properties: {
-          display_name: { type: 'string', minLength: 2 },
-          username: { type: 'string', minLength: 3, maxLength: 20, pattern: '^[a-zA-Z0-9_]+$' },
+          display_name: { type: 'string', maxLength: 15 },
+          username: { type: 'string', minLength: 3, maxLength: 15, pattern: '^[a-zA-Z0-9_]+$' },
           email: { type: 'string', format: 'email' },
-          password: { type: 'string', minLength: 6 },
+          password: { type: 'string', minLength: 8, maxLength: 30},
         },
         additionalProperties: false,
       }
     }
   }, async (request: FastifyRequest<{ Body: { display_name?: string; username?: string; email?: string; password?: string } }>, reply: FastifyReply) => {
-    try {
+    try
+    {
       const authHeader = request.headers.authorization;
       const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
       const token = (request as any).cookies?.access_token || bearer;
 
-      if (!token) {
-        app.log.warn('PUT /profile: Missing auth token');
+      if (!token)
         return reply.code(401).send({ error: 'Missing or invalid authorization' });
-      }
-
       const decoded = app.jwt.verify(token) as { id: number; email: string };
-
       const { display_name, username, email, password } = request.body || {};
-      
-      // Handle username update
-      if (username) {
+
+      if (username)
+      {
         const trimmedUsername = username.trim();
-        
-        // Validate username length
-        if (trimmedUsername.length < 3) {
+
+        if (trimmedUsername.length < 3)
           return reply.code(400).send({ error: 'Username must be at least 3 characters' });
-        }
-        
-        if (trimmedUsername.length > 20) {
-          return reply.code(400).send({ error: 'Username must be at most 20 characters' });
-        }
-        
-        // Validate username format
-        if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
+        if (trimmedUsername.length > 15)
+          return reply.code(400).send({ error: 'Username must be at most 15 characters' });
+        if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername))
           return reply.code(400).send({ error: 'Username can only contain letters, numbers, and underscores' });
-        }
-        
-        // Check if username already exists (excluding current user)
+
         const existingUser = app.db
           .prepare('SELECT id FROM users WHERE username = ? AND id != ?')
           .get(trimmedUsername, decoded.id) as any;
         
-        if (existingUser) {
+        if (existingUser)
           return reply.code(409).send({ error: 'Username already taken' });
-        }
-        
-        // Update username
         app.db.prepare('UPDATE users SET username = ? WHERE id = ?').run(trimmedUsername, decoded.id);
-        app.log.info(`Updated username for user ${decoded.id} to "${trimmedUsername}"`);
       }
       
-      // Handle display_name update
-      if (display_name) {
-        if (display_name.trim().length < 2) {
+      if (display_name)
+      {
+        if (display_name.trim().length < 2)
           return reply.code(400).send({ error: 'Display name must be at least 2 characters' });
-        }
         app.db.prepare('UPDATE users SET display_name = ? WHERE id = ?').run(display_name.trim(), decoded.id);
-        app.log.info(`Updated display_name for user ${decoded.id} to "${display_name.trim()}"`);
       }
 
       // Handle email update
-      if (email) {
+      if (email)
+      {
         const trimmedEmail = email.trim().toLowerCase();
-        
-        // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(trimmedEmail)) {
+        if (!emailRegex.test(trimmedEmail))
           return reply.code(400).send({ error: 'Invalid email format' });
-        }
-        
-        // Check if email already exists (excluding current user)
+
         const existingUser = app.db
           .prepare('SELECT id FROM users WHERE email = ? AND id != ?')
           .get(trimmedEmail, decoded.id) as any;
         
-        if (existingUser) {
+        if (existingUser)
           return reply.code(409).send({ error: 'Email already in use' });
-        }
-        
-        // Update email
         app.db.prepare('UPDATE users SET email = ? WHERE id = ?').run(trimmedEmail, decoded.id);
-        app.log.info(`Updated email for user ${decoded.id} to "${trimmedEmail}"`);
       }
 
-      // Handle password update
-      if (password) {
-        if (password.length < 6) {
-          return reply.code(400).send({ error: 'Password must be at least 6 characters' });
-        }
-        
-        // Hash the new password
+      if (password)
+      {
+        if (password.length < 8)
+          return reply.code(400).send({ error: 'Password must be at least 8 characters' });
         const hashedPassword = await bcrypt.hash(password, 10);
-        
-        // Update password
         app.db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, decoded.id);
-        app.log.info(`Updated password for user ${decoded.id}`);
       }
 
       const updated = app.db
@@ -427,38 +314,33 @@ export default async function profileRoutes(app: FastifyInstance) {
         .get(decoded.id);
 
       return reply.code(200).send({ message: 'Profile updated', user: updated });
-    } catch (err) {
+    }
+    catch (err)
+    {
       app.log.error(err);
       return reply.code(500).send({ error: 'Failed to update profile' });
     }
   });
 
-  // ═══════════════════════════════════════════════════════════
-  // GET /profile/search?username=... - Search for users by username
-  // ═══════════════════════════════════════════════════════════
+  // search for users by username
   app.get('/search', async (request: FastifyRequest<{ Querystring: { username?: string } }>, reply: FastifyReply) => {
     try {
       const authHeader = request.headers.authorization;
       const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
       const token = (request as any).cookies?.access_token || bearer;
-
-      if (!token) {
+      if (!token)
         return reply.code(401).send({ error: 'Missing or invalid authorization' });
-      }
 
       const decoded = app.jwt.verify(token) as { id: number; email: string };
       const { username } = request.query;
 
-      if (!username || username.trim().length === 0) {
+      if (!username || username.trim().length === 0)
         return reply.code(400).send({ error: 'Username query parameter is required' });
-      }
 
-      // Search for users by username (case-insensitive, partial match)
       const users = app.db
         .prepare('SELECT id, username, display_name, avatar_url FROM users WHERE username LIKE ? AND id != ? LIMIT 10')
         .all(`%${username.trim()}%`, decoded.id);
 
-      // Check friendship status for each user
       const usersWithFriendshipStatus = users.map((user: any) => {
         const friendship = app.db
           .prepare('SELECT id FROM friendships WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)')
@@ -469,30 +351,26 @@ export default async function profileRoutes(app: FastifyInstance) {
           isFriend: !!friendship
         };
       });
-
       return reply.code(200).send({ users: usersWithFriendshipStatus });
-    } catch (err) {
+    }
+    catch (err)
+    {
       app.log.error(err);
       return reply.code(500).send({ error: 'Failed to search users' });
     }
   });
 
-  // ═══════════════════════════════════════════════════════════
-  // GET /profile/match-history - Get current user's match history
-  // ═══════════════════════════════════════════════════════════
+  // get user's match history
   app.get('/match-history', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const authHeader = request.headers.authorization;
       const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
       const token = (request as any).cookies?.access_token || bearer;
 
-      if (!token) {
+      if (!token)
         return reply.code(401).send({ error: 'Missing or invalid authorization' });
-      }
-
       const decoded = app.jwt.verify(token) as { id: number; email: string };
-
-      // Get pong matches where user is either left or right player
+      // pong matches
       const pongMatches = app.db
         .prepare(`
           SELECT 
@@ -519,7 +397,7 @@ export default async function profileRoutes(app: FastifyInstance) {
         `)
         .all(decoded.id, decoded.id) as any[];
 
-      // Get tic-tac-toe matches where user is either X or O player
+      // tic-tac-toe matches
       const tttMatches = app.db
         .prepare(`
           SELECT 
@@ -558,23 +436,23 @@ export default async function profileRoutes(app: FastifyInstance) {
         `)
         .all(decoded.id, decoded.id) as any[];
 
-      // Combine and sort all matches by date
       const allMatches = [...pongMatches, ...tttMatches].sort((a, b) => {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      }).slice(0, 50); // Limit to 50 most recent matches
+      }).slice(0, 50);
 
-      // Calculate stats (excluding draws)
       let wins = 0;
       let losses = 0;
 
       allMatches.forEach((match: any) => {
-        if (match.winner === 'draw') return; // Skip draws for win/loss stats
-        
+        if (match.winner === 'draw')
+          return;
         const isLeftPlayer = match.left_player_id === decoded.id;
         const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
         
-        if (isWinner) wins++;
-        else losses++;
+        if (isWinner)
+          wins++;
+        else
+          losses++;
       });
 
       const totalGames = wins + losses;
@@ -589,43 +467,35 @@ export default async function profileRoutes(app: FastifyInstance) {
         },
         matches: allMatches
       });
-    } catch (err) {
+    }
+    catch (err)
+    {
       app.log.error(err);
       return reply.code(500).send({ error: 'Failed to fetch match history' });
     }
   });
 
-  // ═══════════════════════════════════════════════════════════
-  // GET /profile/:id/match-history - Get a user's match history by ID
-  // ═══════════════════════════════════════════════════════════
+  // GET profile match history by user ID
   app.get('/:id/match-history', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
     try {
       const authHeader = request.headers.authorization;
       const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
       const token = (request as any).cookies?.access_token || bearer;
-
-      if (!token) {
+      if (!token)
         return reply.code(401).send({ error: 'Missing or invalid authorization' });
-      }
-
-      // Verify token (authentication required)
       app.jwt.verify(token) as { id: number; email: string };
 
       const userId = parseInt(request.params.id);
-      if (isNaN(userId)) {
+      if (isNaN(userId))
         return reply.code(400).send({ error: 'Invalid user ID' });
-      }
 
-      // Check if user exists
       const user = app.db
         .prepare('SELECT id FROM users WHERE id = ?')
         .get(userId);
 
-      if (!user) {
+      if (!user)
         return reply.code(404).send({ error: 'User not found' });
-      }
-
-      // Get pong matches where user is either left or right player
+      // pong matches
       const pongMatches = app.db
         .prepare(`
           SELECT 
@@ -652,7 +522,7 @@ export default async function profileRoutes(app: FastifyInstance) {
         `)
         .all(userId, userId) as any[];
 
-      // Get tic-tac-toe matches where user is either X or O player
+      // tictac toe matches
       const tttMatches = app.db
         .prepare(`
           SELECT 
@@ -691,23 +561,24 @@ export default async function profileRoutes(app: FastifyInstance) {
         `)
         .all(userId, userId) as any[];
 
-      // Combine and sort all matches by date
       const allMatches = [...pongMatches, ...tttMatches].sort((a, b) => {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      }).slice(0, 50); // Limit to 50 most recent matches
+      }).slice(0, 50);
 
-      // Calculate stats (excluding draws)
       let wins = 0;
       let losses = 0;
 
       allMatches.forEach((match: any) => {
-        if (match.winner === 'draw') return; // Skip draws for win/loss stats
+        if (match.winner === 'draw')
+          return;
         
         const isLeftPlayer = match.left_player_id === userId;
         const isWinner = (isLeftPlayer && match.winner === 'left') || (!isLeftPlayer && match.winner === 'right');
         
-        if (isWinner) wins++;
-        else losses++;
+        if (isWinner)
+          wins++;
+        else
+          losses++;
       });
 
       const totalGames = wins + losses;
@@ -722,7 +593,9 @@ export default async function profileRoutes(app: FastifyInstance) {
         },
         matches: allMatches
       });
-    } catch (err) {
+    }
+    catch (err)
+    {
       app.log.error(err);
       return reply.code(500).send({ error: 'Failed to fetch match history' });
     }

@@ -2,26 +2,24 @@
 
 import React, { useEffect, useState } from "react";
 import { register, login } from "@/lib/api";
-import { Maname } from "next/font/google";
 import useglobalStore from "@/store/globalStore";
-import { resumeToPipeableStream } from "react-dom/server";
 
-export default function Home() {
+export default function Home()
+{
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [requires2FA, setRequires2FA] = useState(false);
   const [twoFACode, setTwoFACode] = useState("");
-  
-  // Surface OAuth errors from callback redirects (e.g., ?error=oauth_failed)
+
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined')
+    {
       const params = new URLSearchParams(window.location.search);
       const err = params.get('error');
-      if (err === 'oauth_failed') {
+      if (err === 'oauth_failed')
         setError('Google sign-in failed. Please try again.');
-      }
     }
   }, []);
 
@@ -35,58 +33,49 @@ export default function Home() {
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const manager = useglobalStore();
+
   // Handle Login
-const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
   e.preventDefault();
   setError("");
   setSuccess("");
   setLoading(true);
 
-  try {
-    console.log('Attempting login with:', {
-      email: loginEmail,
-      password: '***',
-      twofa_token: twoFACode || undefined,
-      twoFACodeLength: twoFACode.length
-    });
-
+  try
+  {
     const result = await login({
       email: loginEmail,
       password: loginPassword,
       twofa_token: twoFACode || undefined,
     });
 
-    console.log('Login result:', result);
-    console.log('Has requires2FA?', 'requires2FA' in result);
-    console.log('Has user?', 'user' in result);
-
-    // Check if 2FA is required
-    if ('requires2FA' in result && result.requires2FA) {
-      console.log('2FA required, showing input');
+    if ('requires2FA' in result && result.requires2FA)
+    {
       setRequires2FA(true);
       setLoading(false);
       return;
     }
 
-    // Store user data in localStorage for quick access
-    if ('user' in result) {
+    if ('user' in result)
+    {
       console.log('User found, logging in:', result.user);
       localStorage.setItem("user", JSON.stringify(result.user));
       manager.updateUser(result.user);
-      // Redirect to dashboard
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 500);
-    } else {
-      console.error('No user in result:', result);
-      setError('Login failed - no user data received');
     }
-  } catch (err: any) {
-    console.error('Login error:', err);
+    else
+      setError('Login failed - no user data received');
+  }
+  catch (err: any)
+  {
     setError(err.message);
     setRequires2FA(false);
     setTwoFACode("");
-  } finally {
+  }
+  finally
+  {
     setLoading(false);
   }
 };
@@ -99,7 +88,8 @@ const handleRegister = async (e: React.FormEvent) => {
   setSuccess("");
   setLoading(true);
 
-  try {
+  try
+  {
     const result = await register({
       email: registerEmail,
       username: registerName,
@@ -107,19 +97,20 @@ const handleRegister = async (e: React.FormEvent) => {
       display_name: registerDisplayName || undefined,
     });
 
-    // Store user data in localStorage for quick access
     localStorage.setItem("user", JSON.stringify(result.user));
     manager.updateUser(result.user);
-    // manager.updateUser(result.user);
-    // Redirect to dashboard
     setTimeout(() => {
       window.location.href = '/dashboard';
     }, 500);
-  } catch (err: any) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
+    }
+    catch (err: any)
+    {
+      setError(err.message);
+    }
+    finally
+    {
+      setLoading(false);
+    }
   };
 
   // Handle Google OAuth

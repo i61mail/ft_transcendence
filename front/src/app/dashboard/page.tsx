@@ -7,14 +7,16 @@ import { API_URL, getMatchHistory, getLeaderboard } from "@/lib/api";
 import { getFriends } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
-interface MatchStats {
+interface MatchStats
+{
   wins: number;
   losses: number;
   totalGames: number;
   winRate: number;
 }
 
-interface Match {
+interface Match
+{
   id: number;
   game_type?: string;
   game_mode: string;
@@ -35,7 +37,8 @@ interface Match {
 
 // Donut Chart Component using Recharts
 const DonutChart = ({ wins, losses, totalGames }: { wins: number; losses: number; totalGames: number }) => {
-  if (totalGames === 0) {
+  if (totalGames === 0)
+  {
     return (
       <div className="relative w-72 h-72 mx-auto flex flex-col items-center justify-center">
         <p className="text-4xl font-pixelify font-bold text-gray-400">0</p>
@@ -80,7 +83,6 @@ const DonutChart = ({ wins, losses, totalGames }: { wins: number; losses: number
   );
 };
 
-// Game Mode Stats Component using Recharts
 const GameModeStats = ({ matches, userId }: { matches: Match[]; userId: number }) => {
   
   // Calculate win rate progression for each match

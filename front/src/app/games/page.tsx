@@ -11,7 +11,6 @@ const Games = () =>
 {
     const manager = useglobalStore();
     const router = useRouter();
-
     const [selectedGame, setSelectedGame] = useState<'pong' | 'tictactoe' | null>(null);
     const [showDifficultySelection, setShowDifficultySelection] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -23,9 +22,9 @@ const Games = () =>
             try
             {
                 const response = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
-                if (!response.ok) throw new Error("Not authenticated");
+                if (!response.ok)
+                    throw new Error("Not authenticated");
                 const data = await response.json();
-
                 if (!manager.user)
                     manager.updateUser(data.user);
                 

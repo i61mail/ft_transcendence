@@ -1,8 +1,10 @@
-export interface FriendshipParams {
+export interface FriendshipParams
+{
     id: number;
 }
 
-export interface Friendship {
+export interface Friendship
+{
     id: number;
     user1_id: number;
     user2_id: number;
@@ -12,7 +14,8 @@ export interface Friendship {
     display_name?: string;
 }
 
-export interface FriendshipRequest {
+export interface FriendshipRequest
+{
     user1: number;
     user2: number;
 }
