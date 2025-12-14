@@ -1,19 +1,22 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-interface RegisterData {
+interface RegisterData
+{
   email: string;
   username: string;
   password: string;
   display_name?: string;
 }
 
-interface LoginData {
+interface LoginData
+{
   email: string;
   password: string;
   twofa_token?: string;
 }
 
-interface AuthResponse {
+interface AuthResponse
+{
   message: string;
   user: {
     id: number;
@@ -24,13 +27,7 @@ interface AuthResponse {
   };
 }
 
-interface ErrorResponse {
-  error: string;
-}
-
-/**
- * Register a new user
- */
+// register a new user
 export async function register(data: RegisterData): Promise<AuthResponse> {
   const response = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
@@ -42,17 +39,12 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
   });
 
   const result = await response.json();
-
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(result.error || 'Registration failed');
-  }
-
   return result;
 }
 
-/**
- * Login existing user
- */
+// login user
 export async function login(data: LoginData): Promise<AuthResponse | { requires2FA: boolean; message: string }> {
   const response = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
@@ -64,33 +56,24 @@ export async function login(data: LoginData): Promise<AuthResponse | { requires2
   });
 
   const result = await response.json();
-
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(result.error || 'Login failed');
-  }
-
   return result;
 }
 
-/**
- * Logout user
- */
+// logout user
 export async function logout() {
   const response = await fetch(`${API_URL}/auth/logout`, {
     method: 'POST',
     credentials: 'include',
   });
 
-  if (!response.ok && response.status !== 204) {
+  if (!response.ok && response.status !== 204)
     throw new Error('Logout failed');
-  }
-
   return true;
 }
 
-/**
- * Get current user info (requires authentication)
- */
+// get current logged-in user info
 export async function getCurrentUser() {
   const response = await fetch(`${API_URL}/auth/me`, {
     method: 'GET',
@@ -98,17 +81,12 @@ export async function getCurrentUser() {
   });
 
   const result = await response.json();
-
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(result.error || 'Failed to get user info');
-  }
-
   return result;
 }
 
-/**
- * Get current user's profile
- */
+// get current user's profile
 export async function getProfile() {
   const response = await fetch(`${API_URL}/profile`, {
     method: 'GET',
@@ -117,16 +95,12 @@ export async function getProfile() {
 
   const result = await response.json();
 
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(result.error || 'Failed to get profile');
-  }
-
   return result;
 }
 
-/**
- * Get a user's profile by ID
- */
+// get a user's profile by ID
 export async function getUserProfile(userId: number) {
   const response = await fetch(`${API_URL}/profile/${userId}`, {
     method: 'GET',
@@ -134,17 +108,12 @@ export async function getUserProfile(userId: number) {
   });
 
   const result = await response.json();
-
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(result.error || 'Failed to get user profile');
-  }
-
   return result;
 }
 
-/**
- * Upload user avatar
- */
+// post user avatar
 export async function uploadAvatar(file: File) {
   const formData = new FormData();
   formData.append('file', file);
@@ -154,19 +123,13 @@ export async function uploadAvatar(file: File) {
     credentials: 'include',
     body: formData,
   });
-
   const result = await response.json();
-
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(result.error || 'Failed to upload avatar');
-  }
-
   return result;
 }
 
-/**
- * Update user profile (e.g., username)
- */
+// update user information
 export async function updateProfile(data: { display_name?: string; username?: string; email?: string; password?: string }) {
   try {
     const response = await fetch(`${API_URL}/profile`, {
@@ -179,13 +142,12 @@ export async function updateProfile(data: { display_name?: string; username?: st
     });
 
     const result = await response.json();
-    if (!response.ok) {
+    if (!response.ok)
       throw new Error(result.error || 'Failed to update profile');
-    }
-
     return result;
-  } catch (err: any) {
-    // Network error (e.g., CORS, timeout, or backend unreachable)
+  }
+  catch (err: any)
+  {
     if (err instanceof TypeError && err.message === 'Failed to fetch') {
       throw new Error('Network error: Cannot reach the server. Check if backend is running.');
     }
@@ -193,9 +155,7 @@ export async function updateProfile(data: { display_name?: string; username?: st
   }
 }
 
-/**
- * Get current user's match history
- */
+// get current user's match history
 export async function getMatchHistory() {
   const response = await fetch(`${API_URL}/profile/match-history`, {
     method: 'GET',
@@ -203,17 +163,12 @@ export async function getMatchHistory() {
   });
 
   const result = await response.json();
-
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(result.error || 'Failed to get match history');
-  }
-
   return result;
 }
 
-/**
- * Get a user's match history by ID
- */
+// get a user's match history by ID
 export async function getUserMatchHistory(userId: number) {
   const response = await fetch(`${API_URL}/profile/${userId}/match-history`, {
     method: 'GET',
@@ -221,17 +176,12 @@ export async function getUserMatchHistory(userId: number) {
   });
 
   const result = await response.json();
-
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(result.error || 'Failed to get user match history');
-  }
-
   return result;
 }
 
-/**
- * Get leaderboard (top players by win rate)
- */
+// get top players for leaderboard
 export async function getLeaderboard() {
   const response = await fetch(`${API_URL}/profile/leaderboard`, {
     method: 'GET',
@@ -239,27 +189,20 @@ export async function getLeaderboard() {
   });
 
   const result = await response.json();
-
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(result.error || 'Failed to get leaderboard');
-  }
-
   return result;
 }
 
-/**
- * Get user's friends list
- */
+// get user's friends list
 export async function getFriends(userId: number) {
   const response = await fetch(`${API_URL}/friendships/${userId}`, {
     method: 'GET',
     credentials: 'include',
   });
 
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error('Failed to get friends');
-  }
-
   const result = await response.json();
-  return result; // Returns array directly
+  return result;
 }
