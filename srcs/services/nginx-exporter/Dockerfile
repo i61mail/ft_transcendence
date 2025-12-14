@@ -1,3 +1,3 @@
 FROM nginx/nginx-prometheus-exporter:edge
 
-CMD ["--nginx.scrape-uri=http://nginx:80/metrics"]
+CMD ["--nginx.scrape-uri=http://nginx:8080/metrics"]

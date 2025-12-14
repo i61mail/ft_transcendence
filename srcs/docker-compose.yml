@@ -25,17 +25,18 @@ services:
     networks:
       - monitoring
     restart: on-failure
-  # prometheus:
-  #   image: prometheus-img
-  #   container_name: prometheus
-  #   build: ./services/prom
-  #   ports:
-  #   - "9090:9090"
-  #   networks:
-  #   - monitoring
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - nginx-exporter
+  prometheus:
+    image: prometheus-img
+    container_name: prometheus
+    build: ./services/prom
+    ports:
+    - "9090:9090"
+    networks:
+    - monitoring
+    restart: unless-stopped
+    depends_on:
+      - nginx-exporter
+      - backend
   nginx:
     image: nginx-img
     container_name: nginx
@@ -47,29 +48,26 @@ services:
     restart: always
     depends_on:
       - frontend
-  # grafana:
-  #   image: grafana-img
-  #   build: ./services/grafana
-  #   container_name: grafana
-  #   ports:
-  #     - "3001:3001"
-  #   networks:
-  #     - monitoring
-  #   depends_on:
-  #     - prometheus
-    # environment:
-    #   - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
-    #   - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
-  # nginx-exporter:
-  #   image: nginx-exporter-img
-  #   container_name: nginx-exporter
-  #   ports:
-  #     - "9113:9113"
-  #   build: ./services/nginx-exporter
-  #   networks:
-  #     - monitoring
-  #   depends_on:
-  #     - nginx
+  grafana:
+    image: grafana-img
+    build: ./services/grafana
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+  nginx-exporter:
+    image: nginx-exporter-img
+    container_name: nginx-exporter
+    ports:
+      - "9113:9113"
+    build: ./services/nginx-exporter
+    networks:
+      - monitoring
+    depends_on:
+      - nginx
   # cadvisor:
   #   image: gcr.io/cadvisor/cadvisor
   #   container_name: cadvisor
