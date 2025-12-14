@@ -19,7 +19,7 @@ export default async function oauthRoutes(app: FastifyInstance)
     },
 
     startRedirectPath: '/google',
-    callbackUri: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:4000/auth/google/callback',
+    callbackUri: process.env.GOOGLE_CALLBACK_URL || 'https://localhost:8080/api/auth/google/callback',
   });
 
   // handle Google OAuth2 callback
@@ -127,13 +127,13 @@ export default async function oauthRoutes(app: FastifyInstance)
         maxAge: 60 * 60 * 24 * 7, // 7 days
       });
       // Redirect to frontend dashboard
-      const frontendUrl = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_ORIGIN || 'https://localhost:8080';
       return reply.redirect(`${frontendUrl}/dashboard`);
     }
     catch (err)
     {
       app.log.error(err);
-      const frontendUrl = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_ORIGIN || 'https://localhost:8080';
       return reply.redirect(`${frontendUrl}?error=oauth_failed`);
     }
   });

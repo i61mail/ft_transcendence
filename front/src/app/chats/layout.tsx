@@ -5,7 +5,7 @@ import useGlobalStore from "@/store/globalStore";
 import Header from "@/components/Header";
 import AllChats from "@/components/chat/AllChats";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8080/api';
 
 export default function ChatsLayout({children}: {children: React.ReactNode})
 {

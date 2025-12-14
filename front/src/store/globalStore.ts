@@ -92,7 +92,7 @@ const useglobalStore = create<GLobalState>((set,get) => (
         if (!current)
         {
             console.log("INIT...")
-            const newSocket = new WebSocket("ws://localhost:4000/sockets");
+            const newSocket = new WebSocket("wss://localhost:8080/api/sockets");
             newSocket.onopen = () =>
             {
                 console.log("connecting to backend...");

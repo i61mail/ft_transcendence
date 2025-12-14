@@ -24,7 +24,7 @@ const Message = (msg: Message) => {
       async function checkInviteExistence() {
         try
         {
-          const check = await fetch(`http://localhost:4000/invite?code=${code}`);
+          const check = await fetch(`https://localhost:8080/api/invite?code=${code}`);
           if (check.ok)
           {
             router.push("/games/invite?code=" + encodeURIComponent(code));

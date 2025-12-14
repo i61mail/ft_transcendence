@@ -28,7 +28,7 @@ const app = Fastify({ logger: true });
 // Register CORS
 app.register(cors,
 {
-  origin: process.env.FRONTEND_ORIGIN || 'http://localhost:3000',
+  origin: process.env.FRONTEND_ORIGIN || 'https://localhost:8080',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -152,7 +152,7 @@ const start = async () => {
   {
     const port = Number(process.env.PORT) || 4000;
     await app.listen({ port, host: '0.0.0.0' });
-    console.log(`🚀 Server running on http://localhost:${port}`);
+    console.log(`🚀 Server running on https://localhost:${port}`);
   }
   catch (err)
   {

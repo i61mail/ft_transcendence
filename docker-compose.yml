@@ -3,7 +3,6 @@ services:
     container_name: frontend
     image: front
     build:
-      context: ..
       dockerfile: ./srcs/services/front/Dockerfile
     ports:
       - "3000:3000"
@@ -16,19 +15,18 @@ services:
     container_name: backend
     image: back
     build:
-      context: ..
       dockerfile: ./srcs/services/back/Dockerfile
     ports:
       - "4000:4000"
     env_file:
-      - ".env.example"
+      - ".env"
     networks:
       - monitoring
     restart: on-failure
   prometheus:
     image: prometheus-img
     container_name: prometheus
-    build: ./services/prom
+    build: ./srcs/services/prom
     ports:
     - "9090:9090"
     networks:
@@ -40,7 +38,7 @@ services:
   nginx:
     image: nginx-img
     container_name: nginx
-    build: ./services/nginx
+    build: ./srcs/services/nginx
     ports:
       - "8080:443"
     networks:
@@ -50,7 +48,7 @@ services:
       - frontend
   grafana:
     image: grafana-img
-    build: ./services/grafana
+    build: ./srcs/services/grafana
     container_name: grafana
     ports:
       - "3001:3000"
@@ -63,7 +61,7 @@ services:
     container_name: nginx-exporter
     ports:
       - "9113:9113"
-    build: ./services/nginx-exporter
+    build: ./srcs/services/nginx-exporter
     networks:
       - monitoring
     depends_on:

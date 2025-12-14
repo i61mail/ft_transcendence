@@ -5,7 +5,7 @@ import { FriendshipProps } from '@/types/chat.types';
 import useGlobalStore from '@/store/globalStore';
 import { useRouter } from 'next/navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8080/api';
 
 interface Props {
   friend: FriendshipProps;

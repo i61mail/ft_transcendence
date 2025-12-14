@@ -115,7 +115,7 @@ const handleRegister = async (e: React.FormEvent) => {
 
   // Handle Google OAuth
   const handleGoogleSignIn = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8080/api';
     window.location.href = `${apiUrl}/auth/google`;
   };
 

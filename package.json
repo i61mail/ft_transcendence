@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "nodemon": "^3.1.11"
-  },
-  "devDependencies": {
-    "@types/qrcode": "^1.5.6",
-    "@types/speakeasy": "^2.0.10"
-  }
-}

@@ -7,7 +7,7 @@ import AllChats from '@/components/chat/AllChats';
 import Header from '@/components/Header';
 import { FriendshipProps } from '@/types/chat.types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8080/api';
 
 export default function ChatPage() {
   const router = useRouter();
