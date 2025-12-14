@@ -2,36 +2,36 @@
 
 import useglobalStore from "@/store/globalStore";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Header from "@/components/Header";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-const Games = () => {
+const Games = () =>
+{
     const manager = useglobalStore();
-    const gameSocketRef = useRef<WebSocket | null>(null);
     const router = useRouter();
-    
-    // State for UI flow
+
     const [selectedGame, setSelectedGame] = useState<'pong' | 'tictactoe' | null>(null);
     const [showDifficultySelection, setShowDifficultySelection] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // Authentication check
-    useEffect(() => {
-        const verifyAuth = async () => {
-            try {
+    useEffect(() =>
+    {
+        const verifyAuth = async () =>
+        {
+            try
+            {
                 const response = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
                 if (!response.ok) throw new Error("Not authenticated");
                 const data = await response.json();
-                
-                // Update user in global store if needed
-                if (!manager.user) {
+
+                if (!manager.user)
                     manager.updateUser(data.user);
-                }
                 
                 setLoading(false);
-            } catch (e) {
+            } catch (e)
+            {
                 localStorage.removeItem("user");
                 router.push("/");
             }
@@ -39,73 +39,26 @@ const Games = () => {
         verifyAuth();
     }, [router, manager]);
 
-    useEffect(() => {
-        if (loading) return; // Don't initialize socket until authenticated
-        
-        if (gameSocketRef.current !== null) {
-            return;
-        }
-        if (manager.gameSocket) {
-            manager.gameSocket.close();
-            manager.updateGameSocket(null);
-        }
-        console.log("creating game socket....");
-
-        gameSocketRef.current = new WebSocket("ws://localhost:4000/sockets/games");
-        
-        gameSocketRef.current.onopen = () => {
-            const init = {gameType: "init"};
-            gameSocketRef.current?.send(JSON.stringify(init));
-            manager.updateGameSocket(gameSocketRef.current);
-        }
-
-        gameSocketRef.current.onclose = () => {
-            console.log("closing game socket...");
-            gameSocketRef.current?.close();
-        }
-
-        gameSocketRef.current.onmessage = (msg) => {
-            const data = JSON.parse(msg.data.toString());
-            console.log("GAME: ", data);
-        }
-
-    }, [manager.gameSocket, loading]);
-
-    const handleGameSelect = (game: 'pong' | 'tictactoe') => {
+    const handleGameSelect = (game: 'pong' | 'tictactoe') =>
+    {
         setSelectedGame(game);
     };
 
-    const handleBack = () => {
+    const handleBack = () =>
+    {
         setSelectedGame(null);
     };
 
-    const handleJoinTournament = () => {
+    const handleJoinTournament = () =>
+    {
         const input = document.getElementById('tournament-code') as HTMLInputElement | null;
         const code = (input?.value ?? '').trim().toUpperCase();
         if (!code || code.length !== 6) return;
         router.push(`/games/tournament?code=${encodeURIComponent(code)}`);
     };
 
-    const handlePaste = async () => {
-        try {
-            const text = await navigator.clipboard.readText();
-            const val = text.trim().slice(0, 6).toUpperCase();
-            const input = document.getElementById('tournament-code') as HTMLInputElement | null;
-            if (input) {
-                input.value = val;
-                input.focus();
-            }
-        } catch {
-            const fallback = window.prompt('Paste tournament code:');
-            if (!fallback) return;
-            const val = fallback.trim().slice(0, 6).toUpperCase();
-            const input = document.getElementById('tournament-code') as HTMLInputElement | null;
-            if (input) input.value = val;
-        }
-    };
-
-    // Show loading screen while checking authentication
-    if (loading) {
+    if (loading)
+    {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5]">
                 <p className="text-xl font-pixelify text-[#2d5a8a]">Loading...</p>
@@ -130,7 +83,6 @@ const Games = () => {
                 <div className="w-full max-w-6xl">
                     
                     {!selectedGame ? (
-                        // Game Selection View
                         <div className="flex flex-col items-center space-y-12">
                             <div className="text-center space-y-4">
                                 <h1 className="font-pixelify text-7xl font-bold text-[#2d5a8a] drop-shadow-lg">
@@ -224,7 +176,6 @@ const Games = () => {
                             </div>
                         </div>
                     ) : showDifficultySelection ? (
-                        // AI Difficulty Selection View (Pong Only)
                         <div className="flex flex-col items-center w-full">
                             <button 
                                 onClick={() => setShowDifficultySelection(false)}
@@ -341,7 +292,6 @@ const Games = () => {
                             </div>
                         </div>
                     ) : (
-                        // Mode Selection View
                         <div className="flex flex-col items-center w-full">
                             <button 
                                 onClick={handleBack}

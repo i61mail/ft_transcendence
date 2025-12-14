@@ -12,7 +12,7 @@ class ScoreBoard
     rightPlayerScore: number = 0;
     winnerByForfeit: types.PlayerIndex = types.PlayerIndex.none;
 
-    get winner() : number
+    get winner(): number
     {
         if (this.winnerByForfeit != types.PlayerIndex.none)
             return (this.winnerByForfeit);
@@ -26,10 +26,10 @@ class ScoreBoard
 
 class Rectangle
 {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+    public  x: number;
+    public  y: number;
+    private width: number;
+    private height: number;
 
 	constructor(x: number, y: number, width: number, height: number)
 	{
@@ -55,18 +55,18 @@ class Rectangle
 
 class Ball
 {
-    posX: number;
-    posY: number;
-    _court: Court;
-    _velocity: {x: number, y: number};
-    _speed: number;
-    canBeRecovered: boolean = true;
+    public  posX: number;
+    public  posY: number;
+    private court: Court;
+    private _velocity: {x: number, y: number};
+    private _speed: number;
+    private canBeRecovered: boolean = true;
 
     constructor(court: Court)
     {
         this.posX = types.SETTINGS.canvasWidth / 2;
         this.posY = types.SETTINGS.canvasHeight / 2;
-        this._court = court;
+        this.court = court;
         this._velocity = {x: 0, y: 0};
         this._speed = Ball.minSpeed;
     }
@@ -115,7 +115,7 @@ class Ball
             if (isLeftPaddle)
             {
                 this.posX = paddle.collisionBox.right + types.SETTINGS.ballRadius;
-                if (this._court.gameMode == types.GameMode.AI)
+                if (this.court.gameMode == types.GameMode.AI)
                     event.emit("aiPredection", this.posX, this.posY, this.velocity);
             }
             else
@@ -128,30 +128,30 @@ class Ball
         this.posX += Math.sign(this._velocity.x) * this._speed * deltaTime;
         this.posY += Math.sign(this._velocity.y) * this._speed * deltaTime;
 
-        if (this.posY - types.SETTINGS.ballRadius < this._court.bounds.upper)
+        if (this.posY - types.SETTINGS.ballRadius < this.court.bounds.upper)
         {
-            this.posY = this._court.bounds.upper + types.SETTINGS.ballRadius;
+            this.posY = this.court.bounds.upper + types.SETTINGS.ballRadius;
             this._velocity.y *= -1;
         }
-        else if (this.posY + types.SETTINGS.ballRadius > this._court.bounds.lower)
+        else if (this.posY + types.SETTINGS.ballRadius > this.court.bounds.lower)
         {
-            this.posY = this._court.bounds.lower - types.SETTINGS.ballRadius;
+            this.posY = this.court.bounds.lower - types.SETTINGS.ballRadius;
             this._velocity.y *= -1;
         }
         if (this.canBeRecovered == true)
         {
-            this._overlapsPaddle(this._court.leftPadle, true);
-            this._overlapsPaddle(this._court.rightPadle, false);
+            this._overlapsPaddle(this.court.leftPadle, true);
+            this._overlapsPaddle(this.court.rightPadle, false);
         }
 
-        if (this.posX < this._court.bounds.left)
+        if (this.posX < this.court.bounds.left)
         {
-            this._court.scorePoint(types.PlayerIndex.rightPlayer);
+            this.court.scorePoint(types.PlayerIndex.rightPlayer);
             this.canBeRecovered = true;
         }
-        else if (this.posX > this._court.bounds.right)
+        else if (this.posX > this.court.bounds.right)
         {
-            this._court.scorePoint(types.PlayerIndex.leftPlayer);
+            this.court.scorePoint(types.PlayerIndex.leftPlayer);
             this.canBeRecovered = true;
         }
         this.speed += Ball.acceleration * deltaTime;
@@ -178,7 +178,7 @@ class Padle
         this.playerIndex = playerIndex;
     }
 
-    static get speed() { return types.SETTINGS.paddleSpeed; } // pixels per second
+    static get speed() { return types.SETTINGS.paddleSpeed; }
 
     get collisionBox()
     {
@@ -217,7 +217,6 @@ abstract class Controller
         this._status = types.keyStat.none;
         this.socket = player.socket;
         this.id = player.id;
-        console.log('!!!!id:', this.id);
     }
 
     abstract controlling(): void;
@@ -243,7 +242,7 @@ abstract class Controller
     }
 }
 
-class LocalController extends Controller // remove this later
+class LocalController extends Controller
 {
     constructor(paddle: Padle, player: playerInfo)
     {
@@ -260,7 +259,7 @@ class LocalController extends Controller // remove this later
             if (data.length != 2)
                 return ;
             if (data[0] == leftPlayer.paddle.playerIndex.toString())
-                leftPlayer._status = parseInt(data[1]!, 10); // i should problem check the message length before using it
+                leftPlayer._status = parseInt(data[1]!, 10);
             else
                 rightPlayer._status = parseInt(data[1]!, 10);
         };
@@ -303,27 +302,27 @@ class AIController extends Controller
 
     controlling(): void
     {
-        event.on("aiPredection", (x: number, y: number, vec : {x: number, y: number}) =>
+        event.on("aiPredection", (ballX: number, ballY: number, ballVelocity: {x: number, y: number}) =>
         {
+            const paddleInterceptX: number = this.paddle.posX - types.SETTINGS.ballRadius;
+            
+            const courtTopEdge: number = this._court.bounds.upper + types.SETTINGS.ballRadius;
+            const courtBottomEdge: number = this._court.bounds.lower - types.SETTINGS.ballRadius;
+            const courtHeight: number = courtBottomEdge - courtTopEdge;
 
-            const Xtarget: number = this.paddle.posX - types.SETTINGS.ballRadius;
-            const Ymin: number = this._court.bounds.upper + types.SETTINGS.ballRadius;
-            const Ymax: number = this._court.bounds.lower - types.SETTINGS.ballRadius;
-            const Ly: number = Ymax - Ymin;
+            const distanceToPaddle: number = paddleInterceptX - ballX;
+            
+            const unfoldBallY: number = ballY + (ballVelocity.y / ballVelocity.x) * distanceToPaddle;
+            
+            const distanceFromTopUnfold: number = unfoldBallY - courtTopEdge;
+            const courtHeightDouble: number = courtHeight * 2;
+            const bouncePattern: number = ((distanceFromTopUnfold % courtHeightDouble) + (courtHeightDouble)) % courtHeightDouble;
 
-            const horizontalDist: number = Xtarget - x;
-            let Yunfold: number;
-            if (vec.x === 0)
-                Yunfold = y;
+            if (bouncePattern <= courtHeight)
+                this._target = courtTopEdge + bouncePattern;
             else
-                Yunfold = y + (vec.y / vec.x) * horizontalDist;
-            const YdistUnfold: number = Yunfold - Ymin;
-            const modRemainder: number = ((YdistUnfold % (2 * Ly)) + (2 * Ly)) % (2 * Ly);
-
-            if (modRemainder <= Ly)
-                this._target = Ymin + modRemainder;
-            else
-                this._target = Ymax - (modRemainder - Ly);
+                this._target = courtBottomEdge - (bouncePattern - courtHeight);
+            
             this._target -= types.SETTINGS.paddleHeight / 2;
 
             this._target += (Math.random() - 0.5) * types.SETTINGS.paddleHeight * this._difficulty;
@@ -333,7 +332,7 @@ class AIController extends Controller
             else if (this._target + types.SETTINGS.paddleHeight > this._court.bounds.lower)
                 this._target = this._court.bounds.lower - types.SETTINGS.paddleHeight;
 
-            this._status = this._target < this.paddle.posY ? types.keyStat.up : types.keyStat.down; 
+            this._status = this._target < this.paddle.posY ? types.keyStat.up: types.keyStat.down; 
         });
     }
 
@@ -350,7 +349,7 @@ class AIController extends Controller
 
 class Court
 {
-    private _isMatchStarted: boolean = true; // might add a timer before it startes
+    private _isMatchStarted: boolean = true;
     public  leftPadle: Padle;
     public  rightPadle: Padle;
     public  gameMode: types.GameMode;
@@ -363,8 +362,8 @@ class Court
 
     constructor(gameMode: types.GameMode,
         difficulty: types.Difficulty,
-        player1 : playerInfo,
-        player2 : playerInfo,
+        player1: playerInfo,
+        player2: playerInfo,
         server: FastifyInstance
     )
     {
@@ -450,15 +449,15 @@ class Court
                 ai_difficulty
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `);
-        const gameMode : string =
+        const gameMode: string =
             this.gameMode == types.GameMode.online
             ? 'online' : this.gameMode == types.GameMode.local
             ? 'local' : 'ai';
         
-        const difficulty : string | null =
+        const difficulty: string | null =
             this.gameMode != types.GameMode.AI
             ? null
-            : this.aiDifficulty == types.Difficulty.easy
+        : this.aiDifficulty == types.Difficulty.easy
             ? 'easy' : this.aiDifficulty == types.Difficulty.meduim
             ? 'meduim' : this.aiDifficulty == types.Difficulty.hard
             ? 'hard' : 'impossible'
@@ -471,7 +470,7 @@ class Court
         const leftId: number = this.leftPlayerController.id;
         const rightId: number | null = this.gameMode == types.GameMode.online
             ? this.rightPlayerController.id
-            : null ;
+        : null ;
         try
         {
             insertMatchStmt.run(
@@ -492,7 +491,6 @@ class Court
 
     endGame()
     {
-        console.log("game ended");
         this._isMatchStarted = false;
         this.addToDatabase();
         this.leftPlayerController.socket.send("finished");
@@ -552,39 +550,38 @@ class Court
 
 export class PongGame
 {
-    private _court: Court;
+    private court: Court;
 
     constructor(
         gameMode: types.GameMode,
         server: FastifyInstance,
-        player1 : playerInfo,
-        player2 : playerInfo = player1,
+        player1: playerInfo,
+        player2: playerInfo = player1,
         difficulty: types.Difficulty = types.Difficulty.hard
     )
     {
-        this._court = new Court(gameMode, difficulty, player1, player2, server);
-        
-        let that = this;
-        let data: types.messageInterace =
+        this.court = new Court(gameMode, difficulty, player1, player2, server);
+    
+        const data: types.messageInterace =
         {
-            leftPlayerPosY: this._court.leftPadle.posY,
-            rightPlayerPosY: this._court.rightPadle.posY,
+            leftPlayerPosY: this.court.leftPadle.posY,
+            rightPlayerPosY: this.court.rightPadle.posY,
 
-            leftPlayerScore: this._court.scoreBoard.leftPlayerScore,
-            rightPlayerScore: this._court.scoreBoard.rightPlayerScore,
+            leftPlayerScore: this.court.scoreBoard.leftPlayerScore,
+            rightPlayerScore: this.court.scoreBoard.rightPlayerScore,
 
-            ballPosX: this._court.ball.posX,
-            ballPosY: this._court.ball.posY,
+            ballPosX: this.court.ball.posX,
+            ballPosY: this.court.ball.posY,
         }
         
-        this._court.leftPlayerController.socket.send(JSON.stringify(data));
-        this._court.rightPlayerController.socket.send(JSON.stringify(data));
+        this.court.leftPlayerController.socket.send(JSON.stringify(data));
+        this.court.rightPlayerController.socket.send(JSON.stringify(data));
         this.run();
     }
 
     private _update(deltaTime: number)
     {
-        this._court.update(deltaTime);
+        this.court.update(deltaTime);
     }
 
     private async run()
@@ -594,8 +591,8 @@ export class PongGame
         
         let parent: PongGame = this;
         let previousUpdateTime = Date.now();
-        this._court.spawnBall();
-        this._court.listenToPlayers();
+        this.court.spawnBall();
+        this.court.listenToPlayers();
         setInterval(function()
         {
             let updateTime = Date.now();
@@ -606,15 +603,18 @@ export class PongGame
     }
     get winner(): number
     {
-        return (this._court.scoreBoard.winner);
+        return (this.court.scoreBoard.winner);
     }
 }
 
+
+// game starters
+
 export function pongOnline(
-    player1 : playerInfo,
-    player2 : playerInfo,
+    player1: playerInfo,
+    player2: playerInfo,
     server: FastifyInstance
-) : PongGame
+): PongGame
 {
     const data: string = JSON.stringify(
     {
@@ -626,11 +626,11 @@ export function pongOnline(
     player1.socket.send(data);
     player2.socket.send(data);
 
-    return new PongGame(types.GameMode.online, server, player1, player2);
+    return (new PongGame(types.GameMode.online, server, player1, player2));
 }
 
 export function pongLocal(
-    player : playerInfo,
+    player: playerInfo,
     server: FastifyInstance
 )
 {
@@ -639,19 +639,26 @@ export function pongLocal(
             gm: types.GameMode.local,
             player1: 'Player 1',
             player2: 'Player 2'
-        }));
-    let pong: PongGame = new PongGame(types.GameMode.local, server, player);
+        }
+    ));
+
+    new PongGame(types.GameMode.local, server, player);
 }
 
 export function pongAI(
-    player : playerInfo,
+    player: playerInfo,
     difficulty: string,
     server: FastifyInstance
 )
 {
-
-    player.socket.send(JSON.stringify({gm: types.GameMode.AI, player1: player.username, player2: `${difficulty} bot`}));
-
+    player.socket.send(JSON.stringify(
+        {
+            gm: types.GameMode.AI,
+            player1: player.username,
+            player2: `${difficulty} bot`
+        }
+    ));
+    
     let pongDif: types.Difficulty = types.Difficulty.easy;
 
     switch (difficulty)
@@ -668,5 +675,5 @@ export function pongAI(
         default:
             return;
     }
-    let pong: PongGame = new PongGame(types.GameMode.AI, server, player, undefined, pongDif);
+    new PongGame(types.GameMode.AI, server, player, undefined, pongDif);
 }

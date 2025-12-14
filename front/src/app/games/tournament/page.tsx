@@ -1,10 +1,10 @@
 'use client'
 
-import { PlayerIndex } from '@/lib/pong/interfaces';
 import useglobalStore from '@/store/globalStore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import Header from '@/components/Header';
+
 
 interface playerInfo
 {
@@ -69,15 +69,7 @@ function PongTournamentContent()
 	const router = useRouter();
 	const params = useSearchParams();
 	const code: string | null = params.get('code');
-	// const [manager.user?.id, setmanager.user?.id] = useState<number | null>(manager.user?.id ?? null);
-	// const [currUsername, setCurrUsername] = useState<string | null>(manager.user?.username ?? null);
 
-	// useEffect(() => {
-	// 	if (manager.user) {
-	// 		setmanager.user?.id(manager.user.id);
-	// 		setCurrUsername(manager.user.username);
-	// 	}
-	// }, [manager.user]);
 
     useEffect(() =>
 	{
@@ -85,21 +77,21 @@ function PongTournamentContent()
         if (conditionT.current || !manager.user?.id) return;
         conditionT.current = true;
 
-        console.log("create socket");
         const socket = new WebSocket("ws://localhost:4000/sockets/games");
         socketRef.current = socket;
 
-        socket.onclose = () => {
-            console.log("game socket closed!!!");
-        };
-
-        socket.onopen = () => {
-			const data: any = { id: manager.user?.id, username: manager.user?.username, code: code };
+        socket.onopen = () => 
+		{
+			const data: any =
+			{
+				id: manager.user?.id,
+				username: manager.user?.username,
+				code: code
+			};
             if (code)
                 data.gameType = 'joinTournament';
 			else
                 data.gameType = "startTournament";
-			console.log('tournament data:', data);
 
             socket.send(JSON.stringify(data));
 
@@ -107,21 +99,19 @@ function PongTournamentContent()
 			{
                 if (msg.data == "finished")
                     return;
-                if (msg.data == "invalid code") {
-                    window.alert("Invalid tournament code. Redirecting to Games page.");
-                    router.push('/games');
-                    return;
-                }
-                if (msg.data == "tournament started") {
-                    window.alert("Tournament has already started. Redirecting to Games page.");
+                const state: any = JSON.parse(msg.data.toString());
+
+				if (state.error != undefined) 
+				{
+                    window.alert(state.error);
                     router.push('/games');
                     return;
                 }
 
-                const state: any = JSON.parse(msg.data.toString());
 				if (state.code == undefined)
 					return ;
-                if (state.error || state.code == undefined) {
+                if (state.code == undefined) 
+				{
                     window.alert("Invalid tournament code. Redirecting to Games page.");
                     router.push('/games');
                     return;
@@ -143,10 +133,8 @@ function PongTournamentContent()
 
 				if (shouldPlay)
 				{
-					console.log("switched to tournament play");
-					// Store socket in global state for the play page to use
 					manager.updateGameSocket(socket);
-					socketRef.current = null; // Don't close in cleanup
+					socketRef.current = null;
                     router.push('/games/tournament/play');
                 } else if (state.status == trnmtStatus.close)
 				{
@@ -162,20 +150,19 @@ function PongTournamentContent()
             };
         };
 
-        return () => {
+        return () => 
+		{
             conditionT.current = false;
-            // Only close if we still own the socket (not passed to play page)
-            if (socketRef.current && (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING)) {
-                console.log("Closing socket on page leave...");
+            if (socketRef.current && (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING))
                 socketRef.current.close();
-            }
             socketRef.current = null;
         };
     }, [manager.user]);
 
 	const statusString = (status: trnmtStatus): string =>
 	{
-		switch (status) {
+		switch (status) 
+		{
 			case trnmtStatus.waiting:
 				return "Waiting";
 			case trnmtStatus.startingSemi:
@@ -214,12 +201,15 @@ function PongTournamentContent()
 		socketRef.current?.send(JSON.stringify({id: manager.user?.id, action: "delete"}));
 	};
 
-	const handleCopyCode = async () => {
-		try {
+	const handleCopyCode = async () =>
+	{
+		try 
+		{
 			await navigator.clipboard.writeText(tournament.code);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
-		} catch (err) {
+		} catch (err)
+		{
 			console.error('Failed to copy:', err);
 		}
 	};

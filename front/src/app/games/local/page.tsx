@@ -13,40 +13,40 @@ const LocalGame = () =>
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const conditionT = useRef<boolean>(false);
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         if (conditionT.current) return;
         conditionT.current = true;
 
-        console.log("create socket")
         const socket = new WebSocket("ws://localhost:4000/sockets/games");
 
-        const handleFinished = () => {
+        const handleFinished = () =>
+        {
             socket.close();
-            if (typeof window === 'undefined' || window.location.pathname !== '/games/local')
-                return;
             router.push('/games');
         };
 
-        socket.onclose = () => {
-            console.log("game socket closed!!!");
-        };
-
-        socket.onopen = () => {
-            console.log("starting game...", socket.readyState);
-            const data = { gameType: "local", id: manager.user?.id, username: manager.user?.username };
+        socket.onopen = () =>
+        {
+            const data =
+            {
+                gameType: "local",
+                id: manager.user?.id,
+                username: manager.user?.username
+            };
             socket.send(JSON.stringify(data));
-            socket.onmessage = (msg) => {
+            socket.onmessage = (msg) =>
+            {
                 if (canvasRef.current && socket)
                     startGame(canvasRef.current, socket, msg.data.toString(), handleFinished);
             };
         };
 
-        return () => {
+        return () =>
+        {
             conditionT.current = false;
-            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-                console.log("Closing socket on page leave...");
+            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
                 socket.close();
-            }
         };
     }, []);
 

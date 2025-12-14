@@ -25,11 +25,10 @@ const InviteGameContent = () =>
         router.push('/chats');
     };
 
- 
-
     useEffect(() =>
     {
-        if (!code || !manager.user) {
+        if (!code || !manager.user)
+        {
             router.push('/dashboard');
             return;
         }
@@ -39,14 +38,15 @@ const InviteGameContent = () =>
 
         codeRef.current = code;
 
-        async function verifyInviteGame() {
-        try
+        async function verifyInviteGame()
+        {
+            try
             {
-            const check = await fetch(`http://localhost:4000/invite?code=${code}`);
-            if (!check.ok)
-            {
-                router.push('/dashboard');
-            }
+                const check = await fetch(`http://localhost:4000/invite?code=${code}`);
+                if (!check.ok)
+                {
+                    router.push('/dashboard');
+                }
             }
             catch (err)
             {
@@ -55,32 +55,24 @@ const InviteGameContent = () =>
         }
         verifyInviteGame();
         manager.setInvite(null);
-        // console.log("create socket for invite game");
         const socket = new WebSocket("ws://localhost:4000/sockets/games");
 
-        socket.onclose = () => {
-            console.log("invite game socket closed");
-        };
-
-        socket.onopen = () => {
-            // console.log("starting invite game...", socket.readyState);
+        socket.onopen = () =>
+        {
             const data = { gameType: "invite", id: manager.user?.id, username: manager.user?.username, code: code };
             socket.send(JSON.stringify(data));
-            socket.onmessage = (msg) => {
+            socket.onmessage = (msg) =>
+            {
                 if (canvasRef.current && socket)
-                {
-                    console.log("started invite game");
                     startGame(canvasRef.current, socket, msg.data.toString(), () => handleFinished(socket));
-                }
             };
         };
 
-        return () => {
+        return () =>
+        {
             invited.current = false;
-            if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
-                // console.log("Closing invite socket on page leave...");
+            if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING))
                 socket.close();
-            }
         };
     }, [code]);
 
@@ -91,7 +83,8 @@ const InviteGameContent = () =>
     )
 }
 
-const InviteGame = () => {
+const InviteGame = () =>
+{
     return (
         <Suspense fallback={<div className="min-h-screen w-screen bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5] flex items-center justify-center">
             <div className="text-xl font-semibold text-gray-700">Loading...</div>

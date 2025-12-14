@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { API_URL, getMatchHistory, getLeaderboard } from "@/lib/api";
 import { getFriends } from "@/lib/api";
+import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 interface MatchStats {
   wins: number;
@@ -32,93 +33,46 @@ interface Match {
   right_player_avatar: string | null;
 }
 
-// Donut Chart Component
+// Donut Chart Component using Recharts
 const DonutChart = ({ wins, losses, totalGames }: { wins: number; losses: number; totalGames: number }) => {
   if (totalGames === 0) {
     return (
-      <div className="relative w-72 h-72 mx-auto">
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-          <circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke="#e0e0e0"
-            strokeWidth="20"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <p className="text-4xl font-pixelify font-bold text-gray-400">0</p>
-          <p className="text-sm font-pixelify text-gray-500">No games</p>
-        </div>
+      <div className="relative w-72 h-72 mx-auto flex flex-col items-center justify-center">
+        <p className="text-4xl font-pixelify font-bold text-gray-400">0</p>
+        <p className="text-sm font-pixelify text-gray-500">No games</p>
       </div>
     );
   }
 
   const winPercentage = (wins / totalGames) * 100;
-  const lossPercentage = (losses / totalGames) * 100;
   
-  const circumference = 2 * Math.PI * 40;
-  const winOffset = circumference - (winPercentage / 100) * circumference;
-  const lossOffset = circumference - (lossPercentage / 100) * circumference;
+  const data = [
+    { name: 'Wins', value: wins, color: '#22c55e' },
+    { name: 'Losses', value: losses, color: '#ef4444' }
+  ];
 
   return (
     <div className="relative w-72 h-72 mx-auto">
-      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-        {/* Background circle */}
-        <circle
-          cx="50"
-          cy="50"
-          r="40"
-          fill="none"
-          stroke="#e0e0e0"
-          strokeWidth="20"
-        />
-        
-        {/* Wins arc */}
-        <circle
-          cx="50"
-          cy="50"
-          r="40"
-          fill="none"
-          stroke="url(#winGradient)"
-          strokeWidth="20"
-          strokeDasharray={circumference}
-          strokeDashoffset={winOffset}
-          strokeLinecap="round"
-          className="transition-all duration-1000 ease-out"
-        />
-        
-        {/* Losses arc */}
-        <circle
-          cx="50"
-          cy="50"
-          r="40"
-          fill="none"
-          stroke="url(#lossGradient)"
-          strokeWidth="20"
-          strokeDasharray={circumference}
-          strokeDashoffset={lossOffset}
-          strokeLinecap="round"
-          transform={`rotate(${(winPercentage / 100) * 360} 50 50)`}
-          className="transition-all duration-1000 ease-out"
-        />
-        
-        {/* Gradients */}
-        <defs>
-          <linearGradient id="winGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#4ade80" />
-            <stop offset="100%" stopColor="#22c55e" />
-          </linearGradient>
-          <linearGradient id="lossGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#f87171" />
-            <stop offset="100%" stopColor="#ef4444" />
-          </linearGradient>
-        </defs>
-      </svg>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={100}
+            paddingAngle={2}
+            dataKey="value"
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
       
       {/* Center text */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <p className="text-5xl font-pixelify font-bold text-[#2d5a8a]">{Math.round(winPercentage)}%</p>
         <p className="text-sm font-pixelify text-gray-600 mt-1">Win Rate</p>
       </div>
@@ -126,246 +80,137 @@ const DonutChart = ({ wins, losses, totalGames }: { wins: number; losses: number
   );
 };
 
-// Game Mode Stats Component (Line Chart showing win rate progression)
+// Game Mode Stats Component using Recharts
 const GameModeStats = ({ matches, userId }: { matches: Match[]; userId: number }) => {
   
   // Calculate win rate progression for each match
   const calculateWinRateProgression = (isPong: boolean) => {
-    // Filter matches by game mode and chronological order
     const filteredMatches = matches
       .filter(match => {
-        const isMatchPong = isPong 
-          ? !match.game_mode.toLowerCase().includes('tic')
-          : match.game_mode.toLowerCase().includes('tic');
-        return isMatchPong && match.winner !== 'draw';
+        // Use game_type for reliable detection (pong vs tictactoe)
+        const matchIsPong = match.game_type === 'pong';
+        const matchIsTicTacToe = match.game_type === 'tictactoe';
+        
+        if (isPong) {
+          return matchIsPong && match.winner !== 'draw';
+        } else {
+          return matchIsTicTacToe && match.winner !== 'draw';
+        }
       })
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     
-    // Calculate cumulative win rate after each match
-    const winRateProgression: number[] = [];
+    const progression: { match: number; winRate: number }[] = [{ match: 0, winRate: 0 }];
     let wins = 0;
     let total = 0;
     
-    filteredMatches.forEach(match => {
+    filteredMatches.forEach((match, index) => {
       total++;
       const isLeft = match.left_player_id === userId;
       const won = (isLeft && match.winner === 'left') || (!isLeft && match.winner === 'right');
       if (won) wins++;
       
       const winRate = (wins / total) * 100;
-      winRateProgression.push(winRate);
+      progression.push({ match: index + 1, winRate: Math.round(winRate) });
     });
     
-    return winRateProgression;
+    return progression;
   };
   
   const pongData = calculateWinRateProgression(true);
   const ticTacToeData = calculateWinRateProgression(false);
 
-  // Calculate points for SVG line chart
-  const svgWidth = 500;
-  const svgHeight = 320;
-  const padding = 50;
-  const chartWidth = svgWidth - padding * 2;
-  const chartHeight = svgHeight - padding * 2;
-  
-  // Determine max number of matches for X-axis (use actual data length)
-  const maxMatches = Math.max(pongData.length, ticTacToeData.length, 1);
-  
-  // Generate line path points (Y-axis is 0-100 for win rate percentage)
-  // Start from match 0 (beginning) with 0% win rate
-  const generateLinePath = (data: number[]) => {
-    if (data.length === 0) return '';
-    // Add starting point at (0, 0%)
-    const points = [`${padding},${svgHeight - padding}`];
-    data.forEach((winRate, index) => {
-      const matchNumber = index + 1; // Match 1, 2, 3...
-      const x = padding + ((matchNumber / maxMatches) * chartWidth);
-      const y = svgHeight - padding - ((winRate / 100) * chartHeight);
-      points.push(`${x},${y}`);
-    });
-    return points.join(' ');
-  };
+  // Merge data for chart
+  const maxLength = Math.max(pongData.length, ticTacToeData.length);
+  const chartData = Array.from({ length: maxLength }, (_, i) => ({
+    match: i,
+    Pong: pongData[i]?.winRate ?? null,
+    'Tic-Tac-Toe': ticTacToeData[i]?.winRate ?? null
+  }));
 
-  const pongPoints = generateLinePath(pongData);
-  const tttPoints = generateLinePath(ticTacToeData);
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white/90 backdrop-blur-md p-3 rounded-lg shadow-lg border border-gray-200">
+          <p className="font-pixelify text-xs text-gray-600 mb-2">Match {payload[0].payload.match}</p>
+          {payload.map((entry: any, index: number) => (
+            entry.value !== null && (
+              <p key={index} className="font-pixelify text-sm font-bold" style={{ color: entry.color }}>
+                {entry.name}: {entry.value}%
+              </p>
+            )
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="relative mt-6 w-full">
-      <svg className="w-full" viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="xMidYMid meet" style={{ minHeight: '400px' }}>
-        {/* Grid Lines - Win Rate Percentages */}
-        {[0, 25, 50, 75, 100].map((percentage) => {
-          const y = svgHeight - padding - ((percentage / 100) * chartHeight);
-          return (
-            <line
-              key={percentage}
-              x1={padding}
-              y1={y}
-              x2={svgWidth - padding}
-              y2={y}
-              stroke="#e5e7eb"
-              strokeWidth="1"
-              opacity="0.5"
+      <div className="h-[400px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+            <XAxis 
+              dataKey="match" 
+              stroke="#6b7280"
+              tick={{ fill: '#6b7280', fontSize: 10, fontFamily: 'Pixelify Sans' }}
+              label={{ value: 'Matches', position: 'insideBottom', offset: -5, style: { fill: '#6b7280', fontFamily: 'Pixelify Sans', fontSize: 12 } }}
             />
-          );
-        })}
-
-        {/* X-Axis */}
-        <line 
-          x1={padding} 
-          y1={svgHeight - padding} 
-          x2={svgWidth - padding} 
-          y2={svgHeight - padding} 
-          stroke="#6b7280" 
-          strokeWidth="2"
-        />
-
-        {/* Y-Axis */}
-        <line 
-          x1={padding} 
-          y1={padding / 2} 
-          x2={padding} 
-          y2={svgHeight - padding} 
-          stroke="#6b7280" 
-          strokeWidth="2"
-        />
-
-        {/* Pong Line */}
-        {pongData.length > 0 && (
-          <polyline
-            points={pongPoints}
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="drop-shadow-lg"
-          />
-        )}
-
-        {/* Tic-Tac-Toe Line */}
-        {ticTacToeData.length > 0 && (
-          <polyline
-            points={tttPoints}
-            fill="none"
-            stroke="#f97316"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="drop-shadow-lg"
-          />
-        )}
-
-        {/* Starting point at (0, 0%) - Pong */}
-        {pongData.length > 0 && (
-          <circle
-            cx={padding}
-            cy={svgHeight - padding}
-            r="5"
-            fill="#3b82f6"
-            stroke="white"
-            strokeWidth="2"
-          />
-        )}
-
-        {/* Starting point at (0, 0%) - Tic-Tac-Toe */}
-        {ticTacToeData.length > 0 && (
-          <circle
-            cx={padding}
-            cy={svgHeight - padding}
-            r="5"
-            fill="#f97316"
-            stroke="white"
-            strokeWidth="2"
-          />
-        )}
-
-        {/* Data points - Pong */}
-        {pongData.map((winRate, index) => {
-          const matchNumber = index + 1;
-          const x = padding + ((matchNumber / maxMatches) * chartWidth);
-          const y = svgHeight - padding - ((winRate / 100) * chartHeight);
-          return (
-            <circle
-              key={`pong-${index}`}
-              cx={x}
-              cy={y}
-              r="5"
-              fill="#3b82f6"
-              stroke="white"
-              strokeWidth="2"
-              className="hover:r-7 transition-all cursor-pointer"
+            <YAxis 
+              stroke="#6b7280"
+              domain={[0, 100]}
+              tick={{ fill: '#6b7280', fontSize: 10, fontFamily: 'Pixelify Sans' }}
+              label={{ value: 'Win Rate (%)', angle: -90, position: 'insideLeft', style: { fill: '#6b7280', fontFamily: 'Pixelify Sans', fontSize: 12 } }}
             />
-          );
-        })}
+            <Tooltip content={<CustomTooltip />} />
+            {pongData.length > 1 && (
+              <Line 
+                type="monotone" 
+                dataKey="Pong" 
+                stroke="#3b82f6" 
+                strokeWidth={3}
+                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}
+                activeDot={{ r: 7 }}
+                connectNulls
+              />
+            )}
+            {ticTacToeData.length > 1 && (
+              <Line 
+                type="monotone" 
+                dataKey="Tic-Tac-Toe" 
+                stroke="#f97316" 
+                strokeWidth={3}
+                strokeDasharray="8 4"
+                dot={{ fill: '#f97316', stroke: '#fff', strokeWidth: 2, r: 5 }}
+                activeDot={{ r: 7 }}
+                connectNulls
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
-        {/* Data points - Tic-Tac-Toe */}
-        {ticTacToeData.map((winRate, index) => {
-          const matchNumber = index + 1;
-          const x = padding + ((matchNumber / maxMatches) * chartWidth);
-          const y = svgHeight - padding - ((winRate / 100) * chartHeight);
-          return (
-            <circle
-              key={`ttt-${index}`}
-              cx={x}
-              cy={y}
-              r="5"
-              fill="#f97316"
-              stroke="white"
-              strokeWidth="2"
-              className="hover:r-7 transition-all cursor-pointer"
-            />
-          );
-        })}
-
-        {/* X-Axis Labels (Match Numbers) - Show spread out labels */}
-        {(() => {
-          const labelCount = Math.min(maxMatches + 1, 11); // 0 to maxMatches
-          const step = maxMatches / (labelCount - 1);
-          return Array.from({ length: labelCount }, (_, i) => {
-            const matchNum = i === 0 ? 0 : Math.round(i * step);
-            const x = padding + ((matchNum / (maxMatches || 1)) * chartWidth);
-            return (
-              <text
-                key={i}
-                x={x}
-                y={svgHeight - padding + 20}
-                textAnchor="middle"
-                className="text-[10px] font-pixelify fill-gray-600"
-              >
-                {matchNum}
-              </text>
-            );
-          });
-        })()}
-
-        {/* Y-Axis Labels (Win Rate Percentages) */}
-        {[0, 25, 50, 75, 100].map((percentage) => {
-          const y = svgHeight - padding - ((percentage / 100) * chartHeight);
-          return (
-            <text
-              key={percentage}
-              x={padding - 10}
-              y={y + 3}
-              textAnchor="end"
-              className="text-[10px] font-pixelify fill-gray-600"
-            >
-              {percentage}
-            </text>
-          );
-        })}
-      </svg>
-
-      {/* Legend */}
+      {/* Custom Legend */}
       <div className="flex items-center justify-center gap-6 mt-6">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-4 bg-gradient-to-b from-blue-400 to-blue-600 rounded"></div>
-          <span className="font-pixelify text-sm text-[#2d5a8a] font-bold">Pong</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-4 bg-gradient-to-b from-orange-400 to-orange-600 rounded"></div>
-          <span className="font-pixelify text-sm text-[#2d5a8a] font-bold">Tic-Tac-Toe</span>
-        </div>
+        {pongData.length > 1 && (
+          <div className="flex items-center gap-2">
+            <svg width="32" height="16" className="overflow-visible">
+              <line x1="0" y1="8" x2="32" y2="8" stroke="#3b82f6" strokeWidth="3" />
+              <circle cx="16" cy="8" r="4" fill="#3b82f6" />
+            </svg>
+            <span className="font-pixelify text-sm text-[#2d5a8a] font-bold">Pong</span>
+          </div>
+        )}
+        {ticTacToeData.length > 1 && (
+          <div className="flex items-center gap-2">
+            <svg width="32" height="16" className="overflow-visible">
+              <line x1="0" y1="8" x2="32" y2="8" stroke="#f97316" strokeWidth="3" strokeDasharray="8 4" />
+              <circle cx="16" cy="8" r="4" fill="#f97316" stroke="#fff" strokeWidth="2" />
+            </svg>
+            <span className="font-pixelify text-sm text-[#2d5a8a] font-bold">Tic-Tac-Toe</span>
+          </div>
+        )}
       </div>
     </div>
   );

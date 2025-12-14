@@ -14,9 +14,10 @@ const NotificationBLock = () =>
         console.log("checking state of", manager.tournamentNotification);
         if (manager.tournamentNotification)
         {
-            setCondition(true);
+            console.log("window.location.pathname:", window.location.pathname);
             if (window.location.pathname != "/games/tournament" && window.location.pathname != "/games/tournament/play")
             {
+                setCondition(true);
                 console.log("redirecting to game...");
                 setTimeout(()=>router.push("/games/tournament"), 1000);
             }

@@ -16,45 +16,49 @@ const TicTacToeGame = () =>
     const initialDataRef = useRef<string | null>(null);
     const router = useRouter();
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         if (conditionT.current) return;
         conditionT.current = true;
 
-        console.log("create socket")
         const socket = new WebSocket("ws://localhost:4000/sockets/games");
         socketRef.current = socket;
 
-        socket.onclose = () => {
-            console.log("game socket closed!!!");
-        };
-
-        socket.onopen = () => {
-            console.log("starting game...", socket.readyState);
-            const data = { gameType: "tictactoe", id: manager.user?.id, username: manager.user?.username };
+        socket.onopen = () => 
+        {
+            const data =
+            {
+                gameType: "tictactoe",
+                id: manager.user?.id,
+                username: manager.user?.username
+            };
             socket.send(JSON.stringify(data));
-            socket.onmessage = (msg) => {
-                if (initialDataRef.current === null) {
+            socket.onmessage = (msg) =>
+            {
+                if (initialDataRef.current === null)
+                {
                     initialDataRef.current = msg.data;
                     setStart(true);
                 }
             };
         };
 
-        return () => {
+        return () => 
+        {
             conditionT.current = false;
-            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-                console.log("Closing socket on page leave...");
+            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
                 socket.close();
-            }
             socketRef.current = null;
         };
     }, []);
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         if (start && canvasRef.current && socketRef.current && initialDataRef.current) {
-            console.log("dataref:", initialDataRef.current);
-            const handleFinished = () => {
-                if (socketRef.current) {
+            const handleFinished = () => 
+            {
+                if (socketRef.current)
+                {
                     socketRef.current.close();
                     router.push('/games');
                 }
@@ -68,7 +72,6 @@ const TicTacToeGame = () =>
         <div className="min-h-screen bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5]">
             <Header user={manager.user} />
             {!start ? (
-                // Queue/Waiting Page
                 <div className="min-h-[calc(100vh-80px)] w-screen relative flex items-center justify-center">
                     {/* Animated Background Elements */}
                     <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -134,7 +137,6 @@ const TicTacToeGame = () =>
                     </div>
                 </div>
             ) : (
-                // Game Canvas Container
                 <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-8">
                     <div className="backdrop-blur-xl bg-white/20 rounded-3xl p-8 shadow-2xl border-2 border-white/40">
                         <canvas 

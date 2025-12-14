@@ -6,6 +6,7 @@ import { WebSocket } from 'ws';
 import { FastifyInstance } from 'fastify';
 import { Socket } from 'dgram';
 import { Server } from 'http';
+import { sendNotification } from '../controllers/socket.controller';
 
 const tournaments: Map<string, Tournament> = new Map<string, Tournament>();
 
@@ -144,7 +145,6 @@ class Tournament
         });
         if (doesExist)
         {
-            console.log("player", player.id, player.username, "does exist");
             this.broadcastTournamentData();
             return (true);
         }
@@ -157,6 +157,11 @@ class Tournament
         {
             this.tData.status = trnmtStatus.startingSemi;
             
+            this.forEachPlayer((player: playerInfo)=>
+            {
+                sendNotification(Tournament.server!, player.id);
+            });
+
             setTimeout(() => 
             {
                 this.startSemiGame();
@@ -168,7 +173,6 @@ class Tournament
 
     interval(winner: number, match: Match, intervalId: NodeJS.Timeout)
     {
-        // console.log('winner:', winner, 'player1:', match.player1?.id, 'player2:', match.player2?.id);
         if (winner == 0)
             return ;
         if (winner == 1)
@@ -251,12 +255,14 @@ class Tournament
 
         const intervalId: NodeJS.Timeout = setInterval(() =>
         {
-            // console.log('semi finale:', this.tData.semi[0].winner != null, this.tData.semi[1].winner != null);
             if (this.tData.semi[0].winner != null
-                && this.tData.semi[1].winner != null
-            )
+                && this.tData.semi[1].winner != null)
             {
                 this.tData.status = trnmtStatus.startingFinal;
+                this.forEachPlayer((player: playerInfo)=>
+                {
+                    sendNotification(Tournament.server!, player.id);
+                });
                 this.tData.final.player1 = this.tData.semi[0].winner;
                 this.tData.final.player2 = this.tData.semi[1].winner;
                 this.broadcastTournamentData();
@@ -327,9 +333,6 @@ class Tournament
 
     broadcastTournamentData()
     {
-        // Create a sanitized version without socket properties to avoid circular references
-        
-
         this.forEachPlayer((player: playerInfo) =>
         {
             player.socket.send(this.socketData);
@@ -358,12 +361,8 @@ function findPlayer(player: playerInfo): boolean
 {
     const code: string | null = playersInTournaments.get(player.id) ?? null;
 
-    console.log("player:", player.id, player.username, "wants to join", code);
     if (!player.socket)
-    {
-        console.log("no socket is open");
         return (true);
-    }
     if (code && tournaments.has(code))
     {
         tournaments.get(code)?.addPlayer(player);
@@ -386,7 +385,7 @@ export function startTournament(host: playerInfo, server: FastifyInstance)
     
 }
 
-export function joinTournament(player: playerInfo, code: string) // maybe return true or false to show that is not possible to join
+export function joinTournament(player: playerInfo, code: string)
 {
     if (findPlayer(player))
         return ;
@@ -399,15 +398,11 @@ export function joinTournament(player: playerInfo, code: string) // maybe return
     else if (!currTournament.addPlayer(player))
     {
         player.socket.send(JSON.stringify({error: "tournament started"}));
-        console.log("tournament already started");
     }
-    else
-        console.log("tournament joined successfully");
 }
 
 export function playTournament(player: playerInfo)
 {
-    console.log("start playing tournament game");
     const currCode: string | undefined = playersInTournaments.get(player.id);
     
     if (currCode == undefined)
