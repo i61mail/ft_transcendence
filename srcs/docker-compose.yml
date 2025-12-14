@@ -68,19 +68,6 @@ services:
       - monitoring
     depends_on:
       - nginx
-  # cadvisor:
-  #   image: gcr.io/cadvisor/cadvisor
-  #   container_name: cadvisor
-  #   ports:
-  #     - "8081:8080"
-  #   networks:
-  #     - monitoring
-  #   volumes:
-  #     - "/:/rootfs:ro"
-  #     - "/var/run:/var/run:ro"
-  #     - "/sys:/sys:ro"
-  #     - "/var/lib/docker/:/var/lib/docker:ro"
-  #     - "/dev/disk/:/dev/disk:ro"
 networks:
   monitoring:
     driver: bridge
