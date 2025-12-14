@@ -109,7 +109,7 @@ const  SocketManager = () =>
         retrieve();
     }, [manager.user])
 
-
+    
     useEffect(() => 
     {
         if (manager.socket)
@@ -120,9 +120,9 @@ const  SocketManager = () =>
               
               if (type === "message")
               {
-                  const {receiver, sender, content, id, friendship_id} = data;
-                  const newMessage: MessageProps = {sender: sender, receiver: receiver, content: content, id: id, friendship_id: friendship_id};
-                  
+                  const {receiver, sender, content, id, friendship_id, inviteCode, inviter} = data;
+                  const newMessage: MessageProps = {sender: sender, receiver: receiver, content: content, id: id, friendship_id: friendship_id, inviteCode: inviteCode, inviter: inviter};
+                  console.log("received message", data)
                   // Only ignore if I'm the SENDER (echo back to me)
                   // Accept if I'm the RECEIVER (someone else sent to me)
                   if (sender === manager.user?.id) {
@@ -138,13 +138,11 @@ const  SocketManager = () =>
                     manager.updateLatestMessage(newMessage);
                   }
               }
-              else if (type === "invite")
-              {
-                console.log("received invite", data);
-                manager.setInvite({sender: data.sender, username: data.username, code: data.code});
-              }
               else if (type === "startInvite")
-                router.push(`/games/invite?code=${encodeURIComponent(data.code)}`);
+              {
+                console.log("redirecting to invite page...");
+                  router.push(`/games/invite?code=${encodeURIComponent(data.code)}`);
+              }
               else if (type === "friend_online")
               {
                     manager.addOnlineUser(data);

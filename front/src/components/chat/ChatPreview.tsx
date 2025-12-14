@@ -4,8 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { FriendshipProps } from '@/types/chat.types';
 import useGlobalStore from '@/store/globalStore';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import onlineStatus from '../../../public/online-status.png'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -16,7 +14,6 @@ interface Props {
 const ChatPreview = (data: Props) => {
   const manager = useGlobalStore();
   const router = useRouter();
-  const [latestMessage, setLatestMessage] = useState('');
   const [notification, setNotification] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [online, setStatus] = useState(false);
@@ -58,6 +55,8 @@ const ChatPreview = (data: Props) => {
     router.push(`/profile/${data.friend.friend_id}`);
   };
 
+  const isSelected = manager.pointedUser?.username === data.friend.username;
+
   return (
     <>
       <div
@@ -68,33 +67,64 @@ const ChatPreview = (data: Props) => {
           router.push(`/chats/${data.friend.id}`);
         }}
         onContextMenu={handleContextMenu}
-        className={`h-20 w-full rounded-xl flex px-3 gap-x-5 items-center cursor-pointer ${
-          manager.pointedUser?.username === data.friend.username && 'bg-[#B0BBCF]'
-        } ${notification && 'border-2 bg-blue-100 border-white'}`}
+        className={`group relative p-3 rounded-xl flex gap-3 items-center cursor-pointer transition-all duration-300 hover:bg-white/15 hover:scale-[1.02] ${
+          isSelected 
+            ? 'bg-white/20 border border-white/30 shadow-lg' 
+            : 'bg-white/5 border border-transparent'
+        } ${notification && 'border-blue-400/50 bg-blue-400/10 animate-pulse'}`}
       >
-        <div className="size-[60px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-          <img 
-            src={data.friend.avatar_url ? (data.friend.avatar_url.startsWith('http') ? data.friend.avatar_url : `${API_URL}${data.friend.avatar_url}`) : "/default-avatar.png"} 
-            alt="Avatar" 
-            className="w-full h-full object-cover"
+        {/* Avatar */}
+        <div className="relative flex-shrink-0">
+          <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center overflow-hidden ring-2 ring-white/20 group-hover:ring-white/40 transition-all duration-300">
+            <img 
+              src={data.friend.avatar_url ? (data.friend.avatar_url.startsWith('http') ? data.friend.avatar_url : `${API_URL}${data.friend.avatar_url}`) : "/default-avatar.png"} 
+              alt="Avatar" 
+              className="w-full h-full object-cover"
             />
+          </div>
+          {/* Online Status Indicator */}
+          {online && (
+            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gradient-to-br from-green-400 to-green-600 rounded-full border-2 border-[#bcc3d4] shadow-lg">
+              <div className="w-full h-full rounded-full bg-green-400 animate-ping opacity-75"></div>
+            </div>
+          )}
         </div>
-        <div className="flex flex-col gap-y-0.5">
-          <h1 className="text-[24px]">{data.friend.display_name || data.friend.username}</h1>
-          <p className="px-3">{latestMessage}</p>
+        
+        {/* Chat Info */}
+        <div className="flex-1 min-w-0">
+          <h2 className={`font-pixelify text-base md:text-lg font-semibold truncate transition-colors duration-300 ${
+            isSelected ? 'text-[#2d5a8a]' : 'text-[#2d5a8a]/90'
+          }`}>
+            {data.friend.display_name || data.friend.username}
+          </h2>
         </div>
-        {online && <Image className='size-7 ml-auto' src={onlineStatus} alt='send button'></Image>}
+        
+        {/* Notification Badge */}
+        {notification && (
+          <div className="w-3 h-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full shadow-lg flex-shrink-0"></div>
+        )}
+        
+        {/* Arrow Indicator on Hover */}
+        <div className={`opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${isSelected ? 'opacity-100' : ''}`}>
+          <svg className="w-5 h-5 text-[#2d5a8a]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
       </div>
 
+      {/* Context Menu */}
       {contextMenu && (
         <div
-          className="fixed bg-[#a8b0c5] border-2 border-[#8aabd6] rounded-xl shadow-lg overflow-hidden z-50"
+          className="fixed backdrop-blur-xl bg-white/20 border border-white/30 rounded-xl shadow-2xl overflow-hidden z-50"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
           <button
             onClick={handleViewProfile}
-            className="block w-full text-left px-4 py-3 font-pixelify text-sm text-black hover:bg-[#8aabd6] hover:text-white transition-colors whitespace-nowrap"
+            className="flex items-center gap-2 w-full text-left px-4 py-3 font-pixelify text-sm text-[#2d5a8a] hover:bg-white/20 transition-all duration-200 whitespace-nowrap"
           >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
             View Profile
           </button>
         </div>

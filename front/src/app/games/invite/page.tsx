@@ -15,27 +15,47 @@ const InviteGameContent = () =>
     const router = useRouter();
     const params = useSearchParams();
     const code: string | null = params.get('code');
-    const inited = useRef<boolean>(false);
+    const invited = useRef<boolean>(false);
+    const codeRef = useRef<string>("");
 
     const handleFinished = (socket?: WebSocket) =>
     {
         if (socket)
             socket.close();
-        router.push('/games');
+        router.push('/chats');
     };
+
+ 
 
     useEffect(() =>
     {
-        if (inited.current) return;
-        inited.current = true;
-
-        if (!code) {
-            router.push('/chats');
+        if (!code || !manager.user) {
+            router.push('/dashboard');
             return;
         }
 
+        if (invited.current && codeRef.current === code) return;
+        invited.current = true;
+
+        codeRef.current = code;
+
+        async function verifyInviteGame() {
+        try
+            {
+            const check = await fetch(`http://localhost:4000/invite?code=${code}`);
+            if (!check.ok)
+            {
+                router.push('/dashboard');
+            }
+            }
+            catch (err)
+            {
+                console.log(err);
+            }
+        }
+        verifyInviteGame();
         manager.setInvite(null);
-        console.log("create socket for invite game");
+        // console.log("create socket for invite game");
         const socket = new WebSocket("ws://localhost:4000/sockets/games");
 
         socket.onclose = () => {
@@ -43,7 +63,7 @@ const InviteGameContent = () =>
         };
 
         socket.onopen = () => {
-            console.log("starting invite game...", socket.readyState);
+            // console.log("starting invite game...", socket.readyState);
             const data = { gameType: "invite", id: manager.user?.id, username: manager.user?.username, code: code };
             socket.send(JSON.stringify(data));
             socket.onmessage = (msg) => {
@@ -56,13 +76,13 @@ const InviteGameContent = () =>
         };
 
         return () => {
-            inited.current = false;
+            invited.current = false;
             if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
-                console.log("Closing invite socket on page leave...");
+                // console.log("Closing invite socket on page leave...");
                 socket.close();
             }
         };
-    }, []);
+    }, [code]);
 
     return (
         <>

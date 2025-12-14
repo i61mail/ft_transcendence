@@ -10,6 +10,7 @@ declare module 'fastify' {
     chatPreviewNotifications: Map<WebSocket, Chat>;
     globalSockets: Map<WebSocket, number>;
     gameSockets: Map<WebSocket, number>;
+    inviteQueue: Map<string, Queue>;
   }
 
   interface FastifyRequest {
