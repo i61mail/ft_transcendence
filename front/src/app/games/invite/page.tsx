@@ -6,6 +6,8 @@ import { Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import GameCanvas from "@/components/GameCanvas";
 
+
+
 const InviteGameContent = () =>
 {
     const manager = useglobalStore();
