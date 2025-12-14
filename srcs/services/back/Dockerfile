@@ -6,6 +6,6 @@ COPY ../../../back .
 
 RUN npm install && npm audit fix
 
-RUN npm install --save-dev @types/speakeasy @types/qrcode
+RUN npm run build
 
-ENTRYPOINT ["npm", "run", "dev"]
+ENTRYPOINT ["npm", "run", "start"]

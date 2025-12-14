@@ -2,7 +2,9 @@ services:
   frontend:
     container_name: frontend
     image: front
-    build: ./services/front
+    build:
+      context: ..
+      dockerfile: ./srcs/services/front/Dockerfile
     ports:
       - "3000:3000"
     networks:
@@ -13,11 +15,13 @@ services:
   backend:
     container_name: backend
     image: back
-    build: ./services/back
+    build:
+      context: ..
+      dockerfile: ./srcs/services/back/Dockerfile
     ports:
       - "4000:4000"
     env_file:
-      - ".env"
+      - ".env.example"
     networks:
       - monitoring
     restart: on-failure

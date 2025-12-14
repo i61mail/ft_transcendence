@@ -2,8 +2,10 @@ FROM node:25-alpine3.21
 
 WORKDIR /app
 
-COPY ../../../back .
+COPY ../../../front .
 
 RUN npm install
 
-ENTRYPOINT ["npm", "run", "dev"]
+RUN npm run build
+
+ENTRYPOINT ["npm", "run", "start"]
