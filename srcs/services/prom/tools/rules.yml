@@ -1,0 +1,32 @@
+groups:
+  - name: cadvisor-containers
+    rules:
+    - alert: HighCPUUsage
+      expr: 100 * rate(process_cpu_seconds_total[5m]) > 80
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Instance {{ $labels.instance }} high CPU usage ({{ $value }}%)"
+        description: "{{ $labels.instance }} using >80% CPU for 5m"    
+    - alert: BackendMemoryHigh
+      expr: (((nodejs_heap_size_used_bytes{instance="backend:4000", job="backend"}) / nodejs_heap_size_total_bytes{instance="backend:4000", job="backend"}) * 100) == 100
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Backend instance {{ $labels.instance }} reached 100% of heap memory usage"
+    - alert: NginxMemoryHigh
+      expr: (go_memstats_heap_inuse_bytes + go_memstats_stack_inuse_bytes) / go_memstats_sys_bytes * 100 > 85
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Nginx exporter instance {{ $labels.instance }} high memory usage ({{ $value }}%)"
+        description: "{{ $labels.instance }} using >85% of memory for 5m"
+    - alert: DatabaseFailure
+      expr: rate(app_database_queries_total{status="error"}[5m]) > 0
+      labels:
+        severity: critical
+      annotations:
+        summary: "Failed to execute a SQL query on table {{ $labels.table }}"
