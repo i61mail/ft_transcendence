@@ -3,12 +3,14 @@
 import React, { useState, useRef } from "react";
 import { uploadAvatar, API_URL } from "@/lib/api";
 
-interface AvatarUploadProps {
+interface AvatarUploadProps
+{
   currentAvatar?: string | null;
   onUploadSuccess: (avatarUrl: string) => void;
 }
 
-export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarUploadProps) {
+export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarUploadProps)
+{
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -16,65 +18,68 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file)
+      return;
 
-    // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       setError("File size must be less than 5MB");
       return;
     }
-
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       setError("Please select an image file");
       return;
     }
-
     setError("");
     
-    // Show preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreview(reader.result as string);
     };
     reader.readAsDataURL(file);
 
-    // Immediately upload after selecting a valid file
     setUploading(true);
-    try {
+    try
+    {
       const result = await uploadAvatar(file);
       // Update user in localStorage
       const userStr = localStorage.getItem("user");
-      if (userStr) {
+      if (userStr)
+      {
         const user = JSON.parse(userStr);
         user.avatar_url = result.avatar_url;
         localStorage.setItem("user", JSON.stringify(user));
       }
       onUploadSuccess(result.avatar_url);
       setPreview(null);
-      if (fileInputRef.current) {
+      if (fileInputRef.current)
         fileInputRef.current.value = "";
-      }
-    } catch (err: any) {
+    }
+    catch (err: any)
+    {
       setError(err.message);
-    } finally {
+    }
+    finally
+    {
       setUploading(false);
     }
   };
 
   const handleUpload = async () => {
     const file = fileInputRef.current?.files?.[0];
-    if (!file) return;
+    if (!file)
+      return;
 
     setUploading(true);
     setError("");
 
-    try {
+    try
+    {
       const result = await uploadAvatar(file);
       
       // Update user in localStorage
       const userStr = localStorage.getItem("user");
-      if (userStr) {
+      if (userStr)
+      {
         const user = JSON.parse(userStr);
         user.avatar_url = result.avatar_url;
         localStorage.setItem("user", JSON.stringify(user));
@@ -82,12 +87,15 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
 
       onUploadSuccess(result.avatar_url);
       setPreview(null);
-      if (fileInputRef.current) {
+      if (fileInputRef.current)
         fileInputRef.current.value = "";
-      }
-    } catch (err: any) {
+    }
+    catch (err: any)
+    {
       setError(err.message);
-    } finally {
+    }
+    finally
+    {
       setUploading(false);
     }
   };
@@ -125,8 +133,6 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
         >
           Choose Image
         </label>
-
-        {/* Upload happens automatically after selecting a file; no separate Upload button */}
       </div>
 
       {/* Error Message */}

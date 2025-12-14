@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { getProfile, getMatchHistory, API_URL } from "@/lib/api";
 
-interface UserProfile {
+interface UserProfile
+{
   id: number;
   email: string;
   username: string;
@@ -14,14 +15,16 @@ interface UserProfile {
   created_at: string;
 }
 
-interface MatchStats {
+interface MatchStats
+{
   wins: number;
   losses: number;
   totalGames: number;
   winRate: number;
 }
 
-interface Match {
+interface Match
+{
   id: number;
   game_type?: string;
   game_mode: string;
@@ -40,7 +43,8 @@ interface Match {
   right_player_avatar: string | null;
 }
 
-export default function ProfilePage() {
+export default function ProfilePage()
+{
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -50,20 +54,23 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
-    if (userData && userData !== "undefined") {
-      try {
+    if (userData && userData !== "undefined")
+    {
+      try
+      {
         setUser(JSON.parse(userData));
-      } catch (e) {
-        console.error("Failed to parse user data:", e);
+      }
+      catch (e)
+      {
         localStorage.removeItem("user");
       }
     }
 
     const verifyAuthAndLoadProfile = async () => {
       try {
-        // Verify authentication
         const response = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
-        if (!response.ok) {
+        if (!response.ok)
+        {
           localStorage.removeItem("user");
           router.push("/");
           return;
@@ -72,18 +79,16 @@ export default function ProfilePage() {
         setUser(data.user);
         localStorage.setItem("user", JSON.stringify(data.user));
 
-        // Load profile
         const profileData = await getProfile();
         setProfile(profileData.user);
 
-        // Load match history
         const matchData = await getMatchHistory();
         setMatchStats(matchData.stats);
         setMatches(matchData.matches);
-
         setLoading(false);
-      } catch (e: any) {
-        console.error("Error loading profile:", e);
+      }
+      catch (e: any)
+      {
         localStorage.removeItem("user");
         router.push("/");
       }
@@ -92,7 +97,8 @@ export default function ProfilePage() {
     verifyAuthAndLoadProfile();
   }, [router]);
 
-  if (loading || !profile || !user) {
+  if (loading || !profile || !user)
+  {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#bcc3d4]">
         <p className="text-xl font-pixelify text-[#2d5a8a]">Loading...</p>

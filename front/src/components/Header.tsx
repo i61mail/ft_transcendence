@@ -7,13 +7,15 @@ import { updateProfile } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-interface HeaderProps {
+interface HeaderProps
+{
   user: any;
   onUserUpdate?: (user: any) => void;
   activeRoute?: 'dashboard' | 'chat' | 'game' | 'profile';
 }
 
-export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }: HeaderProps) {
+export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }: HeaderProps)
+{
   const router = useRouter();
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -30,7 +32,7 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
   const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>("");
-  
+
   // 2FA states
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
   const [qrCode, setQrCode] = useState<string>("");
@@ -47,11 +49,8 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
     const savedTextSize = (localStorage.getItem('textSize') as 'normal' | 'large' | 'xlarge') || 'normal';
     setHighContrast(savedContrast);
     setTextSize(savedTextSize);
-    
-    // Apply settings to document
-    if (savedContrast) {
+    if (savedContrast)
       document.documentElement.classList.add('high-contrast');
-    }
     document.documentElement.setAttribute('data-text-size', savedTextSize);
   }, []);
 
@@ -60,11 +59,10 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
     setHighContrast(newValue);
     localStorage.setItem('highContrast', String(newValue));
     
-    if (newValue) {
+    if (newValue)
       document.documentElement.classList.add('high-contrast');
-    } else {
+    else
       document.documentElement.classList.remove('high-contrast');
-    }
   };
 
   const changeTextSize = (size: 'normal' | 'large' | 'xlarge') => {
@@ -74,22 +72,27 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
   };
 
   const handleLogout = async () => {
-    try {
+    try
+    {
       await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
-    } finally {
+    }
+    finally
+    {
       localStorage.removeItem("user");
       router.push("/");
     }
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim())
+    {
       setSearchResults([]);
       return;
     }
 
     setSearching(true);
-    try {
+    try
+    {
       const response = await fetch(`${API_URL}/profile/search?username=${encodeURIComponent(searchQuery)}`, {
         method: 'GET',
         credentials: 'include',
@@ -98,16 +101,21 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
         },
       });
 
-      if (response.ok) {
+      if (response.ok)
+      {
         const data = await response.json();
         setSearchResults(data.users || []);
-      } else {
-        setSearchResults([]);
       }
-    } catch (err) {
+      else
+        setSearchResults([]);
+    }
+    catch (err)
+    {
       console.error('Search failed:', err);
       setSearchResults([]);
-    } finally {
+    }
+    finally
+    {
       setSearching(false);
     }
   };
@@ -126,17 +134,21 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
         }),
       });
 
-      if (response.ok) {
-        // Remove the user from search results after adding
+      if (response.ok)
+      {
         setSearchResults(prev => prev.filter(u => u.id !== friendId));
         setSearchMessage({ type: 'success', text: 'Friend added successfully!' });
         setTimeout(() => setSearchMessage(null), 3000);
-      } else {
+      }
+      else
+      {
         const error = await response.json();
         setSearchMessage({ type: 'error', text: error.error || 'Failed to add friend' });
         setTimeout(() => setSearchMessage(null), 3000);
       }
-    } catch (err) {
+    }
+    catch (err)
+    {
       console.error('Failed to add friend:', err);
       setSearchMessage({ type: 'error', text: 'Failed to add friend' });
       setTimeout(() => setSearchMessage(null), 3000);
@@ -313,13 +325,17 @@ export default function Header({ user, onUserUpdate, activeRoute = 'dashboard' }
                         setTwoFAMessage("");
                         
                         // Check 2FA status
-                        try {
+                        try
+                        {
                           const response = await fetch(`${API_URL}/auth/2fa/status`, { credentials: 'include' });
-                          if (response.ok) {
+                          if (response.ok)
+                          {
                             const data = await response.json();
                             setTwoFAEnabled(data.enabled);
                           }
-                        } catch (err) {
+                        }
+                        catch (err)
+                        {
                           console.error('Failed to load 2FA status:', err);
                         }
                       }}

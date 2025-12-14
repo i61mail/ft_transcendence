@@ -5,7 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/Header";
 import { getUserProfile, getUserMatchHistory, API_URL } from "@/lib/api";
 
-interface UserProfile {
+interface UserProfile
+{
   id: number;
   username: string;
   display_name: string | null;
@@ -13,14 +14,16 @@ interface UserProfile {
   created_at: string;
 }
 
-interface MatchStats {
+interface MatchStats
+{
   wins: number;
   losses: number;
   totalGames: number;
   winRate: number;
 }
 
-interface Match {
+interface Match
+{
   id: number;
   game_type?: string;
   game_mode: string;
@@ -39,11 +42,11 @@ interface Match {
   right_player_avatar: string | null;
 }
 
-export default function UserProfilePage() {
+export default function UserProfilePage()
+{
   const router = useRouter();
   const params = useParams();
   const userId = params.id as string;
-  
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
@@ -53,48 +56,43 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
-    if (userData) setUser(JSON.parse(userData));
+    if (userData)
+      setUser(JSON.parse(userData));
 
     const verifyAuthAndLoadProfile = async () => {
-      try {
+      try
+      {
         // Verify authentication
         const response = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
         if (!response.ok) throw new Error("Not authenticated");
         const data = await response.json();
         setUser(data.user);
         localStorage.setItem("user", JSON.stringify(data.user));
-
-        // Load user profile by ID
         const profileData = await getUserProfile(parseInt(userId));
         setProfile(profileData.user);
-
-        // Load match history
         const matchData = await getUserMatchHistory(parseInt(userId));
         setMatchStats(matchData.stats);
         setMatches(matchData.matches);
-
         setLoading(false);
-      } catch (e: any) {
-        // Don't log user not found errors to console
-        if (e.message !== "User not found") {
+      }
+      catch (e: any)
+      {
+        if (e.message !== "User not found")
           console.error("Error loading profile:", e);
-        }
-        
         setError(e.message || "Failed to load profile");
         setLoading(false);
-        
-        // If not authenticated, redirect to home
-        if (e.message === "Not authenticated") {
+        if (e.message === "Not authenticated")
+        {
           localStorage.removeItem("user");
           router.push("/");
         }
       }
     };
-    
     verifyAuthAndLoadProfile();
   }, [router, userId]);
 
-  if (loading) {
+  if (loading)
+  {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5]">
         <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-12 shadow-2xl border border-white/20">

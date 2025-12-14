@@ -6,14 +6,16 @@ import Header from "@/components/Header";
 import { API_URL, getMatchHistory, getLeaderboard } from "@/lib/api";
 import { getFriends } from "@/lib/api";
 
-interface MatchStats {
+interface MatchStats
+{
   wins: number;
   losses: number;
   totalGames: number;
   winRate: number;
 }
 
-interface Match {
+interface Match
+{
   id: number;
   game_type?: string;
   game_mode: string;
@@ -32,9 +34,9 @@ interface Match {
   right_player_avatar: string | null;
 }
 
-// Donut Chart Component
 const DonutChart = ({ wins, losses, totalGames }: { wins: number; losses: number; totalGames: number }) => {
-  if (totalGames === 0) {
+  if (totalGames === 0)
+  {
     return (
       <div className="relative w-72 h-72 mx-auto">
         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -57,7 +59,6 @@ const DonutChart = ({ wins, losses, totalGames }: { wins: number; losses: number
 
   const winPercentage = (wins / totalGames) * 100;
   const lossPercentage = (losses / totalGames) * 100;
-  
   const circumference = 2 * Math.PI * 40;
   const winOffset = circumference - (winPercentage / 100) * circumference;
   const lossOffset = circumference - (lossPercentage / 100) * circumference;
@@ -126,7 +127,6 @@ const DonutChart = ({ wins, losses, totalGames }: { wins: number; losses: number
   );
 };
 
-// Game Mode Stats Component (Line Chart showing win rate progression)
 const GameModeStats = ({ matches, userId }: { matches: Match[]; userId: number }) => {
   
   // Calculate win rate progression for each match

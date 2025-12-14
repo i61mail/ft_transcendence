@@ -11,27 +11,25 @@ const Games = () => {
     const manager = useglobalStore();
     const gameSocketRef = useRef<WebSocket | null>(null);
     const router = useRouter();
-    
-    // State for UI flow
     const [selectedGame, setSelectedGame] = useState<'pong' | 'tictactoe' | null>(null);
     const [showDifficultySelection, setShowDifficultySelection] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // Authentication check
     useEffect(() => {
         const verifyAuth = async () => {
-            try {
+            try
+            {
                 const response = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
-                if (!response.ok) throw new Error("Not authenticated");
+                if (!response.ok)
+                    throw new Error("Not authenticated");
                 const data = await response.json();
-                
-                // Update user in global store if needed
-                if (!manager.user) {
+                if (!manager.user)
                     manager.updateUser(data.user);
-                }
                 
                 setLoading(false);
-            } catch (e) {
+            }
+            catch (e)
+            {
                 localStorage.removeItem("user");
                 router.push("/");
             }
@@ -40,12 +38,13 @@ const Games = () => {
     }, [router, manager]);
 
     useEffect(() => {
-        if (loading) return; // Don't initialize socket until authenticated
+        if (loading)
+            return; // Don't initialize socket until authenticated
         
-        if (gameSocketRef.current !== null) {
+        if (gameSocketRef.current !== null)
             return;
-        }
-        if (manager.gameSocket) {
+        if (manager.gameSocket)
+        {
             manager.gameSocket.close();
             manager.updateGameSocket(null);
         }
@@ -104,8 +103,8 @@ const Games = () => {
         }
     };
 
-    // Show loading screen while checking authentication
-    if (loading) {
+    if (loading)
+    {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5]">
                 <p className="text-xl font-pixelify text-[#2d5a8a]">Loading...</p>
