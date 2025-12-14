@@ -19,7 +19,7 @@ export default async function oauthRoutes(app: FastifyInstance)
     },
 
     startRedirectPath: '/google',
-    callbackUri: process.env.GOOGLE_CALLBACK_URL || 'https://localhost:8080/api/auth/google/callback',
+    callbackUri: process.env.GOOGLE_CALLBACK_URL || 'https://localhost:4000/auth/google/callback',
   });
 
   // handle Google OAuth2 callback
