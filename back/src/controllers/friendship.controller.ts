@@ -1,7 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { FriendshipParams, Friendship, FriendshipRequest } from '../types/friendship.types';
 
-interface User {
+interface User
+{
   id: number;
   username: string;
   email: string;
@@ -10,11 +11,11 @@ interface User {
 }
 
 export const extractFriendships = async (
-  request: FastifyRequest<{
-    Params: FriendshipParams;
-  }>,
-  reply: FastifyReply
-) => {
+    request: FastifyRequest<{
+      Params: FriendshipParams;
+    }>,
+    reply: FastifyReply
+  ) => {
   try {
     const extractList = request.server.db.prepare<[number, number, number], Friendship>(
       'SELECT id, (CASE WHEN user1_id = ? THEN user2_id ELSE user1_id END) AS friend_id FROM friendships WHERE user1_id = ? OR user2_id = ?'
@@ -35,20 +36,21 @@ export const extractFriendships = async (
         friend.display_name = user.display_name;
       }
     });
-    // console.log(friendList);
     reply.send(friendList);
-  } catch (err) {
+  }
+  catch (err)
+  {
     request.server.log.error(err);
     reply.status(500).send(err);
   }
 };
 
 export const deleteFriendship = async (
-  request: FastifyRequest<{
-    Params: FriendshipParams;
-  }>,
-  reply: FastifyReply
-) => {
+    request: FastifyRequest<{
+      Params: FriendshipParams;
+    }>,
+    reply: FastifyReply
+  ) => {
   try {
     const id = request.params.id;
     const statement = request.server.db.prepare<[number]>(
@@ -56,17 +58,18 @@ export const deleteFriendship = async (
     );
     statement.run(id);
     reply.send({ success: true });
-  } catch (err) {
-    console.log('failed to delete friendship');
+  }
+  catch (err)
+  {
     request.server.log.error(err);
     reply.status(500).send(err);
   }
 };
 
 export const registerFriendship = async (
-  request: FastifyRequest<{ Body: FriendshipRequest }>,
-  reply: FastifyReply
-) => {
+    request: FastifyRequest<{ Body: FriendshipRequest }>,
+    reply: FastifyReply
+  ) => {
   const { user1, user2 } = request.body;
   const db = request.server.db;
 
@@ -76,7 +79,9 @@ export const registerFriendship = async (
     );
     const result = registerFriendship.run(user1, user2);
     reply.send({ id: result.lastInsertRowid, user1_id: user1, user2_id: user2 });
-  } catch (err) {
+  }
+  catch (err)
+  {
     request.server.log.error(err);
     reply.status(500).send(err);
   }
