@@ -15,11 +15,9 @@ const TournamentPlayGame = () =>
 
     useEffect(() =>
     {
-        // Prevent double initialization in Strict Mode
         if (initializedRef.current) return;
         initializedRef.current = true;
 
-        console.log("Creating socket for tournament play");
         const socket = new WebSocket("ws://localhost:4000/sockets/games");
 
         const handleFinished = () =>
@@ -28,20 +26,18 @@ const TournamentPlayGame = () =>
             router.push('/games/tournament');
         };
 
-        socket.onclose = () =>
-        {
-            console.log("tournament game socket closed!!!");
-        };
-
         socket.onopen = () =>
         {
-            console.log("starting tournament play...", socket.readyState);
-            const data = { gameType: "playTournament", id: manager.user?.id, username: manager.user?.username };
+            const data =
+            {
+                gameType: "playTournament",
+                id: manager.user?.id,
+                username: manager.user?.username
+            };
             socket.send(JSON.stringify(data));
 
             socket.onmessage = (msg) =>
             {
-                console.log("game received: ", msg.data);
                 const parsed = JSON.parse(msg.data);
                 if (parsed.gm === undefined)
                     return;
@@ -49,8 +45,6 @@ const TournamentPlayGame = () =>
                     startGame(canvasRef.current, socket, msg.data, handleFinished);
             };
         };
-
-        // No cleanup to avoid Strict Mode closing the socket
     }, []);
 
     return (

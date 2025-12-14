@@ -2,7 +2,6 @@ import { playerInfo } from "../types/playerInfo.types";
 import * as types from "../types/ticTacToe.types";
 import type { WebSocket } from "ws";
 import { FastifyInstance } from 'fastify';
-import { log } from "console";
 
 class Player
 {
@@ -18,16 +17,16 @@ class Player
 		this.playerId = playerInfo.id;
 		this.socket = playerInfo.socket;
 		this.socketListen();
+		this.socket.onclose = () =>
+		{
+			this.ttt.playerDisconnected(this.symbol);
+		}
 	}
 
 	socketListen()
 	{
-		// this.socket.send(this.symbol);
-
 		this.socket.onmessage = (msg) =>
 		{
-			console.log("received:", msg.data);
-			console.log("to:", this.ttt.currentPlayer, this.symbol);
 			if (this.ttt.currentPlayer == this.symbol)
 				this.ttt.send(msg.data.toString());
 		}
@@ -35,7 +34,6 @@ class Player
 
 	send(gameMsg: types.gameMessage | types.winnerMessage)
 	{
-		console.log(JSON.stringify(gameMsg));
 		this.socket.send(JSON.stringify(gameMsg));
 	}
 }
@@ -49,6 +47,7 @@ export class TicTacToeGame
 	private player1: Player;
 	private player2: Player;
 	private server: FastifyInstance;
+	private isGameOver: boolean = false;
 	private board: types.Symbol[][] = [
 		['', '', ''],
 		['', '', ''],
@@ -71,6 +70,8 @@ export class TicTacToeGame
 
 	send(message: string)
 	{
+		if (this.isGameOver) return;
+		
 		const {row, collumn} = JSON.parse(message);
 	
 		if (this.board[row][collumn] == '')
@@ -90,12 +91,37 @@ export class TicTacToeGame
 				board: this.board,
 				currentPLayer: this.currentPlayer
 			};
-			console.log("sent: ", gameMsg);
 			this.player1.send(gameMsg);
 			this.player2.send(gameMsg);
 			if (hasWinner)
+			{
+				this.isGameOver = true;
 				this.addToDatabase();
+			}
 		}
+	}
+
+	playerDisconnected(disconnectedSymbol: types.Symbol)
+	{
+		if (this.isGameOver) return;
+		
+		this.isGameOver = true;
+		this.winner = disconnectedSymbol === 'X' ? 'O' : 'X';
+		this.winningCells = [];
+		
+		const gameMsg: types.winnerMessage = {
+			type: types.messageType.winner,
+			board: this.board,
+			winner: this.winner,
+			winningCells: this.winningCells
+		};
+
+		if (disconnectedSymbol === this.player1.symbol)
+			this.player2.send(gameMsg);
+		else
+			this.player1.send(gameMsg);
+		
+		this.addToDatabase();
 	}
 
 	checkWinner(row: number, collumn: number): boolean
@@ -174,9 +200,6 @@ export class TicTacToeGame
 		const xPlayerId: number = this.player1.symbol === 'X' ? this.player1.playerId : this.player2.playerId;
 		const oPlayerId: number = this.player1.symbol === 'O' ? this.player1.playerId : this.player2.playerId;
 		const winnerStr: 'x' | 'o' | 'draw' = this.winner === 'X' ? 'x' : this.winner === 'O' ? 'o' : 'draw';
-		console.log('xPlayerId:', xPlayerId);
-		console.log('oPlayerId:', oPlayerId);
-		console.log('winnerStr:', winnerStr);
 		try {
 			insertMatchStmt.run(xPlayerId, oPlayerId, winnerStr);
 		} catch (err) {

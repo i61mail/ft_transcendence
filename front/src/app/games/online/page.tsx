@@ -21,64 +21,53 @@ const OnlineGame = () =>
         if (conditionT.current || !manager.user?.id) return;
         conditionT.current = true;
 
-        console.log("create socket")
         const socket = new WebSocket("ws://localhost:4000/sockets/games");
         socketRef.current = socket;
 
-        const handleFinished = () => {
-            if (socketRef.current) {
-                socketRef.current.close();
-                if (typeof window === 'undefined' || window.location.pathname !== '/games/online') {
-                    return;
-                }
-                router.push('/games');
-            }
-        };
 
-        socket.onclose = () => {
-            console.log("game socket closed!!!");
-        };
-
-        socket.onopen = () => {
-            console.log("starting game...", socket.readyState);
+        socket.onopen = () =>
+        {
             const data = { gameType: "online", id: manager.user?.id, username: manager.user?.username };
             socket.send(JSON.stringify(data));
-            socket.onmessage = (msg) => {
-                if (initialDataRef.current === null) {
+            socket.onmessage = (msg) =>
+            {
+                if (initialDataRef.current === null)
+                {
                     initialDataRef.current = msg.data;
                     setStart(true);
                 }
             };
         };
 
-        return () => {
+        return () =>
+        {
             conditionT.current = false;
-            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-                console.log("Closing socket on page leave...");
+            if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
                 socket.close();
-            }
             socketRef.current = null;
         };
     }, [manager.user]);
 
-    useEffect(() => {
-        if (start && canvasRef.current && socketRef.current && initialDataRef.current) {
-            console.log("dataref:", initialDataRef.current);
-            const handleFinished = () => {
-                if (socketRef.current) {
+    useEffect(() =>
+    {
+        if (start && canvasRef.current && socketRef.current && initialDataRef.current)
+        {
+            const handleFinished = () =>
+            {
+                if (socketRef.current)
+                {
                     socketRef.current.close();
                     router.push('/games');
                 }
             };
             startGame(canvasRef.current, socketRef.current, initialDataRef.current, handleFinished);
-            initialDataRef.current = null; // Clear so we don't restart
+            initialDataRef.current = null;
         }
     }, [start]);
 
     return (
         <>
             {!start ? (
-                // Queue/Waiting Page
                 <div className="min-h-screen w-screen bg-gradient-to-br from-[#c8d5e8] via-[#bcc3d4] to-[#a8b0c5] relative flex items-center justify-center">
                     {/* Animated Background Elements */}
                     <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -144,7 +133,6 @@ const OnlineGame = () =>
                     </div>
                 </div>
             ) : (
-                // Game Canvas
                 <GameCanvas canvasRef={canvasRef} width={800} height={600} />
             )}
         </>
