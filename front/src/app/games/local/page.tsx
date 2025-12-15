@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { startGame } from "@/lib/pong/game";
 import GameCanvas from "@/components/GameCanvas";
+import { getWsUrl } from "@/lib/api";
 
 const LocalGame = () =>
 {
@@ -18,7 +19,7 @@ const LocalGame = () =>
         if (conditionT.current) return;
         conditionT.current = true;
 
-        const socket = new WebSocket("wss://localhost:8080/api/sockets/games");
+        const socket = new WebSocket(`${getWsUrl()}/sockets/games`);
 
         const handleFinished = () =>
         {

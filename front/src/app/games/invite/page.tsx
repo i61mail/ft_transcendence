@@ -5,6 +5,7 @@ import { startGame } from "@/lib/pong/game";
 import { Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import GameCanvas from "@/components/GameCanvas";
+import { getApiUrl, getWsUrl } from "@/lib/api";
 
 
 
@@ -42,7 +43,7 @@ const InviteGameContent = () =>
         {
             try
             {
-                const check = await fetch(`https://localhost:8080/api/invite?code=${code}`);
+                const check = await fetch(`${getApiUrl()}/invite?code=${code}`);
                 if (!check.ok)
                 {
                     router.push('/dashboard');
@@ -55,7 +56,7 @@ const InviteGameContent = () =>
         }
         verifyInviteGame();
         manager.setInvite(null);
-        const socket = new WebSocket("wss://localhost:8080/api/sockets/games");
+        const socket = new WebSocket(`${getWsUrl()}/sockets/games`);
 
         socket.onopen = () =>
         {

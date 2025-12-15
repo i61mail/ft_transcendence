@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { uploadAvatar, API_URL } from "@/lib/api";
+import { uploadAvatar, getApiUrl } from "@/lib/api";
 
 interface AvatarUploadProps
 {
@@ -103,7 +103,7 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
   // Handle both local paths (/uploads/...) and external URLs (https://...)
   const avatarSrc = preview || 
     (currentAvatar 
-      ? (currentAvatar.startsWith('http') ? currentAvatar : `${API_URL}${currentAvatar}`)
+      ? (currentAvatar.startsWith('http') ? currentAvatar : `${getApiUrl()}${currentAvatar}`)
       : "/default-avatar.png");
 
   return (

@@ -1,6 +1,6 @@
 'use client'
 import UserProfilePage from '@/app/profile/[id]/page';
-import { getCurrentUser } from '@/lib/api';
+import { getCurrentUser, getWsUrl, getApiUrl } from '@/lib/api';
 import useglobalStore from '@/store/globalStore';
 import { FriendshipProps, MessageProps, User } from '@/types/chat.types';
 import { useRouter } from 'next/navigation';
@@ -33,7 +33,7 @@ const  SocketManager = () =>
     {
         if (manager.gameSocket || !manager.user)
             return ;
-        const gameSocket = new WebSocket("wss://localhost:8080/api/sockets/games");
+        const gameSocket = new WebSocket(`${getWsUrl()}/sockets/games`);
         gameSocket.onopen = () =>
         {
             console.log("game connection----------");
@@ -76,7 +76,7 @@ const  SocketManager = () =>
         }
 
         async function getFriends(user: User) {
-            const res = await fetch(`https://localhost:8080/api/friendships/${user?.id}`, {
+            const res = await fetch(`${getApiUrl()}/friendships/${user?.id}`, {
                 credentials: 'include'
             });
             const friends: FriendshipProps[] = await res.json();

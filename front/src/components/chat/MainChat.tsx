@@ -6,8 +6,9 @@ import { MessageProps } from '@/types/chat.types'
 import MessageForm from './MessageForm'
 import useGlobalStore from '@/store/globalStore'
 import PongTournament from '@/app/games/tournament/page'
+import { getApiUrl } from '@/lib/api'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8080/api';
+const API_URL = getApiUrl();
 
 
 const MainChat = () => {

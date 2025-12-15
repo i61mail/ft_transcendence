@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import { getProfile, getMatchHistory, API_URL } from "@/lib/api";
+import { getProfile, getMatchHistory, getApiUrl } from "@/lib/api";
 
 interface UserProfile
 {
@@ -68,7 +68,7 @@ export default function ProfilePage()
 
     const verifyAuthAndLoadProfile = async () => {
       try {
-        const response = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+        const response = await fetch(`${getApiUrl()}/auth/me`, { credentials: "include" });
         if (!response.ok)
         {
           localStorage.removeItem("user");
@@ -107,7 +107,7 @@ export default function ProfilePage()
   }
 
   const avatarUrl = profile.avatar_url 
-    ? (profile.avatar_url.startsWith('http') ? profile.avatar_url : `${API_URL}${profile.avatar_url}`)
+    ? (profile.avatar_url.startsWith('http') ? profile.avatar_url : `${getApiUrl()}${profile.avatar_url}`)
     : "/default-avatar.png";
 
   const displayName = profile.display_name || profile.username;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import useGlobalStore from '@/store/globalStore'
-import { API_URL } from '@/lib/api'
+import { getApiUrl } from '@/lib/api'
 
 interface MessageFormProps {
   isBlocked?: boolean;
@@ -18,7 +18,7 @@ const MessageForm = ({ isBlocked = false }: MessageFormProps) => {
     if (!inputValue.trim()) return;
     
     try {
-      let response = await fetch(`${API_URL}/messages`, {
+      let response = await fetch(`${getApiUrl()}/messages`, {
         method: 'POST',
         body: JSON.stringify({
           friendship_id: manager.pointedUser?.id,

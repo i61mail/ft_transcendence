@@ -115,6 +115,7 @@ const handleRegister = async (e: React.FormEvent) => {
 
   // Handle Google OAuth
   const handleGoogleSignIn = () => {
+    // OAuth must use localhost due to Google's callback URL configuration
     const apiUrl = 'https://localhost:8080/api';
     window.location.href = `${apiUrl}/auth/google`;
   };

@@ -3,10 +3,10 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import AvatarUpload from "@/components/AvatarUpload";
-import { updateProfile } from "@/lib/api";
+import { updateProfile, getApiUrl } from "@/lib/api";
 import useglobalStore from "@/store/globalStore";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8080/api';
+const API_URL = getApiUrl();
 
 interface HeaderProps
 {

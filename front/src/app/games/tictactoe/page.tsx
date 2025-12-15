@@ -5,6 +5,7 @@ import { startGame } from "@/lib/tic-tac-toe/game";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
+import { getWsUrl } from "@/lib/api";
 
 const TicTacToeGame = () =>
 {
@@ -21,7 +22,7 @@ const TicTacToeGame = () =>
         if (conditionT.current) return;
         conditionT.current = true;
 
-        const socket = new WebSocket("wss://localhost:8080/api/sockets/games");
+        const socket = new WebSocket(`${getWsUrl()}/sockets/games`);
         socketRef.current = socket;
 
         socket.onopen = () => 

@@ -4,6 +4,7 @@ import useglobalStore from '@/store/globalStore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import Header from '@/components/Header';
+import { getWsUrl } from '@/lib/api';
 
 
 interface playerInfo
@@ -77,7 +78,7 @@ function PongTournamentContent()
         if (conditionT.current || !manager.user?.id) return;
         conditionT.current = true;
 
-        const socket = new WebSocket("wss://localhost:8080/api/sockets/games");
+        const socket = new WebSocket(`${getWsUrl()}/sockets/games`);
         socketRef.current = socket;
 
         socket.onopen = () => 

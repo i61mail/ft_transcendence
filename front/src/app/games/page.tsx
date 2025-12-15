@@ -4,8 +4,9 @@ import useglobalStore from "@/store/globalStore";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import Header from "@/components/Header";
+import { getApiUrl } from "@/lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8080/api';
+const API_URL = getApiUrl();
 
 const Games = () =>
 {

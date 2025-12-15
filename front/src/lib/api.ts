@@ -1,4 +1,19 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8080/api';
+// Dynamic API URL based on how user accesses the app
+// - localhost users get localhost (Google OAuth works)
+// - LAN IP users get LAN IP (remote access works)
+export function getApiUrl(): string {
+  if (typeof window !== 'undefined') {
+    return `https://${window.location.host}/api`;
+  }
+  return 'https://localhost:8080/api';
+}
+
+export function getWsUrl(): string {
+  if (typeof window !== 'undefined') {
+    return `wss://${window.location.host}/api`;
+  }
+  return 'wss://localhost:8080/api';
+}
 
 interface RegisterData
 {
@@ -29,7 +44,7 @@ interface AuthResponse
 
 // register a new user
 export async function register(data: RegisterData): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/auth/register`, {
+  const response = await fetch(`${getApiUrl()}/auth/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -46,7 +61,7 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
 
 // login user
 export async function login(data: LoginData): Promise<AuthResponse | { requires2FA: boolean; message: string }> {
-  const response = await fetch(`${API_URL}/auth/login`, {
+  const response = await fetch(`${getApiUrl()}/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -63,7 +78,7 @@ export async function login(data: LoginData): Promise<AuthResponse | { requires2
 
 // logout user
 export async function logout() {
-  const response = await fetch(`${API_URL}/auth/logout`, {
+  const response = await fetch(`${getApiUrl()}/auth/logout`, {
     method: 'POST',
     credentials: 'include',
   });
@@ -75,7 +90,7 @@ export async function logout() {
 
 // get current logged-in user info
 export async function getCurrentUser() {
-  const response = await fetch(`${API_URL}/auth/me`, {
+  const response = await fetch(`${getApiUrl()}/auth/me`, {
     method: 'GET',
     credentials: 'include',
   });
@@ -88,7 +103,7 @@ export async function getCurrentUser() {
 
 // get current user's profile
 export async function getProfile() {
-  const response = await fetch(`${API_URL}/profile`, {
+  const response = await fetch(`${getApiUrl()}/profile`, {
     method: 'GET',
     credentials: 'include',
   });
@@ -102,7 +117,7 @@ export async function getProfile() {
 
 // get a user's profile by ID
 export async function getUserProfile(userId: number) {
-  const response = await fetch(`${API_URL}/profile/${userId}`, {
+  const response = await fetch(`${getApiUrl()}/profile/${userId}`, {
     method: 'GET',
     credentials: 'include',
   });
@@ -118,7 +133,7 @@ export async function uploadAvatar(file: File) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`${API_URL}/profile/avatar`, {
+  const response = await fetch(`${getApiUrl()}/profile/avatar`, {
     method: 'POST',
     credentials: 'include',
     body: formData,
@@ -132,7 +147,7 @@ export async function uploadAvatar(file: File) {
 // update user information
 export async function updateProfile(data: { display_name?: string; username?: string; email?: string; password?: string }) {
   try {
-    const response = await fetch(`${API_URL}/profile`, {
+    const response = await fetch(`${getApiUrl()}/profile`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -157,7 +172,7 @@ export async function updateProfile(data: { display_name?: string; username?: st
 
 // get current user's match history
 export async function getMatchHistory() {
-  const response = await fetch(`${API_URL}/profile/match-history`, {
+  const response = await fetch(`${getApiUrl()}/profile/match-history`, {
     method: 'GET',
     credentials: 'include',
   });
@@ -170,7 +185,7 @@ export async function getMatchHistory() {
 
 // get a user's match history by ID
 export async function getUserMatchHistory(userId: number) {
-  const response = await fetch(`${API_URL}/profile/${userId}/match-history`, {
+  const response = await fetch(`${getApiUrl()}/profile/${userId}/match-history`, {
     method: 'GET',
     credentials: 'include',
   });
@@ -183,7 +198,7 @@ export async function getUserMatchHistory(userId: number) {
 
 // get top players for leaderboard
 export async function getLeaderboard() {
-  const response = await fetch(`${API_URL}/profile/leaderboard`, {
+  const response = await fetch(`${getApiUrl()}/profile/leaderboard`, {
     method: 'GET',
     credentials: 'include',
   });
@@ -196,7 +211,7 @@ export async function getLeaderboard() {
 
 // get user's friends list
 export async function getFriends(userId: number) {
-  const response = await fetch(`${API_URL}/friendships/${userId}`, {
+  const response = await fetch(`${getApiUrl()}/friendships/${userId}`, {
     method: 'GET',
     credentials: 'include',
   });

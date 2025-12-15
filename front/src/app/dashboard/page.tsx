@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import { API_URL, getMatchHistory, getLeaderboard } from "@/lib/api";
+import { getApiUrl, getMatchHistory, getLeaderboard } from "@/lib/api";
 import { getFriends } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
@@ -233,7 +233,7 @@ export default function Dashboard() {
 
     const verifyAuthAndLoadData = async () => {
       try {
-        const response = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+        const response = await fetch(`${getApiUrl()}/auth/me`, { credentials: "include" });
         if (!response.ok) throw new Error("Not authenticated");
         const data = await response.json();
         setUser(data.user);
@@ -367,7 +367,7 @@ export default function Dashboard() {
                       >
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-600">
                           <img 
-                            src={friend.avatar_url ? (friend.avatar_url.startsWith('http') ? friend.avatar_url : `${API_URL}${friend.avatar_url}`) : `${API_URL}/uploads/default-avatar.png`}
+                            src={friend.avatar_url ? (friend.avatar_url.startsWith('http') ? friend.avatar_url : `${getApiUrl()}${friend.avatar_url}`) : `${getApiUrl()}/uploads/default-avatar.png`}
                             alt={friend.display_name || friend.username}
                             className="w-full h-full object-cover"
                           />
@@ -448,7 +448,7 @@ export default function Dashboard() {
                         <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center shadow-xl border-4 border-white">
                           <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600">
                             <img 
-                              src={leaderboard[1].avatar_url ? (leaderboard[1].avatar_url.startsWith('http') ? leaderboard[1].avatar_url : `${API_URL}${leaderboard[1].avatar_url}`) : `${API_URL}/uploads/default-avatar.png`} 
+                              src={leaderboard[1].avatar_url ? (leaderboard[1].avatar_url.startsWith('http') ? leaderboard[1].avatar_url : `${getApiUrl()}${leaderboard[1].avatar_url}`) : `${getApiUrl()}/uploads/default-avatar.png`} 
                               alt={leaderboard[1].display_name || leaderboard[1].username} 
                               className="w-full h-full object-cover" 
                             />
@@ -474,7 +474,7 @@ export default function Dashboard() {
                         <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 flex items-center justify-center shadow-2xl border-4 border-white animate-pulse-slow">
                           <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-purple-400 to-purple-600">
                             <img 
-                              src={leaderboard[0].avatar_url ? (leaderboard[0].avatar_url.startsWith('http') ? leaderboard[0].avatar_url : `${API_URL}${leaderboard[0].avatar_url}`) : `${API_URL}/uploads/default-avatar.png`} 
+                              src={leaderboard[0].avatar_url ? (leaderboard[0].avatar_url.startsWith('http') ? leaderboard[0].avatar_url : `${getApiUrl()}${leaderboard[0].avatar_url}`) : `${getApiUrl()}/uploads/default-avatar.png`} 
                               alt={leaderboard[0].display_name || leaderboard[0].username} 
                               className="w-full h-full object-cover" 
                             />
@@ -503,7 +503,7 @@ export default function Dashboard() {
                         <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-orange-300 to-orange-600 flex items-center justify-center shadow-xl border-4 border-white">
                           <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-purple-400 to-purple-600">
                             <img 
-                              src={leaderboard[2].avatar_url ? (leaderboard[2].avatar_url.startsWith('http') ? leaderboard[2].avatar_url : `${API_URL}${leaderboard[2].avatar_url}`) : `${API_URL}/uploads/default-avatar.png`} 
+                              src={leaderboard[2].avatar_url ? (leaderboard[2].avatar_url.startsWith('http') ? leaderboard[2].avatar_url : `${getApiUrl()}${leaderboard[2].avatar_url}`) : `${getApiUrl()}/uploads/default-avatar.png`} 
                               alt={leaderboard[2].display_name || leaderboard[2].username} 
                               className="w-full h-full object-cover" 
                             />
@@ -541,7 +541,7 @@ export default function Dashboard() {
                               <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${color.ring} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                                 <div className={`w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br ${color.bg}`}>
                                   <img 
-                                    src={player.avatar_url ? (player.avatar_url.startsWith('http') ? player.avatar_url : `${API_URL}${player.avatar_url}`) : `${API_URL}/uploads/default-avatar.png`} 
+                                    src={player.avatar_url ? (player.avatar_url.startsWith('http') ? player.avatar_url : `${getApiUrl()}${player.avatar_url}`) : `${getApiUrl()}/uploads/default-avatar.png`} 
                                     alt={player.display_name || player.username} 
                                     className="w-full h-full object-cover" 
                                   />
@@ -703,7 +703,7 @@ export default function Dashboard() {
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden ring-2 ring-white/30 group-hover:ring-4 transition-all duration-300">
                               {opponent.avatar ? (
-                                <img src={opponent.avatar.startsWith('http') ? opponent.avatar : `${API_URL}${opponent.avatar}`} alt="" className="w-full h-full object-cover" />
+                                <img src={opponent.avatar.startsWith('http') ? opponent.avatar : `${getApiUrl()}${opponent.avatar}`} alt="" className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600"></div>
                               )}

@@ -1,4 +1,5 @@
 import { FriendshipProps, User, MessageProps } from "@/types/chat.types";
+import { getWsUrl } from "@/lib/api";
 import { stat } from "fs";
 import { Frijole, Maname } from "next/font/google";
 import { create } from "zustand";
@@ -92,7 +93,7 @@ const useglobalStore = create<GLobalState>((set,get) => (
         if (!current)
         {
             console.log("INIT...")
-            const newSocket = new WebSocket("wss://localhost:8080/api/sockets");
+            const newSocket = new WebSocket(`${getWsUrl()}/sockets`);
             newSocket.onopen = () =>
             {
                 console.log("connecting to backend...");
