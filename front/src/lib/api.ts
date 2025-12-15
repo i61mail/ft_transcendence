@@ -1,18 +1,4 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://10.13.10.12:8080/api';
-export const LOCAL_API_URL = 'https://localhost:8080/api';
-
-// Determine which API URL to use based on the current browser location
-// If user is on localhost, use localhost (for Google OAuth cookies)
-// Otherwise use the LAN IP for remote access
-function getEffectiveApiUrl(): string {
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return LOCAL_API_URL;
-    }
-  }
-  return API_URL;
-}
 
 interface RegisterData
 {
@@ -89,8 +75,7 @@ export async function logout() {
 
 // get current logged-in user info
 export async function getCurrentUser() {
-  const apiUrl = getEffectiveApiUrl();
-  const response = await fetch(`${apiUrl}/auth/me`, {
+  const response = await fetch(`${API_URL}/auth/me`, {
     method: 'GET',
     credentials: 'include',
   });

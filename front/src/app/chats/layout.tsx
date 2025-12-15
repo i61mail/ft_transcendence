@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import useGlobalStore from "@/store/globalStore";
 import Header from "@/components/Header";
 import AllChats from "@/components/chat/AllChats";
-import { getCurrentUser } from "@/lib/api";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://10.13.10.12:8080/api';
 
 export default function ChatsLayout({children}: {children: React.ReactNode})
 {
@@ -15,15 +16,15 @@ export default function ChatsLayout({children}: {children: React.ReactNode})
     {
       const checkAuth = async () => {
         try {
-          const data = await getCurrentUser();
-          if (!data || !data.user) {
+          const response = await fetch(`${API_URL}/auth/me`, {
+            credentials: 'include',
+          });
+
+          if (!response.ok) {
             router.push('/');
             return;
           }
-          // Update global store if user not set
-          if (!manager.user) {
-            manager.updateUser(data.user);
-          }
+
         } catch (error) {
           console.error('Auth check failed:', error);
           router.push('/');
