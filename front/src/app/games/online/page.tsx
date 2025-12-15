@@ -21,7 +21,7 @@ const OnlineGame = () =>
         if (conditionT.current || !manager.user?.id) return;
         conditionT.current = true;
 
-        const socket = new WebSocket("wss://10.13.10.12:8080/api/sockets/games");
+        const socket = new WebSocket("wss://localhost:8080/api/sockets/games");
         socketRef.current = socket;
 
 

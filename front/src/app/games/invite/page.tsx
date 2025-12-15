@@ -42,7 +42,7 @@ const InviteGameContent = () =>
         {
             try
             {
-                const check = await fetch(`https://10.13.10.12:8080/api/invite?code=${code}`);
+                const check = await fetch(`https://localhost:8080/api/invite?code=${code}`);
                 if (!check.ok)
                 {
                     router.push('/dashboard');
@@ -55,7 +55,7 @@ const InviteGameContent = () =>
         }
         verifyInviteGame();
         manager.setInvite(null);
-        const socket = new WebSocket("wss://10.13.10.12:8080/api/sockets/games");
+        const socket = new WebSocket("wss://localhost:8080/api/sockets/games");
 
         socket.onopen = () =>
         {

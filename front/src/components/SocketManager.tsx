@@ -33,7 +33,7 @@ const  SocketManager = () =>
     {
         if (manager.gameSocket || !manager.user)
             return ;
-        const gameSocket = new WebSocket("wss://10.13.10.12:8080/api/sockets/games");
+        const gameSocket = new WebSocket("wss://localhost:8080/api/sockets/games");
         gameSocket.onopen = () =>
         {
             console.log("game connection----------");
@@ -76,7 +76,7 @@ const  SocketManager = () =>
         }
 
         async function getFriends(user: User) {
-            const res = await fetch(`https://10.13.10.12:8080/api/friendships/${user?.id}`, {
+            const res = await fetch(`https://localhost:8080/api/friendships/${user?.id}`, {
                 credentials: 'include'
             });
             const friends: FriendshipProps[] = await res.json();
