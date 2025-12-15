@@ -173,15 +173,51 @@ class Tournament
 
     interval(winner: number, match: Match, intervalId: NodeJS.Timeout)
     {
+        // Check if either player disconnected (socket closed) - treat as forfeit
+        const p1Disconnected = match.player1?.socket.readyState !== WebSocket.OPEN;
+        const p2Disconnected = match.player2?.socket.readyState !== WebSocket.OPEN;
+        
+        // If one player disconnected, the other wins
+        if (p1Disconnected && !p2Disconnected) {
+            match.winner = match.player2;
+            clearInterval(intervalId);
+            this.safeSend(match.player2?.socket);
+            return;
+        }
+        if (p2Disconnected && !p1Disconnected) {
+            match.winner = match.player1;
+            clearInterval(intervalId);
+            this.safeSend(match.player1?.socket);
+            return;
+        }
+        // If both disconnected, just pick player1 as winner to end the match
+        if (p1Disconnected && p2Disconnected) {
+            match.winner = match.player1;
+            clearInterval(intervalId);
+            return;
+        }
+
         if (winner == 0)
             return ;
         if (winner == 1)
             match.winner = match.player1;
         else
             match.winner = match.player2;
-        match.player1?.socket.send(this.socketData);
-        match.player2?.socket.send(this.socketData);
+        this.safeSend(match.player1?.socket);
+        this.safeSend(match.player2?.socket);
         clearInterval(intervalId);
+    }
+
+    // Helper to safely send data to a socket
+    safeSend(socket: WebSocket | undefined)
+    {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            try {
+                socket.send(this.socketData);
+            } catch (err) {
+                console.error("Error sending to socket:", err);
+            }
+        }
     }
 
     playGame(player: playerInfo)
@@ -335,7 +371,7 @@ class Tournament
     {
         this.forEachPlayer((player: playerInfo) =>
         {
-            player.socket.send(this.socketData);
+            this.safeSend(player.socket);
         });
     }
 }
