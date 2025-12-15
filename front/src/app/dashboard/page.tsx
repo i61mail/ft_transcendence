@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import { API_URL, getMatchHistory, getLeaderboard } from "@/lib/api";
+import { API_URL, getMatchHistory, getLeaderboard, getCurrentUser } from "@/lib/api";
 import { getFriends } from "@/lib/api";
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
@@ -233,9 +233,8 @@ export default function Dashboard() {
 
     const verifyAuthAndLoadData = async () => {
       try {
-        const response = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
-        if (!response.ok) throw new Error("Not authenticated");
-        const data = await response.json();
+        const data = await getCurrentUser();
+        if (!data || !data.user) throw new Error("Not authenticated");
         setUser(data.user);
         localStorage.setItem("user", JSON.stringify(data.user));
 
