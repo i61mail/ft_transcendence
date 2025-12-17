@@ -2,19 +2,19 @@
 all: build start
 
 build:
-	docker-compose build
+	docker compose build
 
 start:
-	docker-compose up
+	docker compose up
 
 stop:
-	docker-compose stop
+	docker compose stop
 
 remove:
-	docker-compose down
+	docker compose down
 
 cleanup:
-	docker-compose down
+	docker compose down
 	docker system prune -a -f
 
 .PHONY: cleanup remove stop start build
