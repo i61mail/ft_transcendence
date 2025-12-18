@@ -20,6 +20,13 @@ The app is containerized and includes monitoring with Prometheus and Grafana.
 
 ---
 
+## Login & Register Screens
+
+![Login Page](./assets/login-page.png)
+![Register Page](./assets/register-page.png)
+ 
+---
+
 ## Technologies Used
 
 ### Backend (`back/`)
@@ -124,3 +131,6 @@ sudo make cleanup # (removes all containers/images)
 ## Contributing
 
 Feel free to open issues or submit pull requests for improvements!
+
+---
+
