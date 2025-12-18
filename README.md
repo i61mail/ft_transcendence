@@ -90,7 +90,14 @@ sudo make
 ### 4. Access the Application
 - **Frontend**: https://localhost:8080
 - **Backend API**: https://localhost:4000
-- **Grafana**: http://localhost:3001 (login: superUser/superPass)
+- **Grafana**: http://localhost:3001 (default login: superUser/superPass)
+
+#### Grafana Login Screen
+![Grafana Login](./assets/grafana-login.png)
+
+#### Example Grafana Dashboards
+![Grafana Dashboard 1](./assets/grafana-dashboard-1.png)
+![Grafana Dashboard 2](./assets/grafana-dashboard-2.png)
 
 ### 5. Stopping the Application
 ```sh
