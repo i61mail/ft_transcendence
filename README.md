@@ -78,7 +78,7 @@ The app is containerized and includes monitoring with Prometheus and Grafana.
 
 ## ttt game
 
-![ttt Game](./assets/ttt-game.png)
+![tictactoe Game](./assets/ttt-game.png)
 
 ---
 
