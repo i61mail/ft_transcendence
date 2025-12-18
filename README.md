@@ -2,6 +2,13 @@
 
 > A full-stack multiplayer gaming and chat platform built with TypeScript, Fastify, Next.js, and Docker.
 
+---
+
+## Dashboard Screens
+
+![Dashboard Top Players](./assets/dashboard-top-players.png)
+![Dashboard Match History](./assets/dashboard-match-history.png)
+
 
 ---
 
@@ -31,7 +38,7 @@ The app is containerized and includes monitoring with Prometheus and Grafana.
 
 ### Backend (`back/`)
 - Node.js + TypeScript
-- Fastify (REST API, WebSocket)
+- Fastify (API, WebSocket)
 - SQLite (via better-sqlite3)
 - JWT (authentication)
 - OAuth2 (Google)
@@ -55,7 +62,7 @@ The app is containerized and includes monitoring with Prometheus and Grafana.
 ## Application Structure & Flow
 
 ### Backend
-- **API**: Fastify serves REST endpoints for auth, profile, chat, friendship, block, invite, games, and metrics.
+- **API**: Fastify serves endpoints for auth, profile, chat, friendship, block, invite, games, and metrics.
 - **WebSocket**: Real-time chat, notifications, and games (Pong, Tic-Tac-Toe, tournaments).
 - **Database**: SQLite stores users, friendships, messages, matches, blocks, etc.
 - **Auth**: JWT-based, with optional Google OAuth and 2FA (TOTP).
@@ -131,6 +138,4 @@ sudo make cleanup # (removes all containers/images)
 ## Contributing
 
 Feel free to open issues or submit pull requests for improvements!
-
----
 
