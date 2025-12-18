@@ -58,7 +58,7 @@ The app is containerized and includes monitoring with Prometheus and Grafana.
 
 ---
 
-## tictactoe modes
+## tic-tac-toe modes
 
 ![tictactoe Modes](./assets/ttt-modes.png)
 
@@ -76,7 +76,7 @@ The app is containerized and includes monitoring with Prometheus and Grafana.
 
 ---
 
-## rictactoe game
+## tic-tac-toe game
 
 ![tictactoe Game](./assets/ttt-game.png)
 
