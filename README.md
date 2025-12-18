@@ -34,34 +34,6 @@ The app is containerized and includes monitoring with Prometheus and Grafana.
  
 ---
 
-## Technologies Used
-
-### Backend (`back/`)
-- Node.js + TypeScript
-- Fastify (API, WebSocket)
-- SQLite (via better-sqlite3)
-- JWT (authentication)
-- OAuth2 (Google)
-- Prometheus client (metrics)
-
-### Frontend (`front/`)
-- Next.js (React, App Router)
-- TypeScript
-- Tailwind CSS
-- Zustand (state management)
-- WebSocket (real-time)
-
-### DevOps & Monitoring
-- Docker & Docker Compose
-- Nginx (reverse proxy)
-- Prometheus (metrics)
-- Grafana (dashboards)
-
----
-
-## Application Structure & Flow
-
----
 ## Chat Screen
 
 ![Chat Screen](./assets/chat-screen.png)
@@ -98,11 +70,53 @@ The app is containerized and includes monitoring with Prometheus and Grafana.
 
 ---
 
+## pong game
+
+![Pong Game](./assets/pong-game.png)
+
+---
+
+## ttt game
+
+![ttt Game](./assets/ttt-game.png)
+
+---
+
 ## edit info
 
 ![Edit info](./assets/edit-info.png)
 
 ---
+
+## Technologies Used
+
+### Backend (`back/`)
+- Node.js + TypeScript
+- Fastify (API, WebSocket)
+- SQLite (via better-sqlite3)
+- JWT (authentication)
+- OAuth2 (Google)
+- Prometheus client (metrics)
+
+### Frontend (`front/`)
+- Next.js (React, App Router)
+- TypeScript
+- Tailwind CSS
+- Zustand (state management)
+- WebSocket (real-time)
+
+### DevOps & Monitoring
+- Docker & Docker Compose
+- Nginx (reverse proxy)
+- Prometheus (metrics)
+- Grafana (dashboards)
+
+---
+
+## Application Structure & Flow
+
+---
+
 
 ### Backend
 - **API**: Fastify serves endpoints for auth, profile, chat, friendship, block, invite, games, and metrics.
