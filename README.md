@@ -61,6 +61,49 @@ The app is containerized and includes monitoring with Prometheus and Grafana.
 
 ## Application Structure & Flow
 
+---
+## Chat Screen
+
+![Chat Screen](./assets/chat-screen.png)
+
+---
+
+## profile Screen
+
+![Profile Screen](./assets/profile-screen.png)
+
+---
+
+## two games
+
+![Two Games](./assets/two-games.png)
+
+---
+
+## pong modes
+
+![Pong Modes](./assets/pong-modes.png)
+
+---
+
+## ttt modes
+
+![ttt Modes](./assets/ttt-modes.png)
+
+---
+
+## tournament
+
+![Tournament](./assets/tournament.png)
+
+---
+
+## edit info
+
+![Edit info](./assets/edit-info.png)
+
+---
+
 ### Backend
 - **API**: Fastify serves endpoints for auth, profile, chat, friendship, block, invite, games, and metrics.
 - **WebSocket**: Real-time chat, notifications, and games (Pong, Tic-Tac-Toe, tournaments).
@@ -138,4 +181,7 @@ sudo make cleanup # (removes all containers/images)
 ## Contributing
 
 Feel free to open issues or submit pull requests for improvements!
+
+---
+
 
