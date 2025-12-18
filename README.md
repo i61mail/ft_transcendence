@@ -2,6 +2,7 @@
 
 > A full-stack multiplayer gaming and chat platform built with TypeScript, Fastify, Next.js, and Docker.
 
+
 ---
 
 ## Overview
@@ -112,6 +113,7 @@ sudo make cleanup # (removes all containers/images)
 - Update ports and environment variables as needed.
 
 ---
+
 ## Contributing
 
 Feel free to open issues or submit pull requests for improvements!
